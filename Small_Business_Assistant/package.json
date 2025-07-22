@@ -1,0 +1,37 @@
+{
+  "name": "small-business-assistant",
+  "version": "1.0.0",
+  "description": "Voice-driven mobile and web assistant for manual laborers and small business owners",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:mobile\" \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:mobile": "npm --prefix packages/mobile start",
+    "dev:web": "npm --prefix packages/web run dev",
+    "dev:api": "npm --prefix packages/api run dev",
+    "build": "npm run build:mobile; npm run build:web; npm run build:api",
+    "build:mobile": "npm --prefix packages/mobile run build",
+    "build:web": "npm --prefix packages/web run build",
+    "build:api": "npm --prefix packages/api run build",
+    "test": "npm run test:mobile; npm run test:web; npm run test:api",
+    "test:mobile": "npm --prefix packages/mobile test",
+    "test:web": "npm --prefix packages/web test",
+    "test:api": "npm --prefix packages/api test",
+    "lint": "npm run lint:mobile; npm run lint:web; npm run lint:api",
+    "lint:mobile": "npm --prefix packages/mobile run lint",
+    "lint:web": "npm --prefix packages/web run lint",
+    "lint:api": "npm --prefix packages/api run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "author": "Billy Rochester",
+  "license": "MIT"
+} 

@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  firstName    String
+  lastName     String
+  phone        String?
+  role         String   @default("worker") // Changed from UserRole enum
+  isActive     Boolean  @default(true)
+  profilePhoto String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  jobs     Job[]
+  quotes   Quote[]
+  invoices Invoice[]
+
+  @@map("users")
+}
+
+model Job {
+  id               String     @id @default(cuid())
+  title            String
+  description      String?
+  customerName     String
+  customerPhone    String?
+  customerEmail    String?
+  status           String     @default("pending") // Changed from JobStatus enum
+  priority         String     @default("medium") // Changed from Priority enum
+  estimatedDuration Int?      // in minutes
+  actualDuration   Int?       // in minutes
+  laborCost        Float?     // Changed from Decimal
+  totalCost        Float?     // Changed from Decimal
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  completedAt      DateTime?
+
+  // Relations
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address     Location?
+  photos      Photo[]
+  timeEntries  TimeEntry[]
+  quotes      Quote[]
+  invoices    Invoice[]
+  voiceCommands VoiceCommand[]
+
+  @@map("jobs")
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  latitude  Float
+  longitude Float
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  jobId     String @unique
+  job       Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  @@map("locations")
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  url         String
+  type        String // Changed from PhotoType enum
+  timestamp   DateTime @default(now())
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  jobId String?
+  job   Job?   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model TimeEntry {
+  id        String    @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int?      // in minutes
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  jobId     String
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  location  Location? @relation(fields: [locationId], references: [id])
+
+  locationId String? @unique
+
+  @@map("time_entries")
+}
+
+model Quote {
+  id            String      @id @default(cuid())
+  customerName  String
+  customerEmail String?
+  customerPhone String?
+  subtotal      Float       // Changed from Decimal
+  tax           Float?      // Changed from Decimal
+  total         Float       // Changed from Decimal
+  status        String      @default("draft") // Changed from QuoteStatus enum
+  validUntil    DateTime
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  jobId   String
+  job     Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   QuoteItem[]
+  invoices Invoice[]
+
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String  @id @default(cuid())
+  description String
+  quantity    Int
+  unit        String
+  unitPrice   Float   // Changed from Decimal
+  total       Float   // Changed from Decimal
+
+  // Relations
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_items")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique
+  customerName   String
+  customerEmail  String?
+  customerPhone  String?
+  customerAddress String
+  subtotal       Float         // Changed from Decimal
+  tax            Float?        // Changed from Decimal
+  total          Float         // Changed from Decimal
+  status         String        @default("draft") // Changed from InvoiceStatus enum
+  dueDate        DateTime
+  paidDate       DateTime?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  jobId   String?
+  job     Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  quoteId String?
+  quote   Quote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  description String
+  quantity    Int
+  unit        String
+  unitPrice   Float   // Changed from Decimal
+  total       Float   // Changed from Decimal
+
+  // Relations
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+model VoiceCommand {
+  id            String           @id @default(cuid())
+  type          String           // Changed from VoiceCommandType enum
+  text          String
+  processedText String?
+  confidence    Float?
+  metadata      String? // Changed from Json?
+  createdAt     DateTime         @default(now())
+
+  // Relations
+  jobId String?
+  job   Job?   @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@map("voice_commands")
+} 

@@ -1,0 +1,72 @@
+# Development Environment
+
+## **User Environment**
+- **Operating System**: Windows 10 (version 10.0.26100)
+- **Shell**: PowerShell (C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe)
+- **Workspace**: C:\Projects\Small_Business_Assistant
+
+## **PowerShell-Specific Considerations**
+
+### **Command Separators**
+- **❌ DON'T use**: `&&` (bash-style command chaining)
+- **✅ DO use**: `;` (PowerShell command separator) or `npm --prefix` for cross-platform compatibility
+
+### **Directory Navigation**
+- **❌ DON'T use**: `cd` commands in npm scripts (causes hanging in PowerShell)
+- **✅ DO use**: `npm --prefix packages/[name]` for running commands in subdirectories
+
+### **Path Separators**
+- **Windows paths**: Use backslashes `\` or forward slashes `/` (both work in PowerShell)
+- **PowerShell aliases**: `ls` works for `Get-ChildItem`, `cd` works for `Set-Location`
+
+### **Environment Variables**
+- **PowerShell syntax**: `$env:VARIABLE_NAME`
+- **Batch file syntax**: `%VARIABLE_NAME%`
+- **Cross-platform**: Use `.env` files for npm scripts
+
+## **Development Workflow**
+
+### **Starting Development Servers**
+1. **Primary method**: `npm run dev` (uses concurrently with npm --prefix)
+2. **PowerShell script**: `.\start-dev.ps1` (opens separate windows)
+3. **Batch file**: `start-dev.bat` (Windows CMD alternative)
+
+### **Package Management**
+- **Install dependencies**: `npm install` (works in all packages via workspaces)
+- **Run scripts**: `npm run [script]` (uses npm --prefix for subdirectories)
+- **Workspace commands**: All npm commands work from root directory
+
+### **File Operations**
+- **PowerShell file operations**: Use `New-Item`, `Remove-Item`, `Copy-Item`
+- **Cross-platform file operations**: Use Node.js fs module or npm scripts
+
+## **Common Issues & Solutions**
+
+### **PowerShell Execution Policy**
+If scripts fail to run:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### **Path Length Issues**
+- Windows has 260-character path limit
+- Use shorter directory names when possible
+- Consider using `npm --prefix` instead of `cd` commands
+
+### **Line Ending Issues**
+- Git may change line endings between Windows and Unix
+- Use `.gitattributes` to maintain consistent line endings
+- PowerShell handles both `\r\n` and `\n` line endings
+
+## **Best Practices for This Environment**
+
+1. **Always use `npm --prefix`** instead of `cd` in npm scripts
+2. **Test commands in PowerShell** before adding to scripts
+3. **Use cross-platform npm commands** when possible
+4. **Avoid bash-specific syntax** in any scripts or documentation
+5. **Provide multiple startup options** (npm, PowerShell script, batch file)
+6. **Use forward slashes** in paths for better cross-platform compatibility
+description:
+globs:
+alwaysApply: false
+---
