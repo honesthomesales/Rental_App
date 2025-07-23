@@ -21,17 +21,19 @@
             padding: 3rem;
             border-radius: 1rem;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 600px;
             margin: 2rem;
         }
         h1 {
             color: #333;
             margin-bottom: 1rem;
+            font-size: 2.5rem;
         }
         p {
             color: #666;
             margin-bottom: 2rem;
             line-height: 1.6;
+            font-size: 1.1rem;
         }
         .button {
             display: inline-block;
@@ -42,6 +44,7 @@
             border-radius: 0.5rem;
             font-weight: 600;
             transition: transform 0.2s;
+            margin: 0.5rem;
         }
         .button:hover {
             transform: translateY(-2px);
@@ -52,7 +55,28 @@
             color: #0369a1;
             padding: 1rem;
             border-radius: 0.5rem;
+            margin: 2rem 0;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
             margin-top: 2rem;
+        }
+        .feature {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #667eea;
+        }
+        .feature h3 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        .feature p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
         }
     </style>
 </head>
@@ -62,23 +86,49 @@
         <p>A comprehensive rental property management system with Supabase backend, built with Next.js and TypeScript.</p>
         
         <div class="status">
-            <strong>Status:</strong> Development Ready ✅<br>
-            <strong>Local URL:</strong> <a href="http://localhost:3000" target="_blank">http://localhost:3000</a>
+            <strong>🚀 Deployment Status:</strong> GitHub Pages<br>
+            <strong>📱 Local Development:</strong> <a href="http://localhost:3000" target="_blank">http://localhost:3000</a><br>
+            <strong>🔗 Repository:</strong> <a href="https://github.com/honesthomesales/Small_Business_Assistant" target="_blank">View on GitHub</a>
         </div>
         
-        <a href="http://localhost:3000" class="button" target="_blank">
-            Launch App
-        </a>
+        <div>
+            <a href="http://localhost:3000" class="button" target="_blank">
+                🚀 Launch App (Local)
+            </a>
+            <a href="https://github.com/honesthomesales/Small_Business_Assistant" class="button" target="_blank">
+                📂 View Source Code
+            </a>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🏠 Properties</h3>
+                <p>Manage rental properties with detailed information</p>
+            </div>
+            <div class="feature">
+                <h3>👥 Tenants</h3>
+                <p>Track tenant information and lease details</p>
+            </div>
+            <div class="feature">
+                <h3>💰 Payments</h3>
+                <p>Record and track rent payments</p>
+            </div>
+            <div class="feature">
+                <h3>📊 Analytics</h3>
+                <p>Profit analysis and financial reporting</p>
+            </div>
+            <div class="feature">
+                <h3>📋 Transactions</h3>
+                <p>Complete transaction management</p>
+            </div>
+            <div class="feature">
+                <h3>🔔 Notifications</h3>
+                <p>Late tenant notices and alerts</p>
+            </div>
+        </div>
         
         <div style="margin-top: 2rem; font-size: 0.9rem; color: #888;">
-            <p><strong>Features:</strong></p>
-            <ul style="text-align: left; display: inline-block;">
-                <li>Property Management</li>
-                <li>Tenant Management</li>
-                <li>Payment Tracking</li>
-                <li>Profit Analysis</li>
-                <li>Transaction Management</li>
-            </ul>
+            <p><strong>Tech Stack:</strong> Next.js • TypeScript • Supabase • Tailwind CSS • React</p>
         </div>
     </div>
 </body>
