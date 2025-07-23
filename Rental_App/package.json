@@ -1,0 +1,39 @@
+{
+  "name": "rental-app",
+  "version": "1.0.0",
+  "description": "Production-grade rental management app with Supabase backend",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@rental-app/web",
+    "dev:android": "turbo run dev --filter=@rental-app/android",
+    "dev:tablet": "turbo run dev --filter=@rental-app/tablet",
+    "build": "turbo run build",
+    "build:packages": "turbo run build --filter=@rental-app/api --filter=@rental-app/ui",
+    "build:web": "turbo run build --filter=@rental-app/web",
+    "build:android": "turbo run build --filter=@rental-app/android",
+    "build:tablet": "turbo run build --filter=@rental-app/tablet",
+    "test": "turbo run test",
+    "test:web": "turbo run test --filter=@rental-app/web",
+    "test:api": "turbo run test --filter=@rental-app/api",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "install:all": "npm install && npm run install:workspaces",
+    "install:workspaces": "turbo run install",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "supabase db reset --seed-file=supabase/seed.sql",
+    "db:setup": "npm run db:migrate && npm run db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
