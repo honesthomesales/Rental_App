@@ -1,23 +1,17 @@
+import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import './globals.css'
-import { Toaster } from 'react-hot-toast'
 import { Header } from '../components/Header'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Rental Management App',
-  description: 'Professional rental property management system',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
-  other: {
-    'google': 'notranslate',
-  },
+  description: 'Comprehensive rental property management system',
 }
+
+// Environment variables are set in next.config.js
 
 export default function RootLayout({
   children,
@@ -25,11 +19,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" translate="no">
-      <body className={inter.className} translate="no">
-        <Header />
+    <html lang="en">
+      <body className={inter.className}>
         <div className="min-h-screen bg-gray-50">
-          {children}
+          <Header />
+          <main className="container mx-auto px-4 py-8">
+            {children}
+          </main>
         </div>
         <Toaster
           position="top-right"

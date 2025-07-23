@@ -3,15 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { TransactionsService } from '@rental-app/api'
-import type { Transaction } from '@rental-app/api'
+import type { Transaction, Property, Tenant, Loan } from '@rental-app/api'
 import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, FileText, MapPin, User, Building } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
+// Extended Transaction type with related data
+interface TransactionWithRelations extends Transaction {
+  properties?: Property;
+  tenants?: Tenant;
+  loans?: Loan;
+}
+
 export default function TransactionDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const [transaction, setTransaction] = useState<Transaction | null>(null)
+  const [transaction, setTransaction] = useState<TransactionWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
