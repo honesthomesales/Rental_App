@@ -3,9 +3,5 @@
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "functions": {
-    "apps/web/app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "source": "apps/web"
 } 
