@@ -3,6 +3,7 @@ export type PropertyStatus = 'rented' | 'empty' | 'owner_finance' | 'lease_purch
 export type TransactionType = 'rent_payment' | 'loan_payment' | 'property_sale' | 'property_purchase' | 'expense' | 'income';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
 export type LateStatus = 'on_time' | 'late_5_days' | 'late_10_days' | 'eviction_notice';
+export type PaymentFrequency = 'monthly' | 'bi_weekly' | 'weekly';
 
 export interface Property {
   id: string;
@@ -18,6 +19,7 @@ export interface Property {
   square_feet?: number;
   year_built?: number;
   purchase_price?: number;
+  purchase_payment?: number;
   purchase_date?: string;
   current_value?: number;
   monthly_rent?: number;
@@ -27,9 +29,12 @@ export interface Property {
   insurance_provider?: string;
   insurance_expiry_date?: string;
   insurance_premium?: number;
+  property_tax?: number;
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  latitude?: number;
+  longitude?: number;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -45,7 +50,6 @@ export interface Tenant {
   phone?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  move_in_date?: string;
   lease_start_date?: string;
   lease_end_date?: string;
   monthly_rent?: number;
@@ -60,6 +64,25 @@ export interface Tenant {
   created_at: string;
   updated_at: string;
   properties?: Property; // Add property information for late tenant queries
+  payment_frequency?: PaymentFrequency;
+  leases?: Lease[]; // Add lease information
+}
+
+export interface Lease {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  lease_start_date: string;
+  lease_end_date: string;
+  rent: number;
+  rent_cadence: string;
+  move_in_fee: number;
+  late_fee_amount: number;
+  lease_pdf?: string;
+  status: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PaymentHistoryItem {
@@ -174,7 +197,10 @@ export interface CreatePropertyData {
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  latitude?: number;
+  longitude?: number;
   notes?: string;
+  rent_cadence?: string;
 }
 
 export interface UpdatePropertyData extends Partial<CreatePropertyData> {
@@ -189,11 +215,11 @@ export interface CreateTenantData {
   phone?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  move_in_date?: string;
   lease_start_date?: string;
   lease_end_date?: string;
   monthly_rent?: number;
   security_deposit?: number;
+  rent_cadence?: string;
   notes?: string;
 }
 

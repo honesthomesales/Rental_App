@@ -10,7 +10,7 @@ CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'failed', 'cancelled
 CREATE TYPE late_status AS ENUM ('on_time', 'late_5_days', 'late_10_days', 'eviction_notice');
 
 -- Properties table
-CREATE TABLE properties (
+CREATE TABLE RENT_properties (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     address TEXT NOT NULL,
@@ -42,16 +42,15 @@ CREATE TABLE properties (
 );
 
 -- Tenants table
-CREATE TABLE tenants (
+CREATE TABLE RENT_tenants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    property_id UUID REFERENCES properties(id) ON DELETE SET NULL,
+    property_id UUID REFERENCES RENT_properties(id) ON DELETE SET NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255),
     phone VARCHAR(20),
     emergency_contact_name VARCHAR(255),
     emergency_contact_phone VARCHAR(20),
-    move_in_date DATE,
     lease_start_date DATE,
     lease_end_date DATE,
     monthly_rent DECIMAL(10,2),
@@ -63,6 +62,19 @@ CREATE TABLE tenants (
     last_payment_date DATE,
     notes TEXT,
     is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Payments table
+CREATE TABLE RENT_payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    property_id UUID REFERENCES RENT_properties(id) ON DELETE SET NULL,
+    tenant_id UUID REFERENCES RENT_tenants(id) ON DELETE SET NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_type VARCHAR(50) NOT NULL,
+    notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -85,7 +97,7 @@ CREATE TABLE bank_accounts (
 -- Loans table
 CREATE TABLE loans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    property_id UUID REFERENCES properties(id) ON DELETE SET NULL,
+    property_id UUID REFERENCES RENT_properties(id) ON DELETE SET NULL,
     lender_name VARCHAR(255) NOT NULL,
     loan_number VARCHAR(100),
     original_amount DECIMAL(12,2) NOT NULL,
@@ -101,10 +113,10 @@ CREATE TABLE loans (
 );
 
 -- Transactions table
-CREATE TABLE transactions (
+CREATE TABLE RENT_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    property_id UUID REFERENCES properties(id) ON DELETE SET NULL,
-    tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+    property_id UUID REFERENCES RENT_properties(id) ON DELETE SET NULL,
+    tenant_id UUID REFERENCES RENT_tenants(id) ON DELETE SET NULL,
     loan_id UUID REFERENCES loans(id) ON DELETE SET NULL,
     bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE SET NULL,
     transaction_type transaction_type NOT NULL,
@@ -122,7 +134,7 @@ CREATE TABLE transactions (
 );
 
 -- Scraped payments table (temporary holding)
-CREATE TABLE scraped_payments (
+CREATE TABLE RENT_scraped_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     source VARCHAR(50) NOT NULL, -- 'gmail', 'sms', 'cashapp'
     raw_data JSONB NOT NULL,
@@ -133,8 +145,8 @@ CREATE TABLE scraped_payments (
     sender_phone VARCHAR(20),
     description TEXT,
     is_processed BOOLEAN DEFAULT FALSE,
-    proposed_property_id UUID REFERENCES properties(id) ON DELETE SET NULL,
-    proposed_tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+    proposed_property_id UUID REFERENCES RENT_properties(id) ON DELETE SET NULL,
+    proposed_tenant_id UUID REFERENCES RENT_tenants(id) ON DELETE SET NULL,
     proposed_transaction_type transaction_type,
     confidence_score DECIMAL(3,2),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -142,18 +154,21 @@ CREATE TABLE scraped_payments (
 );
 
 -- Create indexes for better performance
-CREATE INDEX idx_properties_city_state ON properties(city, state);
-CREATE INDEX idx_properties_for_rent ON properties(is_for_rent) WHERE is_for_rent = TRUE;
-CREATE INDEX idx_properties_for_sale ON properties(is_for_sale) WHERE is_for_sale = TRUE;
-CREATE INDEX idx_tenants_property_id ON tenants(property_id);
-CREATE INDEX idx_tenants_active ON tenants(is_active) WHERE is_active = TRUE;
-CREATE INDEX idx_tenants_late_status ON tenants(late_status);
-CREATE INDEX idx_transactions_property_id ON transactions(property_id);
-CREATE INDEX idx_transactions_tenant_id ON transactions(tenant_id);
-CREATE INDEX idx_transactions_date ON transactions(transaction_date);
-CREATE INDEX idx_transactions_type ON transactions(transaction_type);
-CREATE INDEX idx_scraped_payments_processed ON scraped_payments(is_processed) WHERE is_processed = FALSE;
-CREATE INDEX idx_scraped_payments_source ON scraped_payments(source);
+CREATE INDEX idx_properties_city_state ON RENT_properties(city, state);
+CREATE INDEX idx_properties_for_rent ON RENT_properties(is_for_rent) WHERE is_for_rent = TRUE;
+CREATE INDEX idx_properties_for_sale ON RENT_properties(is_for_sale) WHERE is_for_sale = TRUE;
+CREATE INDEX idx_tenants_property_id ON RENT_tenants(property_id);
+CREATE INDEX idx_tenants_active ON RENT_tenants(is_active) WHERE is_active = TRUE;
+CREATE INDEX idx_tenants_late_status ON RENT_tenants(late_status);
+CREATE INDEX idx_transactions_property_id ON RENT_transactions(property_id);
+CREATE INDEX idx_transactions_tenant_id ON RENT_transactions(tenant_id);
+CREATE INDEX idx_transactions_date ON RENT_transactions(transaction_date);
+CREATE INDEX idx_transactions_type ON RENT_transactions(transaction_type);
+CREATE INDEX idx_payments_property_id ON RENT_payments(property_id);
+CREATE INDEX idx_payments_tenant_id ON RENT_payments(tenant_id);
+CREATE INDEX idx_payments_date ON RENT_payments(payment_date);
+CREATE INDEX idx_scraped_payments_processed ON RENT_scraped_payments(is_processed) WHERE is_processed = FALSE;
+CREATE INDEX idx_scraped_payments_source ON RENT_scraped_payments(source);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -165,8 +180,9 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at
-CREATE TRIGGER update_properties_updated_at BEFORE UPDATE ON properties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_properties_updated_at BEFORE UPDATE ON RENT_properties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON RENT_tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bank_accounts_updated_at BEFORE UPDATE ON bank_accounts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_loans_updated_at BEFORE UPDATE ON loans FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON RENT_payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON RENT_transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 

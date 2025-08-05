@@ -1,4 +1,4 @@
-import { supabase, handleSupabaseError, createApiResponse } from '../client';
+import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Transaction, CreateTransactionData, UpdateTransactionData, ApiResponse, PaginatedResponse } from '../types';
 
 export class TransactionsService {
@@ -14,14 +14,10 @@ export class TransactionsService {
     end_date?: string;
   }): Promise<ApiResponse<Transaction[]>> {
     try {
+      const supabase = getSupabaseClient();
       let query = supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `)
+        .from('RENT_transactions')
+        .select('*')
         .order('transaction_date', { ascending: false });
 
       if (filters?.transaction_type) {
@@ -65,14 +61,10 @@ export class TransactionsService {
    */
   static async getById(id: string): Promise<ApiResponse<Transaction>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `)
+        .from('RENT_transactions')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -91,8 +83,9 @@ export class TransactionsService {
    */
   static async create(transactionData: CreateTransactionData): Promise<ApiResponse<Transaction>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .insert([transactionData])
         .select()
         .single();
@@ -112,8 +105,9 @@ export class TransactionsService {
    */
   static async update(id: string, transactionData: UpdateTransactionData): Promise<ApiResponse<Transaction>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .update(transactionData)
         .eq('id', id)
         .select()
@@ -134,8 +128,9 @@ export class TransactionsService {
    */
   static async delete(id: string): Promise<ApiResponse<boolean>> {
     try {
+      const supabase = getSupabaseClient();
       const { error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .delete()
         .eq('id', id);
 
@@ -150,7 +145,7 @@ export class TransactionsService {
   }
 
   /**
-   * Get transactions with pagination
+   * Get paginated transactions
    */
   static async getPaginated(
     page: number = 1,
@@ -165,16 +160,12 @@ export class TransactionsService {
     }
   ): Promise<ApiResponse<PaginatedResponse<Transaction>>> {
     try {
+      const supabase = getSupabaseClient();
       const offset = (page - 1) * limit;
 
       let query = supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `, { count: 'exact' })
+        .from('RENT_transactions')
+        .select('*', { count: 'exact' })
         .order('transaction_date', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -234,9 +225,9 @@ export class TransactionsService {
     start_date?: string;
     end_date?: string;
   }): Promise<ApiResponse<Transaction[]>> {
-    return this.getAll({ 
+    return this.getAll({
       transaction_type: 'rent_payment',
-      ...filters 
+      ...filters
     });
   }
 
@@ -249,9 +240,9 @@ export class TransactionsService {
     start_date?: string;
     end_date?: string;
   }): Promise<ApiResponse<Transaction[]>> {
-    return this.getAll({ 
+    return this.getAll({
       transaction_type: 'loan_payment',
-      ...filters 
+      ...filters
     });
   }
 
@@ -259,7 +250,10 @@ export class TransactionsService {
    * Get transactions by date range
    */
   static async getByDateRange(startDate: string, endDate: string): Promise<ApiResponse<Transaction[]>> {
-    return this.getAll({ start_date: startDate, end_date: endDate });
+    return this.getAll({
+      start_date: startDate,
+      end_date: endDate
+    });
   }
 
   /**
@@ -267,19 +261,20 @@ export class TransactionsService {
    */
   static async getTotalIncome(startDate: string, endDate: string): Promise<ApiResponse<number>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .select('amount')
-        .in('transaction_type', ['rent_payment', 'income'])
-        .eq('payment_status', 'completed')
+        .in('transaction_type', ['rent_payment', 'income', 'property_sale'])
         .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate);
+        .lte('transaction_date', endDate)
+        .eq('payment_status', 'completed');
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      const total = data?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
       return createApiResponse(total);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
@@ -291,19 +286,20 @@ export class TransactionsService {
    */
   static async getTotalExpenses(startDate: string, endDate: string): Promise<ApiResponse<number>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .select('amount')
-        .eq('transaction_type', 'expense')
-        .eq('payment_status', 'completed')
+        .in('transaction_type', ['expense', 'loan_payment', 'property_purchase'])
         .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate);
+        .lte('transaction_date', endDate)
+        .eq('payment_status', 'completed');
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      const total = data?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
       return createApiResponse(total);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));

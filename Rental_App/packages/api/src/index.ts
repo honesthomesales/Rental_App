@@ -9,4 +9,5 @@ export { supabase, handleSupabaseError, createApiResponse } from './client';
 export { PropertiesService } from './services/properties';
 export { TenantsService } from './services/tenants';
 export { TransactionsService } from './services/transactions';
-export { PaymentsService } from './services/payments'; 
+export { PaymentsService } from './services/payments';
+export { OtherService, OtherEntry } from './services/other'; 

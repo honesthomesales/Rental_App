@@ -1,9 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 const Layout: React.FC = () => {
-  const { user, logout } = useAuth();
   const location = useLocation();
 
   const navigation = [
@@ -40,15 +38,6 @@ const Layout: React.FC = () => {
                   </Link>
                 ))}
               </div>
-            </div>
-            <div className="flex items-center">
-              <span className="text-gray-700 mr-4">{user?.firstName} {user?.lastName}</span>
-              <button
-                onClick={logout}
-                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-              >
-                Logout
-              </button>
             </div>
           </div>
         </div>

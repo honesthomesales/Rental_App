@@ -1,10 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
 
   return (
     <div className="p-6">
@@ -12,14 +10,8 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {user?.firstName || 'User'}!
+              Welcome to Small Business Assistant!
             </h1>
-            <button
-              onClick={logout}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-            >
-              Logout
-            </button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

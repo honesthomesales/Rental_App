@@ -5,6 +5,9 @@ import type { Database } from './database.types';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Global singleton instance
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+
 // Create a function to get the client with proper error handling
 function createSupabaseClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -20,7 +23,21 @@ function createSupabaseClient() {
   });
 }
 
-export const supabase = createSupabaseClient();
+export function getSupabaseClient() {
+  if (typeof window === 'undefined') {
+    // Server-side: return null or throw error
+    throw new Error('Supabase client cannot be used on the server side');
+  }
+  
+  if (!supabaseClient) {
+    supabaseClient = createSupabaseClient();
+  }
+  
+  return supabaseClient;
+}
+
+// Export the client for backward compatibility (will only work on client side)
+export const supabase = typeof window !== 'undefined' ? getSupabaseClient() : null;
 
 // Helper function to handle Supabase errors
 export function handleSupabaseError(error: any): string {

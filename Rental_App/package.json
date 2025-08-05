@@ -30,10 +30,14 @@
     "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "devDependencies": {
-    "turbo": "^1.10.0",
-    "@supabase/supabase-js": "^2.38.0"
+    "@supabase/supabase-js": "^2.38.0",
+    "turbo": "^1.10.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "critters": "^0.0.23",
+    "date-fns": "^4.1.0"
   }
-} 
+}

@@ -1,20 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@rental-app/api/src/client'
-import { normalizeRentToMonthly, extractRentCadence, formatRentWithCadence } from '../../lib/utils'
-import type { Property } from '@/types/property'
-import { Plus, Search, Edit, Trash2, Home, DollarSign, MapPin, Users, Link as LinkIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { PropertiesService } from '@rental-app/api'
+import type { Property } from '@rental-app/api'
+import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon, Map, List } from 'lucide-react'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 import { TenantLinkModal } from '@/components/TenantLinkModal'
+import PropertiesMap from '@/components/PropertiesMap'
+import BulkGeocoder from '@/components/BulkGeocoder'
+import { extractRentCadence, formatRentWithCadence } from '../../lib/utils'
 
 export default function PropertiesPage() {
+  const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [showTenantModal, setShowTenantModal] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
 
   useEffect(() => {
     loadProperties()
@@ -23,21 +27,14 @@ export default function PropertiesPage() {
   const loadProperties = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const response = await PropertiesService.getAll()
       
-      if (error) {
-        console.error('Database error:', error)
-        toast.error('Failed to load properties')
-        return
-      }
-      
-      if (data) {
-        setProperties(data)
+      if (response.success && response.data) {
+
+        setProperties(response.data)
       } else {
-        toast.error('No properties found')
+        console.error('Failed to load properties:', response.error)
+        toast.error('Failed to load properties')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -51,19 +48,15 @@ export default function PropertiesPage() {
     if (!confirm('Are you sure you want to delete this property?')) return
 
     try {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', propertyId)
+      const response = await PropertiesService.delete(propertyId)
       
-      if (error) {
-        console.error('Delete error:', error)
+      if (response.success) {
+        toast.success('Property deleted successfully')
+        loadProperties() // Reload the list
+      } else {
+        console.error('Delete error:', response.error)
         toast.error('Failed to delete property')
-        return
       }
-      
-      toast.success('Property deleted successfully')
-      loadProperties() // Reload the list
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error deleting property')
@@ -123,7 +116,7 @@ export default function PropertiesPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -141,25 +134,25 @@ export default function PropertiesPage() {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm text-gray-600">Total Properties</p>
-                <p className="text-2xl font-bold text-primary-600">{properties.length}</p>
+                <p className="text-2xl font-bold text-blue-600">{properties.length}</p>
               </div>
-              <Link
-                href="/properties/new"
-                className="btn btn-primary"
+              <button
+                onClick={() => router.push('/properties/new')}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Property
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search and Filters */}
-        <div className="card mb-6">
-          <div className="card-content">
-            <div className="flex items-center space-x-4">
+        {/* Search, Filters, and View Toggle */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="p-6">
+            <div className="flex items-center justify-between space-x-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -168,18 +161,55 @@ export default function PropertiesPage() {
                     placeholder="Search properties..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input pl-10 w-full"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    viewMode === 'list' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    viewMode === 'map' 
+                      ? 'bg-blue-100 border-blue-300 text-blue-700' 
+                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Map className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Properties Grid */}
+        {/* Bulk Geocoding Tool */}
+        <div className="mb-6">
+          <BulkGeocoder 
+            properties={properties} 
+            onPropertiesUpdated={loadProperties}
+          />
+        </div>
+
+        {/* Map View */}
+        {viewMode === 'map' && (
+          <div className="mb-6">
+            <PropertiesMap properties={filteredProperties} height="500px" />
+          </div>
+        )}
+
+        {/* Properties List */}
         {filteredProperties.length === 0 ? (
-          <div className="card">
-            <div className="card-content text-center py-12">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="text-center py-12">
               <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {searchTerm ? 'No properties found' : 'No properties yet'}
@@ -191,113 +221,141 @@ export default function PropertiesPage() {
                 }
               </p>
               {!searchTerm && (
-                <Link href="/properties/new" className="btn btn-primary">
+                <button
+                  onClick={() => router.push('/properties/new')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto transition-colors"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Property
-                </Link>
+                </button>
               )}
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProperties.map((property) => (
-              <div key={property.id} className="card hover:shadow-lg transition-shadow">
-                <div className="card-content">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {property.name}
-                      </h3>
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {property.city}, {property.state}
-                      </div>
-                    </div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(property.status)}`}>
-                      {getStatusLabel(property.status)}
-                    </span>
-                  </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Type:</span>
-                      <span className="font-medium capitalize">{property.property_type}</span>
-                    </div>
-                    {property.bedrooms && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Bedrooms:</span>
-                        <span className="font-medium">{property.bedrooms}</span>
-                      </div>
-                    )}
-                    {property.bathrooms && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Bathrooms:</span>
-                        <span className="font-medium">{property.bathrooms}</span>
-                      </div>
-                    )}
-                    {property.monthly_rent && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Rent:</span>
-                        <span className="font-medium text-green-600">
-                          {(() => {
-                            const rentCadence = extractRentCadence(property.notes || undefined)
-                            return formatRentWithCadence(property.monthly_rent || 0, rentCadence)
-                          })()}
-                        </span>
-                      </div>
-                    )}
-                    {property.tenants && property.tenants.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center text-sm text-gray-600 mb-2">
-                          <Users className="w-4 h-4 mr-1" />
-                          <span className="font-medium">Linked Tenants ({property.tenants.length})</span>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[1400px]">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                      Property
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                      Type & Details
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                      Rent
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                      Tenants
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                      
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredProperties.map((property) => (
+                    <tr key={property.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {property.name}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate">
+                            {property.address}
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          {property.tenants.slice(0, 2).map((tenant) => (
-                            <div key={tenant.id} className="text-xs text-gray-600">
-                              • {tenant.first_name} {tenant.last_name}
-                              {tenant.monthly_rent && (
-                                <span className="text-green-600 ml-1">
-                                  (${tenant.monthly_rent.toLocaleString()}/mo)
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                          {property.tenants.length > 2 && (
-                            <div className="text-xs text-gray-500">
-                              +{property.tenants.length - 2} more tenants
-                            </div>
-                          )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <MapPin className="w-4 h-4 mr-1 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{property.city}, {property.state}</span>
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Link
-                      href={`/properties/${property.id}`}
-                      className="btn btn-sm btn-secondary flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleOpenTenantModal(property)}
-                      className="btn btn-sm btn-primary"
-                    >
-                      <LinkIcon className="w-4 h-4 mr-1" />
-                      Link Tenants
-                    </button>
-                    <button
-                      onClick={() => handleDelete(property.id)}
-                      className="btn btn-sm btn-danger"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900 capitalize">
+                          {property.property_type || 'N/A'}
+                        </div>
+                        {(property.bedrooms || property.bathrooms) && (
+                          <div className="text-sm text-gray-500">
+                            {property.bedrooms && `${property.bedrooms} bed`}
+                            {property.bedrooms && property.bathrooms && ' • '}
+                            {property.bathrooms && `${property.bathrooms} bath`}
+                          </div>
+                        )}
+                        {property.square_feet && (
+                          <div className="text-sm text-gray-500">
+                            {property.square_feet.toLocaleString()} sq ft
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {property.monthly_rent ? (
+                          <div className="text-sm font-medium text-green-600">
+                            {(() => {
+                              const rentCadence = extractRentCadence(property.notes || undefined)
+                              return formatRentWithCadence(property.monthly_rent || 0, rentCadence)
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">N/A</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                  
+                          if (property.tenants && property.tenants.length > 0) {
+                            return (
+                              <div className="space-y-1">
+                                {property.tenants.map((tenant, index) => (
+                                  <div key={tenant.id} className="flex items-center text-sm text-gray-900">
+                                    <Users className="w-4 h-4 mr-1 text-gray-400 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {tenant.first_name} {tenant.last_name}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          } else {
+                            return <div className="text-sm text-gray-500">No tenants</div>
+                          }
+                        })()}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => router.push(`/properties/${property.id}`)}
+                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleOpenTenantModal(property)}
+                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                          >
+                            <LinkIcon className="w-3 h-3 mr-1" />
+                            Link
+                          </button>
+                          <button
+                            onClick={() => handleDelete(property.id)}
+                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

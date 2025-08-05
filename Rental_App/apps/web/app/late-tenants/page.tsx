@@ -27,34 +27,99 @@ export default function LateTenantsPage() {
   const loadLateTenants = async () => {
     try {
       setLoading(true)
-      console.log('Loading late tenants...')
       const response = await TenantsService.getLateTenants()
       
-      console.log('Late tenants response:', response)
-      
       if (response.success && response.data) {
-        console.log('Setting late tenants:', response.data.length, 'tenants')
-        setLateTenants(response.data)
+        // Sort tenants by payment cadence: weekly first, then bi-weekly, then monthly
+        const sortedTenants = sortTenantsByCadence(response.data)
+        setLateTenants(sortedTenants)
       } else {
-        console.error('Failed to load late tenants:', response.error)
         toast.error('Failed to load late tenants')
       }
     } catch (error) {
-      console.error('Error loading late tenants:', error)
       toast.error('Error loading late tenants')
     } finally {
       setLoading(false)
     }
   }
 
+  // Sort tenants by payment cadence: weekly first, then bi-weekly, then monthly
+  const sortTenantsByCadence = (tenants: Tenant[]): Tenant[] => {
+    const getCadencePriority = (tenant: Tenant): number => {
+      const cadence = getRentCadence(tenant)
+      
+      switch (cadence) {
+        case 'weekly':
+          return 1
+        case 'bi-weekly':
+          return 2
+        case 'monthly':
+          return 3
+        default:
+          return 3 // Default to monthly priority
+      }
+    }
+
+    return [...tenants].sort((a, b) => {
+      const priorityA = getCadencePriority(a)
+      const priorityB = getCadencePriority(b)
+      return priorityA - priorityB
+    })
+  }
+
   const calculateTotalDue = (tenant: Tenant): number => {
-    return TenantsService.calculateTotalDue(tenant)
+    if (tenant.total_due !== undefined) {
+      return tenant.total_due;
+    }
+    return TenantsService.calculateTotalDue(tenant);
   }
 
   const calculateDaysLate = (tenant: Tenant): number => {
+    // Use the calculated days late from the API if available
+    if (tenant.days_late !== undefined) {
+      return tenant.days_late;
+    }
+    
+    // Fallback calculation if not provided by API
     const lastPaymentDate = tenant.last_payment_date ? new Date(tenant.last_payment_date) : null
     const today = new Date()
     return lastPaymentDate ? Math.floor((today.getTime() - lastPaymentDate.getTime()) / (1000 * 60 * 60 * 24)) : 30
+  }
+
+  const getRentAmount = (tenant: Tenant): number => {
+    if (tenant.leases && tenant.leases.length > 0) {
+      return tenant.leases[0].rent || 0;
+    }
+    return tenant.monthly_rent || 0;
+  }
+
+  const getRentCadence = (tenant: Tenant): string => {
+    if (tenant.leases && tenant.leases.length > 0) {
+      const cadence = tenant.leases[0].rent_cadence;
+      if (cadence) {
+        // Normalize the cadence format for display
+        const normalized = cadence.toLowerCase().trim();
+        switch (normalized) {
+          case 'weekly':
+            return 'weekly';
+          case 'bi-weekly':
+          case 'biweekly':
+          case 'bi_weekly':
+            return 'bi-weekly';
+          case 'monthly':
+          default:
+            return 'monthly';
+        }
+      }
+    }
+    return 'monthly';
+  }
+
+  const getLatePeriods = (tenant: Tenant): number => {
+    if (tenant.late_periods !== undefined) {
+      return tenant.late_periods;
+    }
+    return 0;
   }
 
   const generateNotice = (tenant: Tenant) => {
@@ -110,6 +175,9 @@ export default function LateTenantsPage() {
                 <div>
                   <h2 className="card-title">Late Tenants</h2>
                   <p className="card-description">Generate 5-day notices for overdue tenants</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sorted by payment cadence: Weekly (1) → Bi-weekly (2) → Monthly (3)
+                  </p>
                 </div>
               </div>
             </div>
@@ -120,8 +188,10 @@ export default function LateTenantsPage() {
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Tenant</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Property</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900">Rent Cadence</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Days Late</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Monthly Rent</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900">Rent Amount</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-900">Late Periods</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Late Fees</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Total Due</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
@@ -131,6 +201,10 @@ export default function LateTenantsPage() {
                     {lateTenants.map((tenant) => {
                       const totalDue = calculateTotalDue(tenant)
                       const daysLate = calculateDaysLate(tenant)
+                      const rentAmount = getRentAmount(tenant)
+                      const rentCadence = getRentCadence(tenant)
+                      const latePeriods = getLatePeriods(tenant)
+                      const lateFees = tenant.total_late_fees || tenant.late_fees_owed || 0
                       
                       return (
                         <tr key={tenant.id} className="border-b border-gray-100 hover:bg-gray-50">
@@ -143,7 +217,19 @@ export default function LateTenantsPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="text-gray-400">Property ID: {tenant.property_id || 'None'}</span>
+                            <span className="text-gray-900">{tenant.properties?.name || 'No property'}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600 capitalize">{rentCadence}</span>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                rentCadence === 'weekly' ? 'bg-red-100 text-red-800' :
+                                rentCadence === 'bi-weekly' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {rentCadence === 'weekly' ? '1' : rentCadence === 'bi-weekly' ? '2' : '3'}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-4 px-4">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -151,10 +237,13 @@ export default function LateTenantsPage() {
                             </span>
                           </td>
                           <td className="py-4 px-4 font-medium text-gray-900">
-                            ${tenant.monthly_rent?.toLocaleString() || '0'}
+                            ${rentAmount.toLocaleString()}
                           </td>
                           <td className="py-4 px-4 font-medium text-gray-900">
-                            ${tenant.late_fees_owed?.toLocaleString() || '0'}
+                            {latePeriods}
+                          </td>
+                          <td className="py-4 px-4 font-medium text-gray-900">
+                            ${lateFees.toLocaleString()}
                           </td>
                           <td className="py-4 px-4 font-medium text-red-600">
                             ${totalDue.toLocaleString()}
@@ -162,7 +251,7 @@ export default function LateTenantsPage() {
                           <td className="py-4 px-4">
                             <button
                               onClick={() => generateNotice(tenant)}
-                              className="btn btn-sm btn-primary"
+                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center"
                             >
                               <FileText className="w-4 h-4 mr-2" />
                               Generate Notice
@@ -193,14 +282,14 @@ export default function LateTenantsPage() {
               <div className="flex space-x-2">
                 <button
                   onClick={printNotice}
-                  className="btn btn-secondary"
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   Print
                 </button>
                 <button
                   onClick={() => setShowNotice(false)}
-                  className="btn btn-secondary"
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center"
                 >
                   Close
                 </button>
