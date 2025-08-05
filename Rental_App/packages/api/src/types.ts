@@ -267,4 +267,7 @@ export interface LateTenant extends Tenant {
   properties: Property;
   total_due: number;
   days_late: number;
+  late_periods?: number;
+  total_late_fees?: number;
+  total_outstanding?: number;
 } 

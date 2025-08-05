@@ -19,7 +19,7 @@ interface Payment {
   created_at: string
 }
 
-import type { Property as BaseProperty, Tenant as BaseTenant } from '@rental-app/api'
+import type { Property as BaseProperty, Tenant as BaseTenant, PaymentStatus } from '@rental-app/api'
 
 interface Property extends BaseProperty {
   tenants?: Tenant[]
@@ -30,7 +30,7 @@ interface Tenant extends BaseTenant {
   payment_history: Array<{
     date: string
     amount: number
-    status: string
+    status: PaymentStatus
   }>
 }
 

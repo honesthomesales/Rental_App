@@ -1,5 +1,5 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
-import type { Tenant, CreateTenantData, UpdateTenantData, ApiResponse, PaginatedResponse } from '../types';
+import type { Tenant, LateTenant, CreateTenantData, UpdateTenantData, ApiResponse, PaginatedResponse } from '../types';
 
 export class TenantsService {
   /**
@@ -586,7 +586,7 @@ export class TenantsService {
   /**
    * Get late tenants with detailed information using new pay period calculation
    */
-  static async getLateTenants(): Promise<ApiResponse<Tenant[]>> {
+  static async getLateTenants(): Promise<ApiResponse<LateTenant[]>> {
     try {
       const supabase = getSupabaseClient();
           const { data: tenants, error } = await supabase
@@ -641,7 +641,7 @@ export class TenantsService {
           total_outstanding: latePaymentInfo.totalOutstanding,
           late_periods: latePaymentInfo.latePeriods,
           days_late: this.calculateDaysLate(tenant.last_payment_date)
-        };
+        } as LateTenant;
       });
 
       return createApiResponse(lateTenants);

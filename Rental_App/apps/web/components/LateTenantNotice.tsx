@@ -1,10 +1,10 @@
 'use client'
 
 import { TenantsService } from '@rental-app/api'
-import type { Tenant } from '@rental-app/api'
+import type { LateTenant } from '@rental-app/api'
 
 interface LateTenantNoticeProps {
-  tenant: Tenant
+  tenant: LateTenant
 }
 
 export function LateTenantNotice({ tenant }: LateTenantNoticeProps) {

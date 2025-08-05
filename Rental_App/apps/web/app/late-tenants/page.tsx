@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TenantsService } from '@rental-app/api'
-import type { Tenant } from '@rental-app/api'
+import type { LateTenant } from '@rental-app/api'
 import { 
   AlertTriangle, 
   FileText, 
@@ -15,9 +15,9 @@ import toast from 'react-hot-toast'
 import { LateTenantNotice } from '@/components/LateTenantNotice'
 
 export default function LateTenantsPage() {
-  const [lateTenants, setLateTenants] = useState<Tenant[]>([])
+  const [lateTenants, setLateTenants] = useState<LateTenant[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null)
+  const [selectedTenant, setSelectedTenant] = useState<LateTenant | null>(null)
   const [showNotice, setShowNotice] = useState(false)
 
   useEffect(() => {
@@ -44,8 +44,8 @@ export default function LateTenantsPage() {
   }
 
   // Sort tenants by payment cadence: weekly first, then bi-weekly, then monthly
-  const sortTenantsByCadence = (tenants: Tenant[]): Tenant[] => {
-    const getCadencePriority = (tenant: Tenant): number => {
+  const sortTenantsByCadence = (tenants: LateTenant[]): LateTenant[] => {
+    const getCadencePriority = (tenant: LateTenant): number => {
       const cadence = getRentCadence(tenant)
       
       switch (cadence) {
@@ -67,14 +67,14 @@ export default function LateTenantsPage() {
     })
   }
 
-  const calculateTotalDue = (tenant: Tenant): number => {
+  const calculateTotalDue = (tenant: LateTenant): number => {
     if (tenant.total_due !== undefined) {
       return tenant.total_due;
     }
     return TenantsService.calculateTotalDue(tenant);
   }
 
-  const calculateDaysLate = (tenant: Tenant): number => {
+  const calculateDaysLate = (tenant: LateTenant): number => {
     // Use the calculated days late from the API if available
     if (tenant.days_late !== undefined) {
       return tenant.days_late;
@@ -86,14 +86,14 @@ export default function LateTenantsPage() {
     return lastPaymentDate ? Math.floor((today.getTime() - lastPaymentDate.getTime()) / (1000 * 60 * 60 * 24)) : 30
   }
 
-  const getRentAmount = (tenant: Tenant): number => {
+  const getRentAmount = (tenant: LateTenant): number => {
     if (tenant.leases && tenant.leases.length > 0) {
       return tenant.leases[0].rent || 0;
     }
     return tenant.monthly_rent || 0;
   }
 
-  const getRentCadence = (tenant: Tenant): string => {
+  const getRentCadence = (tenant: LateTenant): string => {
     if (tenant.leases && tenant.leases.length > 0) {
       const cadence = tenant.leases[0].rent_cadence;
       if (cadence) {
@@ -115,14 +115,14 @@ export default function LateTenantsPage() {
     return 'monthly';
   }
 
-  const getLatePeriods = (tenant: Tenant): number => {
+  const getLatePeriods = (tenant: LateTenant): number => {
     if (tenant.late_periods !== undefined) {
       return tenant.late_periods;
     }
     return 0;
   }
 
-  const generateNotice = (tenant: Tenant) => {
+  const generateNotice = (tenant: LateTenant) => {
     setSelectedTenant(tenant)
     setShowNotice(true)
   }
