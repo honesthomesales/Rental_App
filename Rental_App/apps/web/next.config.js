@@ -9,47 +9,9 @@ const nextConfig = {
   generateBuildId: async () => {
     return 'build'
   },
-  // Performance optimizations
-  compress: true,
-  poweredByHeader: false,
-  reactStrictMode: true,
-  swcMinify: true,
-  
-  // Image optimization
+  // Disable image optimization for static export
   images: {
-    domains: ['gnisgfojzrrnidizrycj.supabase.co'],
-    formats: ['image/webp', 'image/avif'],
-  },
-  
-  // Bundle optimization
-  experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['lucide-react', '@rental-app/ui'],
-  },
-  
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Optimize bundle size
-    if (!dev && !isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
-            enforce: true,
-          },
-        },
-      }
-    }
-    
-    return config
+    unoptimized: true,
   },
 }
 
