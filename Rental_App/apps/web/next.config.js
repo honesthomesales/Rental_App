@@ -13,6 +13,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Disable experimental features
+  experimental: {
+    optimizeCss: false,
+  },
 }
 
 module.exports = nextConfig 
