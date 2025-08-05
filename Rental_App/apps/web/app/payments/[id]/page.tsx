@@ -8,6 +8,11 @@ import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, FileText, MapPin, User, 
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
+// Required for static export
+export async function generateStaticParams() {
+  return []
+}
+
 // Extended Transaction type with related data
 interface TransactionWithRelations extends Transaction {
   properties?: Property;

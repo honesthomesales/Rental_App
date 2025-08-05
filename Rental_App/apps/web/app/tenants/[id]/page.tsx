@@ -7,6 +7,11 @@ import type { Tenant } from '@rental-app/api'
 import { TenantForm } from '@/components/TenantForm'
 import toast from 'react-hot-toast'
 
+// Required for static export
+export async function generateStaticParams() {
+  return []
+}
+
 export default function EditTenantPage() {
   const params = useParams()
   const router = useRouter()

@@ -7,6 +7,11 @@ import type { Transaction } from '@rental-app/api'
 import { TransactionForm } from '@/components/TransactionForm'
 import toast from 'react-hot-toast'
 
+// Required for static export
+export async function generateStaticParams() {
+  return []
+}
+
 export default function EditTransactionPage() {
   const params = useParams()
   const router = useRouter()

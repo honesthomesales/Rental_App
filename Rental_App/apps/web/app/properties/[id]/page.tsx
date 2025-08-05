@@ -10,6 +10,11 @@ import { RentPaymentForm } from '../../../components/RentPaymentForm'
 import { ArrowLeft, Edit, Trash2, Home, MapPin, DollarSign, Calendar, Phone, Mail, Users, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// Required for static export
+export async function generateStaticParams() {
+  return []
+}
+
 export default function PropertyDetailPage() {
   const params = useParams()
   const router = useRouter()
