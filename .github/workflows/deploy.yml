@@ -37,6 +37,13 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      - name: Debug - List build output
+        run: |
+          echo "Checking if out directory exists:"
+          ls -la apps/web/
+          echo "Checking if out directory was created:"
+          ls -la apps/web/out/ || echo "out directory not found"
+
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
         

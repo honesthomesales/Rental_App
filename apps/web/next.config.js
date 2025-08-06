@@ -16,10 +16,8 @@ const nextConfig = {
   },
   trailingSlash: true,
   generateBuildId: async () => 'build',
-  // Enable static export only for production builds (GitHub Pages)
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'export',
-  }),
+  // Always enable static export for GitHub Pages
+  output: 'export',
   // Disable image optimization for static export
   images: {
     unoptimized: true,

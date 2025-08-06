@@ -1,0 +1,31 @@
+[1mdiff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml[m
+[1mindex aa5cb31..5858d8e 100644[m
+[1m--- a/.github/workflows/deploy.yml[m
+[1m+++ b/.github/workflows/deploy.yml[m
+[36m@@ -27,22 +27,17 @@[m [mjobs:[m
+           node-version: '18'[m
+           cache: 'npm'[m
+           [m
+[31m-      - name: Install dependencies[m
+[32m+[m[32m      - name: Install all dependencies[m
+         run: npm ci[m
+         [m
+[31m-      - name: Build packages[m
+[31m-        run: npm run build:packages[m
+[31m-        [m
+       - name: Build web application[m
+[31m-        run: |[m
+[31m-          cd apps/web[m
+[31m-          npm run build[m
+[32m+[m[32m        run: npm run build:web[m
+         env:[m
+           NODE_ENV: production[m
+           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}[m
+           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}[m
+[31m-        [m
+[31m-      - name: Setup Pages[m
+[32m+[m
+[32m+[m[32m      - name: Setup GitHub Pages[m
+         uses: actions/configure-pages@v4[m
+         [m
+       - name: Upload artifact[m
