@@ -1,63 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { TenantsService } from '@rental-app/api'
 import type { Tenant } from '@rental-app/api'
 import { Plus, Search, Edit, Trash2, Users, Phone, Mail, Calendar, DollarSign } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
-export default function TenantsPage() {
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+// Loading component
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+  </div>
+)
 
-  useEffect(() => {
-    loadTenants()
-  }, [])
-
-  const loadTenants = async () => {
-    try {
-      setLoading(true)
-      const response = await TenantsService.getAll()
-      
-      if (response.success && response.data) {
-        setTenants(response.data)
-      } else {
-        toast.error('Failed to load tenants')
-      }
-    } catch (error) {
-      toast.error('Error loading tenants')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (tenantId: string) => {
-    if (!confirm('Are you sure you want to delete this tenant?')) return
-
-    try {
-      const response = await TenantsService.delete(tenantId)
-      
-      if (response.success) {
-        toast.success('Tenant deleted successfully')
-        loadTenants() // Reload the list
-      } else {
-        toast.error(response.error || 'Failed to delete tenant')
-      }
-    } catch (error) {
-      toast.error('Error deleting tenant')
-    }
-  }
-
-  const filteredTenants = tenants.filter(tenant =>
-    tenant.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.phone?.includes(searchTerm)
-  )
-
+// Tenant Card Component
+const TenantCard = ({ tenant, onDelete }: {
+  tenant: Tenant
+  onDelete: (id: string) => void
+}) => {
   const getLateStatusColor = (status: string) => {
     switch (status) {
       case 'on_time':
@@ -88,12 +49,247 @@ export default function TenantsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+  return (
+    <div className="card hover:shadow-lg transition-shadow">
+      <div className="card-content">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {tenant.first_name} {tenant.last_name}
+            </h3>
+            <div className="flex items-center text-sm text-gray-500 mb-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+                {getLateStatusLabel(tenant.late_status)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2 mb-4">
+          {tenant.phone && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="w-4 h-4 mr-2" />
+              {tenant.phone}
+            </div>
+          )}
+          {tenant.email && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Mail className="w-4 h-4 mr-2" />
+              {tenant.email}
+            </div>
+          )}
+          {tenant.properties && (
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Property:</span> {tenant.properties.name}
+            </div>
+          )}
+          {tenant.leases && tenant.leases.length > 0 && (
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
+            </div>
+          )}
+          {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Lease Start:</span> {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+
+        <div className="flex space-x-2">
+          <Link
+            href={`/tenants/${tenant.id}`}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </Link>
+          <button
+            onClick={() => onDelete(tenant.id)}
+            className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
+    </div>
+  )
+}
+
+// Tenant List Row Component
+const TenantListRow = ({ tenant, onDelete }: {
+  tenant: Tenant
+  onDelete: (id: string) => void
+}) => {
+  const getLateStatusColor = (status: string) => {
+    switch (status) {
+      case 'on_time':
+        return 'bg-green-100 text-green-800'
+      case 'late_5_days':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'late_10_days':
+        return 'bg-orange-100 text-orange-800'
+      case 'eviction_notice':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getLateStatusLabel = (status: string) => {
+    switch (status) {
+      case 'on_time':
+        return 'On Time'
+      case 'late_5_days':
+        return '5 Days Late'
+      case 'late_10_days':
+        return '10 Days Late'
+      case 'eviction_notice':
+        return 'Eviction Notice'
+      default:
+        return status
+    }
+  }
+
+  return (
+    <tr key={tenant.id} className="hover:bg-gray-50">
+      <td className="px-4 py-4">
+        <div>
+          <div className="text-sm font-medium text-gray-900">
+            {tenant.first_name} {tenant.last_name}
+          </div>
+          {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
+            <div className="text-xs text-gray-500">
+              Since: {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className="text-sm text-gray-900 space-y-1">
+          {tenant.phone && (
+            <div className="flex items-center">
+              <Phone className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+              <span className="truncate max-w-32">{tenant.phone}</span>
+            </div>
+          )}
+          {tenant.email && (
+            <div className="flex items-center">
+              <Mail className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+              <span className="truncate max-w-40">{tenant.email}</span>
+            </div>
+          )}
+          {!tenant.phone && !tenant.email && (
+            <span className="text-gray-500">No contact info</span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-4 text-sm text-gray-900">
+        <div className="truncate max-w-32">
+          {tenant.properties?.name || 'No property assigned'}
+        </div>
+      </td>
+      <td className="px-4 py-4 text-sm text-gray-900">
+        {tenant.leases && tenant.leases.length > 0 
+          ? `$${tenant.leases[0].rent.toLocaleString()}/month` 
+          : tenant.monthly_rent 
+            ? `$${tenant.monthly_rent.toLocaleString()}/month` 
+            : 'Not set'}
+      </td>
+      <td className="px-4 py-4">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+          {getLateStatusLabel(tenant.late_status)}
+        </span>
+      </td>
+      <td className="px-4 py-4 text-sm font-medium">
+        <div className="flex space-x-2">
+          <Link
+            href={`/tenants/${tenant.id}`}
+            className="text-blue-600 hover:text-blue-900 flex items-center"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </Link>
+          <button
+            onClick={() => onDelete(tenant.id)}
+            className="text-red-600 hover:text-red-900 flex items-center"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Delete
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+export default function TenantsPage() {
+  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  // Memoize the loadTenants function
+  const loadTenants = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await TenantsService.getAll()
+      
+      if (response.success && response.data) {
+        setTenants(response.data)
+      } else {
+        toast.error('Failed to load tenants')
+      }
+    } catch (error) {
+      toast.error('Error loading tenants')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadTenants()
+  }, [loadTenants])
+
+  // Memoize the delete handler
+  const handleDelete = useCallback(async (tenantId: string) => {
+    if (!confirm('Are you sure you want to delete this tenant?')) return
+
+    try {
+      const response = await TenantsService.delete(tenantId)
+      
+      if (response.success) {
+        toast.success('Tenant deleted successfully')
+        loadTenants() // Reload the list
+      } else {
+        toast.error(response.error || 'Failed to delete tenant')
+      }
+    } catch (error) {
+      toast.error('Error deleting tenant')
+    }
+  }, [loadTenants])
+
+  // Memoize filtered tenants
+  const filteredTenants = useMemo(() => {
+    return tenants.filter(tenant =>
+      tenant.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tenant.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tenant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tenant.phone?.includes(searchTerm)
     )
+  }, [tenants, searchTerm])
+
+  // Memoize search handler
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+  }, [])
+
+  // Memoize view mode handler
+  const handleViewModeChange = useCallback((mode: 'grid' | 'list') => {
+    setViewMode(mode)
+  }, [])
+
+  if (loading) {
+    return <LoadingSpinner />
   }
 
   return (
@@ -115,7 +311,7 @@ export default function TenantsPage() {
               {/* View Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'grid'
                       ? 'bg-white text-gray-900 shadow-sm'
@@ -125,7 +321,7 @@ export default function TenantsPage() {
                   Grid View
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'list'
                       ? 'bg-white text-gray-900 shadow-sm'
@@ -160,7 +356,7 @@ export default function TenantsPage() {
                     type="text"
                     placeholder="Search tenants..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearchChange}
                     className="input pl-10 w-full"
                   />
                 </div>
@@ -196,70 +392,15 @@ export default function TenantsPage() {
             {/* Grid View */}
             {viewMode === 'grid' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTenants.map((tenant) => (
-                  <div key={tenant.id} className="card hover:shadow-lg transition-shadow">
-                    <div className="card-content">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {tenant.first_name} {tenant.last_name}
-                          </h3>
-                          <div className="flex items-center text-sm text-gray-500 mb-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
-                              {getLateStatusLabel(tenant.late_status)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        {tenant.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="w-4 h-4 mr-2" />
-                            {tenant.phone}
-                          </div>
-                        )}
-                        {tenant.email && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Mail className="w-4 h-4 mr-2" />
-                            {tenant.email}
-                          </div>
-                        )}
-                        {tenant.properties && (
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Property:</span> {tenant.properties.name}
-                          </div>
-                        )}
-                        {tenant.leases && tenant.leases.length > 0 && (
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
-                          </div>
-                        )}
-                        {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Lease Start:</span> {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <Link
-                          href={`/tenants/${tenant.id}`}
-                          className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(tenant.id)}
-                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>}>
+                  {filteredTenants.map((tenant) => (
+                    <TenantCard
+                      key={tenant.id}
+                      tenant={tenant}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </Suspense>
               </div>
             )}
 
@@ -291,76 +432,15 @@ export default function TenantsPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredTenants.map((tenant) => (
-                        <tr key={tenant.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {tenant.first_name} {tenant.last_name}
-                              </div>
-                              {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
-                                <div className="text-xs text-gray-500">
-                                  Since: {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm text-gray-900 space-y-1">
-                              {tenant.phone && (
-                                <div className="flex items-center">
-                                  <Phone className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate max-w-32">{tenant.phone}</span>
-                                </div>
-                              )}
-                              {tenant.email && (
-                                <div className="flex items-center">
-                                  <Mail className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                                  <span className="truncate max-w-40">{tenant.email}</span>
-                                </div>
-                              )}
-                              {!tenant.phone && !tenant.email && (
-                                <span className="text-gray-500">No contact info</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900">
-                            <div className="truncate max-w-32">
-                              {tenant.properties?.name || 'No property assigned'}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900">
-                            {tenant.leases && tenant.leases.length > 0 
-                              ? `$${tenant.leases[0].rent.toLocaleString()}/month` 
-                              : tenant.monthly_rent 
-                                ? `$${tenant.monthly_rent.toLocaleString()}/month` 
-                                : 'Not set'}
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
-                              {getLateStatusLabel(tenant.late_status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <Link
-                                href={`/tenants/${tenant.id}`}
-                                className="text-blue-600 hover:text-blue-900 flex items-center"
-                              >
-                                <Edit className="w-4 h-4 mr-1" />
-                                Edit
-                              </Link>
-                              <button
-                                onClick={() => handleDelete(tenant.id)}
-                                className="text-red-600 hover:text-red-900 flex items-center"
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      <Suspense fallback={<tr><td colSpan={6} className="px-4 py-4"><div className="h-16 bg-gray-100 animate-pulse rounded"></div></td></tr>}>
+                        {filteredTenants.map((tenant) => (
+                          <TenantListRow
+                            key={tenant.id}
+                            tenant={tenant}
+                            onDelete={handleDelete}
+                          />
+                        ))}
+                      </Suspense>
                     </tbody>
                   </table>
                 </div>

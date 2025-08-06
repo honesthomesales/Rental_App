@@ -33,6 +33,9 @@ export interface Property {
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  sell_price?: number;
+  interest_rate?: number;
+  map_id?: string;
   latitude?: number;
   longitude?: number;
   notes?: string;
@@ -76,13 +79,29 @@ export interface Lease {
   lease_end_date: string;
   rent: number;
   rent_cadence: string;
+  rent_due_day?: number;
   move_in_fee: number;
   late_fee_amount: number;
   lease_pdf?: string;
+  lease_pdf_url?: string;
   status: string;
   notes?: string;
   created_at: string;
   updated_at: string;
+  tenant?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
+  property?: {
+    id: string;
+    name: string;
+    address: string;
+    city?: string;
+    state?: string;
+  };
 }
 
 export interface PaymentHistoryItem {
@@ -194,9 +213,13 @@ export interface CreatePropertyData {
   insurance_provider?: string;
   insurance_expiry_date?: string;
   insurance_premium?: number;
+  property_tax?: number;
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  sell_price?: number;
+  interest_rate?: number;
+  map_id?: string;
   latitude?: number;
   longitude?: number;
   notes?: string;
@@ -224,7 +247,6 @@ export interface CreateTenantData {
 }
 
 export interface UpdateTenantData extends Partial<CreateTenantData> {
-  id: string;
   last_payment_date?: string;
   late_fees_owed?: number;
   late_status?: LateStatus;

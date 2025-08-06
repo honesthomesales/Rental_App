@@ -36,93 +36,35 @@ export default function LatePaymentsPage() {
     try {
       setLoading(true)
       
-      // Load all tenants with lease data
-      const tenantsResponse = await TenantsService.getAll()
-      const tenantsData = tenantsResponse.data
+      // Use the new getLateTenants API method
+      const response = await TenantsService.getLateTenants()
       
-      // Load all properties
-      const propertiesResponse = await PropertiesService.getAll()
-      const propertiesData = propertiesResponse.data
-      
-      if (!tenantsData || !propertiesData) {
-        console.error('Failed to load data')
-        return
+      if (response.success && response.data) {
+        // Transform the data to match the expected format
+        const lateTenantsList: LateTenant[] = response.data.map((tenant: any) => ({
+          id: tenant.id,
+          first_name: tenant.first_name,
+          last_name: tenant.last_name,
+          property_id: tenant.property_id,
+          property_name: tenant.properties?.name || 'Unknown Property',
+          property_address: tenant.properties?.address || '',
+          rent: tenant.properties?.monthly_rent || 0,
+          total_owed: tenant.total_due || 0,
+          late_periods: tenant.late_periods || 0,
+          lease_start_date: tenant.leases?.[0]?.lease_start_date || '',
+          rent_cadence: tenant.leases?.[0]?.rent_cadence || 'monthly',
+          late_payment_info: {
+            totalLateFees: tenant.total_late_fees || 0,
+            totalOutstanding: tenant.total_outstanding || 0,
+            totalDue: tenant.total_due || 0,
+            latePeriods: tenant.late_periods || 0
+          }
+        }))
+        
+        setLateTenants(lateTenantsList)
+      } else {
+        console.error('Failed to load late tenants')
       }
-
-      const lateTenantsList: LateTenant[] = []
-
-      // Process each tenant to find late payments (same logic as dashboard)
-      tenantsData.forEach((tenant: any) => {
-        try {
-          // Find the property for this tenant
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
-          if (!property) return
-
-          // Get lease data from the joined leases table
-          const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
-          if (!lease || !lease.lease_start_date) return
-
-          // Use the same logic as dashboard
-          const tenantWithLease = { ...tenant, lease_start_date: lease.lease_start_date }
-          const propertyWithNotes = { ...property, notes: property.notes || '' }
-          
-          const isLate = isTenantLate(tenantWithLease, propertyWithNotes)
-          
-          if (isLate) {
-            const latePaymentInfo = calculateTotalLatePayments(tenantWithLease, propertyWithNotes)
-            
-            lateTenantsList.push({
-              id: tenant.id,
-              first_name: tenant.first_name,
-              last_name: tenant.last_name,
-              property_id: tenant.property_id,
-              property_name: property.name,
-              property_address: property.address,
-              rent: property.monthly_rent || 0,
-              total_owed: latePaymentInfo.totalDue,
-              late_periods: latePaymentInfo.latePeriods,
-              lease_start_date: lease.lease_start_date,
-              rent_cadence: lease.rent_cadence || 'monthly',
-              late_payment_info: latePaymentInfo
-            })
-          }
-        } catch (error) {
-          console.error('Error processing tenant:', tenant.first_name, tenant.last_name, error)
-        }
-      })
-
-      // Sort by payment cadence first (weekly, bi-weekly, monthly), then by total amount owed
-      lateTenantsList.sort((a, b) => {
-        // First, sort by cadence priority
-        const getCadencePriority = (cadence: string): number => {
-          const normalized = cadence.toLowerCase().trim();
-          
-          switch (normalized) {
-            case 'weekly':
-              return 1;
-            case 'bi-weekly':
-            case 'biweekly':
-            case 'bi_weekly':
-              return 2;
-            case 'monthly':
-            default:
-              return 3;
-          }
-        };
-
-        const priorityA = getCadencePriority(a.rent_cadence);
-        const priorityB = getCadencePriority(b.rent_cadence);
-
-        // If cadence priorities are different, sort by cadence
-        if (priorityA !== priorityB) {
-          return priorityA - priorityB;
-        }
-
-        // If cadence is the same, sort by total amount owed (highest first)
-        return b.total_owed - a.total_owed;
-      });
-      
-      setLateTenants(lateTenantsList)
     } catch (error) {
       console.error('Error loading late payments:', error)
     } finally {

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
 import { Calendar, DollarSign, TrendingUp, PieChart, Plus, Minus, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
-import { TenantsService, PropertiesService, PaymentsService, OtherService } from '@rental-app/api'
-import type { Tenant, Property, OtherEntry } from '@rental-app/api'
+import { TenantsService, PropertiesService, PaymentsService } from '@rental-app/api'
+import type { Tenant, Property } from '@rental-app/api'
 import { normalizeRentToMonthly, extractRentCadence } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
@@ -104,22 +104,12 @@ export default function ProfitPage() {
     }
   }
 
-       const [otherEntries, setOtherEntries] = useState<OtherEntry[]>([])
-  const [rentPayments, setRentPayments] = useState<any[]>([])
+       const [rentPayments, setRentPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [showAddExpense, setShowAddExpense] = useState(false)
-  const [showEditExpense, setShowEditExpense] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<OtherEntry | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [monthlyPotentialIncome, setMonthlyPotentialIncome] = useState(0)
   const [monthsInRange, setMonthsInRange] = useState(0)
-  const [newEntry, setNewEntry] = useState({
-    type: 'expense' as 'expense' | 'income',
-    amount: 0,
-    description: '',
-    date: format(new Date(), 'yyyy-MM-dd')
-  })
 
   useEffect(() => {
     loadProfitData()
@@ -129,15 +119,14 @@ export default function ProfitPage() {
      try {
        setLoading(true)
        
-       const [propertiesResponse, tenantsResponse, paymentsResponse, otherResponse, allPaymentsResponse] = await Promise.all([
+       const [propertiesResponse, tenantsResponse, paymentsResponse, allPaymentsResponse] = await Promise.all([
          PropertiesService.getAll(),
          TenantsService.getAll(),
          PaymentsService.getByDateRange(dateRange.start, dateRange.end),
-         OtherService.getByDateRange(dateRange.start, dateRange.end),
          PaymentsService.getAll()
        ])
 
-       if (!propertiesResponse.success || !tenantsResponse.success || !paymentsResponse.success || !otherResponse.success || !allPaymentsResponse.success) {
+       if (!propertiesResponse.success || !tenantsResponse.success || !paymentsResponse.success || !allPaymentsResponse.success) {
          toast.error('Failed to load data')
          return
        }
@@ -145,7 +134,7 @@ export default function ProfitPage() {
        const propertiesData = propertiesResponse.data || []
        const tenants = tenantsResponse.data || []
        const payments = paymentsResponse.data || []
-       const otherEntriesData = otherResponse.data || []
+       const otherEntriesData = [] // Remove dependency on RENT_other table
        const allPayments = allPaymentsResponse.data || []
 
        // If this is the initial load and no payments found, try to find the most recent month with data
@@ -192,7 +181,6 @@ export default function ProfitPage() {
 
         // Update state for modal access
         setProperties(propertiesData)
-        setOtherEntries(otherEntriesData)
         setRentPayments(payments)
         setMonthlyPotentialIncome(calculatedMonthlyPotentialIncome)
         setMonthsInRange(calculatedMonthsInRange)
@@ -317,100 +305,7 @@ export default function ProfitPage() {
       }
     }
 
-  const addEntry = async () => {
-    if (newEntry.amount <= 0 || !newEntry.description.trim()) {
-      toast.error('Please enter a valid amount and description')
-      return
-    }
 
-    const response = await OtherService.create({
-      date: newEntry.date,
-      type: newEntry.type,
-      amount: newEntry.amount,
-      description: newEntry.description
-    })
-
-    if (response.success) {
-      toast.success('Entry added successfully')
-      setNewEntry({
-        type: 'expense',
-        amount: 0,
-        description: '',
-        date: format(new Date(), 'yyyy-MM-dd')
-      })
-      setShowAddExpense(false)
-      loadProfitData() // Recalculate profit
-    } else {
-      toast.error('Failed to add entry')
-    }
-  }
-
-  const editEntry = (entry: OtherEntry) => {
-    setEditingEntry(entry)
-    setNewEntry({
-      type: entry.type,
-      amount: entry.amount,
-      description: entry.description,
-      date: entry.date
-    })
-    setShowEditExpense(true)
-  }
-
-  const updateEntry = async () => {
-    if (!editingEntry || newEntry.amount <= 0 || !newEntry.description.trim()) {
-      toast.error('Please enter a valid amount and description')
-      return
-    }
-
-    const response = await OtherService.update({
-      id: editingEntry.id,
-      date: newEntry.date,
-      type: newEntry.type,
-      amount: newEntry.amount,
-      description: newEntry.description
-    })
-
-    if (response.success) {
-      toast.success('Entry updated successfully')
-      setNewEntry({
-        type: 'expense',
-        amount: 0,
-        description: '',
-        date: format(new Date(), 'yyyy-MM-dd')
-      })
-      setEditingEntry(null)
-      setShowEditExpense(false)
-      loadProfitData() // Recalculate profit
-    } else {
-      toast.error('Failed to update entry')
-    }
-  }
-
-  const removeEntry = async (id: string) => {
-    const response = await OtherService.delete(id)
-    if (response.success) {
-      toast.success('Entry removed successfully')
-      loadProfitData() // Recalculate profit
-    } else {
-      toast.error('Failed to remove entry')
-    }
-  }
-
-  const getEntryTypeColor = (type: string) => {
-    switch (type) {
-      case 'expense': return 'bg-red-100 text-red-800'
-      case 'income': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getEntryTypeLabel = (type: string) => {
-    switch (type) {
-      case 'expense': return 'Expense'
-      case 'income': return 'Income'
-      default: return 'Other'
-    }
-  }
 
   const getPaymentTypeColor = (type: string) => {
     switch (type?.toLowerCase()) {
@@ -647,18 +542,9 @@ export default function ProfitPage() {
                    {/* Payments List Section - Bottom */}
           <div className="card">
             <div className="card-header">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <PieChart className="w-5 h-5 text-primary-600 mr-2" />
-                  <h2 className="card-title">Payments List</h2>
-                </div>
-                <button
-                  onClick={() => setShowAddExpense(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Entry
-                </button>
+              <div className="flex items-center">
+                <PieChart className="w-5 h-5 text-primary-600 mr-2" />
+                <h2 className="card-title">Payments List</h2>
               </div>
             </div>
            <div className="card-content">
@@ -729,159 +615,7 @@ export default function ProfitPage() {
          </div>
       </div>
 
-             {/* Add Entry Modal */}
-       {showAddExpense && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-               <h2 className="text-xl font-bold text-gray-900">Add Entry</h2>
-               <button
-                 onClick={() => setShowAddExpense(false)}
-                 className="text-gray-400 hover:text-gray-600"
-               >
-                 ✕
-               </button>
-             </div>
-             <div className="p-6 space-y-4">
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                 <select
-                   value={newEntry.type}
-                   onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value as 'expense' | 'income' })}
-                   className="input"
-                 >
-                   <option value="expense">Expense</option>
-                   <option value="income">Income</option>
-                 </select>
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                 <input
-                   type="number"
-                   value={newEntry.amount}
-                   onChange={(e) => setNewEntry({ ...newEntry, amount: parseFloat(e.target.value) || 0 })}
-                   className="input"
-                   placeholder="0.00"
-                   step="0.01"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                 <input
-                   type="text"
-                   value={newEntry.description}
-                   onChange={(e) => setNewEntry({ ...newEntry, description: e.target.value })}
-                   className="input"
-                   placeholder="Enter description"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                 <input
-                   type="date"
-                   value={newEntry.date}
-                   onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                   className="input"
-                 />
-               </div>
-             </div>
-             <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-               <button
-                 onClick={() => setShowAddExpense(false)}
-                 className="btn btn-secondary"
-               >
-                 Cancel
-               </button>
-               <button
-                 onClick={addEntry}
-                 className="btn btn-primary"
-               >
-                 Add Entry
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
-
-       {/* Edit Entry Modal */}
-       {showEditExpense && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-               <h2 className="text-xl font-bold text-gray-900">Edit Entry</h2>
-               <button
-                 onClick={() => {
-                   setShowEditExpense(false)
-                   setEditingEntry(null)
-                 }}
-                 className="text-gray-400 hover:text-gray-600"
-               >
-                 ✕
-               </button>
-             </div>
-             <div className="p-6 space-y-4">
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                 <select
-                   value={newEntry.type}
-                   onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value as 'expense' | 'income' })}
-                   className="input"
-                 >
-                   <option value="expense">Expense</option>
-                   <option value="income">Income</option>
-                 </select>
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                 <input
-                   type="number"
-                   value={newEntry.amount}
-                   onChange={(e) => setNewEntry({ ...newEntry, amount: parseFloat(e.target.value) || 0 })}
-                   className="input"
-                   placeholder="0.00"
-                   step="0.01"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                 <input
-                   type="text"
-                   value={newEntry.description}
-                   onChange={(e) => setNewEntry({ ...newEntry, description: e.target.value })}
-                   className="input"
-                   placeholder="Enter description"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                 <input
-                   type="date"
-                   value={newEntry.date}
-                   onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                   className="input"
-                 />
-               </div>
-             </div>
-             <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-               <button
-                 onClick={() => {
-                   setShowEditExpense(false)
-                   setEditingEntry(null)
-                 }}
-                 className="btn btn-secondary"
-               >
-                 Cancel
-               </button>
-               <button
-                 onClick={updateEntry}
-                 className="btn btn-primary"
-               >
-                 Update Entry
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
+      
     </div>
   )
 } 

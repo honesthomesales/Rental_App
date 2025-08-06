@@ -21,6 +21,16 @@ export interface CreatePaymentData {
   notes?: string;
 }
 
+export interface UpdatePaymentData {
+  id: string;
+  payment_date?: string;
+  amount?: number;
+  property_id?: string;
+  tenant_id?: string;
+  payment_type?: string;
+  notes?: string;
+}
+
 export class PaymentsService {
   /**
    * Get all payments
@@ -213,6 +223,32 @@ export class PaymentsService {
       }
 
       return createApiResponse(data as Payment[]);
+    } catch (error) {
+      return createApiResponse(null, handleSupabaseError(error));
+    }
+  }
+
+  /**
+   * Update a payment
+   */
+  static async updatePayment(paymentData: UpdatePaymentData): Promise<ApiResponse<Payment>> {
+    try {
+      const supabase = getSupabaseClient();
+      
+      const { id, ...updateData } = paymentData;
+      
+      const { data, error } = await supabase
+        .from('RENT_payments')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return createApiResponse(null, handleSupabaseError(error));
+      }
+
+      return createApiResponse(data as Payment);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }

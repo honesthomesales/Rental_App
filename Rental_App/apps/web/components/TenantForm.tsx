@@ -10,13 +10,11 @@ import { X, Save, User, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const tenantSchema = z.object({
-  property_id: z.string().min(1, 'Property is required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
+  property_id: z.string().optional(),
   lease_start_date: z.string().optional(),
   lease_end_date: z.string().optional(),
   monthly_rent: z.number().min(0, 'Rent must be positive').optional(),
@@ -42,9 +40,28 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
   })
+
+  const rentCadence = watch('rent_cadence')
+
+  const loadProperties = async () => {
+    try {
+      const response = await PropertiesService.getAll()
+      
+      if (response.success && response.data) {
+        setProperties(response.data)
+      } else {
+        console.error('TenantForm: Failed to load properties:', response.error)
+        toast.error(`Failed to load properties: ${response.error}`)
+      }
+    } catch (error) {
+      console.error('TenantForm: Failed to load properties:', error)
+      toast.error(`Error loading properties: ${error}`)
+    }
+  }
 
   useEffect(() => {
     loadProperties()
@@ -53,23 +70,17 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
   // Reset form when tenant prop changes
   useEffect(() => {
     if (tenant) {
-      console.log('TenantForm: Received tenant data:', tenant)
-      console.log('TenantForm: Leases array:', tenant.leases)
-      
       // Get lease information from the first active lease
       const activeLease = tenant.leases?.[0]
-      console.log('TenantForm: Active lease:', activeLease)
       
       reset({
-        property_id: tenant.property_id || undefined,
         first_name: tenant.first_name,
         last_name: tenant.last_name,
         email: tenant.email || undefined,
         phone: tenant.phone || undefined,
-        emergency_contact_name: tenant.emergency_contact_name || undefined,
-        emergency_contact_phone: tenant.emergency_contact_phone || undefined,
-        lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
-        lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
+        property_id: tenant.property_id || undefined,
+        lease_start_date: activeLease?.lease_start_date || undefined,
+        lease_end_date: activeLease?.lease_end_date || undefined,
         monthly_rent: activeLease?.rent || tenant.monthly_rent || undefined,
         security_deposit: tenant.security_deposit || undefined,
         rent_cadence: activeLease?.rent_cadence || undefined,
@@ -78,16 +89,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
     }
   }, [tenant, reset])
 
-  const loadProperties = async () => {
-    try {
-      const response = await PropertiesService.getAll() // Removed filter
-      if (response.success && response.data) {
-        setProperties(response.data)
-      }
-    } catch (error) {
-      console.error('Failed to load properties:', error)
-    }
-  }
+
 
   const onSubmit = async (data: TenantFormData) => {
     try {
@@ -95,11 +97,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
       
       if (tenant) {
         // Update existing tenant
-        const updateData: UpdateTenantData = {
-          id: tenant.id,
-          ...data
-        }
-        const response = await TenantsService.update(tenant.id, updateData)
+        const response = await TenantsService.update(tenant.id, data)
         
         if (response.success && response.data) {
           onSuccess(response.data)
@@ -120,6 +118,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         }
       }
     } catch (error) {
+      console.error('Error saving tenant:', error)
       toast.error('Error saving tenant')
     } finally {
       setLoading(false)
@@ -213,12 +212,19 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               </label>
               <select {...register('property_id')} className="input">
                 <option value="">Select a property (optional)</option>
-                {properties.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {property.name} - {property.address}
-                  </option>
-                ))}
+                {properties.length === 0 ? (
+                  <option value="" disabled>Loading properties...</option>
+                ) : (
+                  properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.name} - {property.address}
+                    </option>
+                  ))
+                )}
               </select>
+              {properties.length === 0 && (
+                <p className="text-sm text-gray-500 mt-1">No properties available</p>
+              )}
             </div>
 
             {/* Lease Information */}
@@ -250,7 +256,9 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Rent
+                {rentCadence === 'weekly' ? 'Weekly Rent' : 
+                 rentCadence === 'bi-weekly' ? 'Bi-weekly Rent' : 
+                 rentCadence === 'monthly' ? 'Monthly Rent' : 'Rent Amount'}
               </label>
               <input
                 {...register('monthly_rent', { valueAsNumber: true })}
@@ -286,32 +294,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               </select>
             </div>
 
-            {/* Emergency Contact */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-6">Emergency Contact</h3>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Emergency Contact Name
-              </label>
-              <input
-                {...register('emergency_contact_name')}
-                className="input"
-                placeholder="Enter emergency contact name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Emergency Contact Phone
-              </label>
-              <input
-                {...register('emergency_contact_phone')}
-                className="input"
-                placeholder="Enter emergency contact phone"
-              />
-            </div>
 
             {/* Notes */}
             <div className="md:col-span-2">

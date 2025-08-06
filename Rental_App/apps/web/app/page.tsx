@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, DollarSign, Home, Users, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
@@ -57,6 +57,151 @@ interface DashboardStats {
   }
 }
 
+// Loading component
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+  </div>
+)
+
+// Stats Card Component
+const StatsCard = ({ icon: Icon, label, value, color, onClick }: {
+  icon: any
+  label: string
+  value: string | number
+  color: string
+  onClick?: () => void
+}) => (
+  <div 
+    className={`card ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+    onClick={onClick}
+  >
+    <div className="card-content">
+      <div className="flex items-center">
+        <div className={`p-2 ${color} rounded-lg`}>
+          <Icon className="w-6 h-6 text-primary-600" />
+        </div>
+        <div className="ml-4">
+          <p className="text-sm font-medium text-gray-600">{label}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+// Property Type Breakdown Component
+const PropertyTypeBreakdown = ({ stats }: { stats: DashboardStats }) => (
+  <div className="card mb-6">
+    <div className="card-header">
+      <h2 className="card-title">Property Type Breakdown</h2>
+      <p className="card-description">Distribution of your properties by type</p>
+    </div>
+    <div className="card-content">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="text-center p-4 bg-blue-50 rounded-lg">
+          <div className="text-2xl font-bold text-blue-600">{stats.total_properties}</div>
+          <div className="text-sm text-gray-600">Total</div>
+        </div>
+        <div className="text-center p-4 bg-green-50 rounded-lg">
+          <div className="text-2xl font-bold text-green-600">{stats.property_type_breakdown.house}</div>
+          <div className="text-sm text-gray-600">House</div>
+        </div>
+        <div className="text-center p-4 bg-purple-50 rounded-lg">
+          <div className="text-2xl font-bold text-purple-600">{stats.property_type_breakdown.doublewide}</div>
+          <div className="text-sm text-gray-600">Doublewide</div>
+        </div>
+        <div className="text-center p-4 bg-orange-50 rounded-lg">
+          <div className="text-2xl font-bold text-orange-600">{stats.property_type_breakdown.singlewide}</div>
+          <div className="text-sm text-gray-600">Singlewide</div>
+        </div>
+        <div className="text-center p-4 bg-red-50 rounded-lg">
+          <div className="text-2xl font-bold text-red-600">{stats.property_type_breakdown.loan}</div>
+          <div className="text-sm text-gray-600">Loan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+// Properties Table Component
+const PropertiesTable = ({ properties, onPropertyClick, onEditClick }: {
+  properties: Property[]
+  onPropertyClick: (id: string) => void
+  onEditClick: (id: string) => void
+}) => (
+  <div className="overflow-x-auto">
+    <table className="min-w-full divide-y divide-gray-200">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Property
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Address
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Type
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Status
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Monthly Rent
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {properties.map((property) => (
+          <tr key={property.id} className="hover:bg-gray-50">
+            <td className="px-6 py-4 whitespace-nowrap">
+              <div className="text-sm font-medium text-gray-900">{property.name}</div>
+              <div className="text-sm text-gray-500">{property.city}, {property.state}</div>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {property.address}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap">
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                {property.property_type}
+              </span>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap">
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                property.status === 'rented' ? 'bg-green-100 text-green-800' :
+                property.status === 'empty' ? 'bg-gray-100 text-gray-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {property.status}
+              </span>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button
+                onClick={() => onPropertyClick(property.id)}
+                className="text-primary-600 hover:text-primary-900 mr-4"
+              >
+                View
+              </button>
+              <button
+                onClick={() => onEditClick(property.id)}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Edit
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)
+
 export default function Dashboard() {
   const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
@@ -96,7 +241,6 @@ export default function Dashboard() {
     try {
       setLoading(true)
   
-      
       // Check if environment variables are available
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         console.error('Missing Supabase environment variables')
@@ -113,8 +257,6 @@ export default function Dashboard() {
       
       const propertiesData = propertiesResponse.data
       const tenantsData = tenantsResponse.data
-      
-      
       
       if (propertiesData) {
         // Convert API Property type to local Property type
@@ -179,19 +321,16 @@ export default function Dashboard() {
     let totalOutstanding = 0
     
     if (tenantsData && tenantsData.length > 0) {
-
-      
+      // Use the new API structure where tenant already has properties and payment_history
       lateTenantsCount = tenantsData.filter((tenant: any) => {
         try {
-          // Find the property for this tenant
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
-          
-          if (!property || !tenant.leases || tenant.leases.length === 0) {
+          // The tenant object now includes properties and payment_history from the API
+          if (!tenant.properties || !tenant.leases || tenant.leases.length === 0) {
             return false
           }
           
           // Use the new late payment calculation system
-          return TenantsService.isTenantLate(tenant, property)
+          return TenantsService.isTenantLate(tenant, tenant.properties)
         } catch (error) {
           console.error('Error checking tenant late status:', error)
           return false
@@ -201,9 +340,8 @@ export default function Dashboard() {
       // Calculate total outstanding from late tenants
       totalOutstanding = tenantsData.reduce((sum, tenant: any) => {
         try {
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
-          if (property && tenant.leases && tenant.leases.length > 0) {
-            const latePaymentInfo = TenantsService.calculateTotalLatePayments(tenant, property)
+          if (tenant.properties && tenant.leases && tenant.leases.length > 0) {
+            const latePaymentInfo = TenantsService.calculateTotalLatePayments(tenant, tenant.properties)
             return sum + latePaymentInfo.totalDue
           }
         } catch (error) {
@@ -271,158 +409,86 @@ export default function Dashboard() {
     router.push('/late-payments')
   }, [router])
 
+  const handleEditProperty = useCallback((propertyId: string) => {
+    router.push(`/properties/${propertyId}/edit`)
+  }, [router])
+
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
     return null
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Manage your rental properties</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={handleAddProperty}
-                className="btn btn-primary btn-lg"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Property
-              </button>
-              <button 
-                onClick={handleViewLatePayments}
-                className="btn btn-warning btn-lg"
-              >
-                <AlertTriangle className="w-5 h-5 mr-2" />
-                Late Payments
-              </button>
-            </div>
+      {/* Dashboard Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Manage your rental properties</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={handleAddProperty}
+              className="btn btn-primary btn-lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add Property
+            </button>
+            <button 
+              onClick={handleViewLatePayments}
+              className="btn btn-warning btn-lg"
+            >
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Late Payments
+            </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="card">
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <Home className="w-6 h-6 text-primary-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Properties</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total_properties}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-success-100 rounded-lg">
-                  <Users className="w-6 h-6 text-success-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total_tenants}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-warning-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-warning-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Monthly Income</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    ${stats.monthly_income.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewLatePayments}>
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-danger-100 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-danger-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Late Payments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.late_tenants_count}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/late-payments')}>
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    ${stats.outstanding_balances.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <StatsCard
+            icon={Home}
+            label="Properties"
+            value={stats.total_properties}
+            color="bg-primary-100"
+          />
+          <StatsCard
+            icon={Users}
+            label="Occupied"
+            value={stats.total_tenants}
+            color="bg-success-100"
+          />
+          <StatsCard
+            icon={DollarSign}
+            label="Monthly Income"
+            value={`$${stats.monthly_income.toLocaleString()}`}
+            color="bg-warning-100"
+          />
+          <StatsCard
+            icon={AlertTriangle}
+            label="Late Payments"
+            value={stats.late_tenants_count}
+            color="bg-danger-100"
+            onClick={handleViewLatePayments}
+          />
+          <StatsCard
+            icon={DollarSign}
+            label="Total Outstanding"
+            value={`$${stats.outstanding_balances.toLocaleString()}`}
+            color="bg-red-100"
+            onClick={handleViewLatePayments}
+          />
         </div>
 
         {/* Property Type Breakdown */}
-        <div className="card mb-6">
-          <div className="card-header">
-            <h2 className="card-title">Property Type Breakdown</h2>
-            <p className="card-description">Distribution of your properties by type</p>
-          </div>
-          <div className="card-content">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{stats.total_properties}</div>
-                <div className="text-sm text-gray-600">Total</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{stats.property_type_breakdown.house}</div>
-                <div className="text-sm text-gray-600">House</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{stats.property_type_breakdown.doublewide}</div>
-                <div className="text-sm text-gray-600">Doublewide</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{stats.property_type_breakdown.singlewide}</div>
-                <div className="text-sm text-gray-600">Singlewide</div>
-              </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{stats.property_type_breakdown.loan}</div>
-                <div className="text-sm text-gray-600">Loan</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PropertyTypeBreakdown stats={stats} />
 
         {/* Properties Section */}
         <div className="card">
@@ -444,83 +510,17 @@ export default function Dashboard() {
                   />
                 </div>
                 <button className="btn btn-secondary">
-                  {/* <Filter className="w-4 h-4 mr-2" /> */}
                   Filter
                 </button>
               </div>
             </div>
           </div>
           <div className="card-content">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Property
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Monthly Rent
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredProperties.map((property) => (
-                    <tr key={property.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{property.name}</div>
-                        <div className="text-sm text-gray-500">{property.city}, {property.state}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {property.address}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {property.property_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          property.status === 'rented' ? 'bg-green-100 text-green-800' :
-                          property.status === 'empty' ? 'bg-gray-100 text-gray-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {property.status}
-                        </span>
-                      </td>
-                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                         {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
-                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handlePropertyClick(property.id)}
-                          className="text-primary-600 hover:text-primary-900 mr-4"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => router.push(`/properties/${property.id}/edit`)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PropertiesTable
+              properties={filteredProperties}
+              onPropertyClick={handlePropertyClick}
+              onEditClick={handleEditProperty}
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -48,41 +48,68 @@ interface PaymentModalProps {
   onClose: () => void
   property: Property | null
   selectedDate: Date | null
+  existingPayment: Payment | null
   onSave: (payment: Omit<Payment, 'id' | 'created_at'>) => void
+  onUpdate: (payment: Payment) => void
   loading: boolean
 }
 
-function PaymentModal({ isOpen, onClose, property, selectedDate, onSave, loading }: PaymentModalProps) {
+function PaymentModal({ isOpen, onClose, property, selectedDate, existingPayment, onSave, onUpdate, loading }: PaymentModalProps) {
   const [amount, setAmount] = useState('')
   const [paymentType, setPaymentType] = useState('Rent')
   const [notes, setNotes] = useState('')
+
+  // Initialize form with existing payment data when modal opens
+  useEffect(() => {
+    if (existingPayment) {
+      setAmount(existingPayment.amount.toString())
+      setPaymentType(existingPayment.payment_type)
+      setNotes(existingPayment.notes || '')
+    } else {
+      setAmount('')
+      setPaymentType('Rent')
+      setNotes('')
+    }
+  }, [existingPayment])
 
   if (!isOpen || !property || !selectedDate) return null
 
   const handleSave = () => {
     if (!amount || parseFloat(amount) <= 0) return
 
-    const newPayment: Omit<Payment, 'id' | 'created_at'> = {
-      payment_date: selectedDate.toISOString().split('T')[0],
-      amount: parseFloat(amount),
-      property_id: property.id,
-      tenant_id: property.tenants?.[0]?.id || '',
-      payment_type: paymentType,
-      notes: notes
+    if (existingPayment) {
+      // Update existing payment
+      const updatedPayment: Payment = {
+        ...existingPayment,
+        payment_date: selectedDate.toISOString().split('T')[0],
+        amount: parseFloat(amount),
+        payment_type: paymentType,
+        notes: notes
+      }
+      onUpdate(updatedPayment)
+    } else {
+      // Create new payment
+      const newPayment: Omit<Payment, 'id' | 'created_at'> = {
+        payment_date: selectedDate.toISOString().split('T')[0],
+        amount: parseFloat(amount),
+        property_id: property.id,
+        tenant_id: property.tenants?.[0]?.id || '',
+        payment_type: paymentType,
+        notes: notes
+      }
+      onSave(newPayment)
     }
-
-    onSave(newPayment)
+    
     onClose()
-    setAmount('')
-    setPaymentType('Rent')
-    setNotes('')
   }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Add Payment</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {existingPayment ? 'Edit Payment' : 'Add Payment'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -180,7 +207,7 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onSave, loading
             {loading && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
             )}
-            {loading ? 'Saving...' : 'Save Payment'}
+            {loading ? 'Saving...' : (existingPayment ? 'Update Payment' : 'Save Payment')}
           </button>
         </div>
       </div>
@@ -200,7 +227,10 @@ export default function PaymentsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [existingPayment, setExistingPayment] = useState<Payment | null>(null)
   const [savingPayment, setSavingPayment] = useState(false)
+  const [scrollPosition, setScrollPosition] = useState(0)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
 
   // Generate weekly dates (Fridays) for the grid
   const generateWeeklyDates = (weeks: number = 8) => {
@@ -226,9 +256,9 @@ export default function PaymentsPage() {
   // Calculate date range for efficient loading
   const getDateRange = () => {
     const startDate = new Date(weeklyDates[0])
-    startDate.setDate(startDate.getDate() - 3) // Reduced from 7 to 3 days before
+    startDate.setDate(startDate.getDate() - 30) // Look back 30 days to catch previous payment periods
     const endDate = new Date(weeklyDates[weeklyDates.length - 1])
-    endDate.setDate(endDate.getDate() + 3) // Reduced from 7 to 3 days after
+    endDate.setDate(endDate.getDate() + 30) // Look forward 30 days to catch future payment periods
     
     return {
       start: startDate.toISOString().split('T')[0],
@@ -240,6 +270,32 @@ export default function PaymentsPage() {
   const [propertiesCache, setPropertiesCache] = useState<Property[]>([])
   const [propertiesCacheTime, setPropertiesCacheTime] = useState(0)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+  // Scroll position preservation
+  const saveScrollPosition = useCallback(() => {
+    if (tableContainerRef.current) {
+      const currentScrollTop = tableContainerRef.current.scrollTop
+      if (currentScrollTop > 0) {
+        setScrollPosition(currentScrollTop)
+      }
+    }
+  }, [])
+
+  const restoreScrollPosition = useCallback(() => {
+    if (tableContainerRef.current) {
+      setTimeout(() => {
+        if (tableContainerRef.current) {
+          tableContainerRef.current.scrollTop = scrollPosition
+        }
+      }, 100)
+    }
+  }, [scrollPosition])
+
+  // Handle week navigation with scroll preservation
+  const handleWeekNavigation = useCallback((direction: 'prev' | 'next') => {
+    saveScrollPosition()
+    setCurrentWeekOffset(prev => direction === 'prev' ? prev - 1 : prev + 1)
+  }, [saveScrollPosition])
 
   // Memoize loadData to prevent infinite re-renders
   const memoizedLoadData = useCallback(async () => {
@@ -334,11 +390,17 @@ export default function PaymentsPage() {
   // Memoize filtered properties with cadence sorting
   const filteredProperties = useMemo(() => {
     
-    let filtered = properties;
+    // First, filter out properties without tenants
+    let filtered = properties.filter(property => {
+      // Check if property has tenants and at least one tenant has an ID
+      return property.tenants && 
+             property.tenants.length > 0 && 
+             property.tenants.some(tenant => tenant.id && tenant.id.trim() !== '')
+    });
     
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase()
-      filtered = properties.filter(property =>
+      filtered = filtered.filter(property =>
         property.name.toLowerCase().includes(searchLower) ||
         property.address.toLowerCase().includes(searchLower) ||
         property.city.toLowerCase().includes(searchLower) ||
@@ -373,8 +435,12 @@ export default function PaymentsPage() {
   }, [currentWeekOffset])
 
   const handleCellDoubleClick = useCallback((property: Property, date: Date) => {
+    // Check if there's an existing payment for this property and date
+    const existingPaymentForDate = getPaymentForWeek(property.id, date)
+    
     setSelectedProperty(property)
     setSelectedDate(date)
+    setExistingPayment(existingPaymentForDate)
     setModalOpen(true)
   }, [])
 
@@ -433,6 +499,34 @@ export default function PaymentsPage() {
     } catch (error) {
       console.error('Error saving payment:', error)
       toast.error('Error saving payment')
+    } finally {
+      setSavingPayment(false)
+    }
+  }, [])
+
+  const handleUpdatePayment = useCallback(async (updatedPayment: Payment) => {
+    try {
+      setSavingPayment(true)
+      
+      const response = await PaymentsService.updatePayment(updatedPayment)
+      
+      if (response.success) {
+        toast.success('Payment updated successfully')
+        
+        // Refresh payments data
+        const dateRange = getDateRange()
+        const paymentsResponse = await PaymentsService.getByDateRange(dateRange.start, dateRange.end)
+        if (paymentsResponse.success) {
+          setPayments(paymentsResponse.data || [])
+        }
+        
+        setModalOpen(false)
+      } else {
+        toast.error(response.error || 'Failed to update payment')
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error)
+      toast.error('Error updating payment')
     } finally {
       setSavingPayment(false)
     }
@@ -498,10 +592,15 @@ export default function PaymentsPage() {
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
     const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0)
 
-    // Calculate total payments for this month
+    // For monthly payments, check the current month AND the previous month's end (last 7 days)
+    // This handles cases where rent is paid at the end of one month for the next month
+    const previousMonthEnd = new Date(monthStart)
+    previousMonthEnd.setDate(previousMonthEnd.getDate() - 7)
+
+    // Calculate total payments for this month and the previous month's end
     let totalPaid = 0
 
-    // Check payments table
+    // Check payments table for current month
     const monthPayments = payments.filter(p => {
       if (p.property_id !== propertyId) return false
       const paymentDate = new Date(p.payment_date)
@@ -509,13 +608,63 @@ export default function PaymentsPage() {
     })
     totalPaid += monthPayments.reduce((sum, p) => sum + p.amount, 0)
 
-    // Check tenant payment history
+    // Check payments table for previous month's end (last 7 days)
+    const previousMonthPayments = payments.filter(p => {
+      if (p.property_id !== propertyId) return false
+      const paymentDate = new Date(p.payment_date)
+      return paymentDate >= previousMonthEnd && paymentDate < monthStart
+    })
+    totalPaid += previousMonthPayments.reduce((sum, p) => sum + p.amount, 0)
+
+    // Check tenant payment history for current month
     if (property?.tenants?.[0]?.payment_history) {
       const tenantPayments = property.tenants[0].payment_history.filter(p => {
         const paymentDate = new Date(p.date)
         return paymentDate >= monthStart && paymentDate <= monthEnd && p.status === 'completed'
       })
       totalPaid += tenantPayments.reduce((sum, p) => sum + p.amount, 0)
+    }
+
+    // Check tenant payment history for previous month's end
+    if (property?.tenants?.[0]?.payment_history) {
+      const previousMonthTenantPayments = property.tenants[0].payment_history.filter(p => {
+        const paymentDate = new Date(p.date)
+        return paymentDate >= previousMonthEnd && paymentDate < monthStart && p.status === 'completed'
+      })
+      totalPaid += previousMonthTenantPayments.reduce((sum, p) => sum + p.amount, 0)
+    }
+
+    // For the current month, also check if there was a payment in the current month that covers this date
+    // This handles cases where a payment is made mid-month but should cover the entire month
+    if (totalPaid < monthlyRent) {
+      // Check if there's any payment in the current month that could cover this date
+      const currentMonthAnyPayment = payments.find(p => {
+        if (p.property_id !== propertyId) return false
+        const paymentDate = new Date(p.payment_date)
+        return paymentDate >= monthStart && paymentDate <= monthEnd
+      })
+      
+      if (currentMonthAnyPayment && currentMonthAnyPayment.amount >= monthlyRent) {
+        totalPaid = currentMonthAnyPayment.amount
+      }
+    }
+
+    // For monthly payments, if we have a payment that covers the full monthly rent,
+    // it should cover the entire month regardless of when it was made
+    if (totalPaid >= monthlyRent) {
+      return true
+    }
+
+    // Also check if there's a payment in the current month that covers the full rent amount
+    // This handles cases where a payment is made later in the month but should cover the entire month
+    const currentMonthPayment = payments.find(p => {
+      if (p.property_id !== propertyId) return false
+      const paymentDate = new Date(p.payment_date)
+      return paymentDate >= monthStart && paymentDate <= monthEnd
+    })
+
+    if (currentMonthPayment && currentMonthPayment.amount >= monthlyRent) {
+      return true
     }
 
     return totalPaid >= monthlyRent
@@ -556,6 +705,80 @@ export default function PaymentsPage() {
     return 'monthly'
   }, [])
 
+  // Function to check if a payment is overdue for a specific date
+  const isPaymentOverdue = useCallback((property: Property, date: Date): boolean => {
+    const cadence = extractPaymentCadence(property)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    
+    // If the date is in the future, it's not overdue
+    if (checkDate > today) return false
+    
+    // Check if there's a payment for this date
+    const payment = getPaymentForWeek(property.id, date)
+    if (payment) return false
+    
+    // For monthly payments, check if the month is fully paid
+    if (cadence === 'monthly') {
+      return !isMonthlyRentFullyPaid(property.id, date)
+    }
+    
+    // For bi-weekly payments, check if the bi-weekly period is paid
+    if (cadence === 'bi-weekly') {
+      // For bi-weekly, we need to check if there's a payment that covers this bi-weekly period
+      // A bi-weekly period starts every other week, so we need to find the start of the current bi-weekly period
+      
+      // Calculate the start of the current bi-weekly period
+      const currentDate = new Date(date)
+      const daysSinceMonday = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1 // Monday = 0
+      const startOfWeek = new Date(currentDate)
+      startOfWeek.setDate(startOfWeek.getDate() - daysSinceMonday)
+      
+      // Find the start of the bi-weekly period (every other Monday)
+      const weekNumber = Math.floor(startOfWeek.getTime() / (7 * 24 * 60 * 60 * 1000))
+      const biWeeklyStart = new Date(0)
+      biWeeklyStart.setTime((weekNumber - (weekNumber % 2)) * 7 * 24 * 60 * 60 * 1000)
+      
+      // Check if there's a payment within 14 days after the bi-weekly period start
+      const biWeeklyEnd = new Date(biWeeklyStart)
+      biWeeklyEnd.setDate(biWeeklyEnd.getDate() + 14)
+      
+      // Look for any payment in the bi-weekly period
+      const biWeeklyPayment = payments.find(p => {
+        if (p.property_id !== property.id) return false
+        const paymentDate = new Date(p.payment_date)
+        return paymentDate >= biWeeklyStart && paymentDate <= biWeeklyEnd
+      })
+      
+      if (biWeeklyPayment) {
+        return false // Found a payment for this bi-weekly period
+      }
+      
+      // Also check tenant payment history
+      if (property?.tenants?.[0]?.payment_history) {
+        const tenantPayment = property.tenants[0].payment_history.find(p => {
+          const paymentDate = new Date(p.date)
+          return paymentDate >= biWeeklyStart && paymentDate <= biWeeklyEnd && p.status === 'completed'
+        })
+        
+        if (tenantPayment) {
+          return false // Found a tenant payment for this bi-weekly period
+        }
+      }
+      
+      return true // No payment found for this bi-weekly period
+    }
+    
+    // For weekly payments, check if this week has a payment
+    if (cadence === 'weekly') {
+      return !payment
+    }
+    
+    return false
+  }, [extractPaymentCadence, getPaymentForWeek, isMonthlyRentFullyPaid, payments, properties])
+
   // Function to check if we should show a checkbox for this date
   const shouldShowCheckbox = useCallback((property: Property, date: Date): boolean => {
     const cadence = extractPaymentCadence(property)
@@ -565,22 +788,47 @@ export default function PaymentsPage() {
       return isMonthlyRentFullyPaid(property.id, date)
     }
     
-    // For bi-weekly payments, show checkbox for the current week if the previous week was paid
+    // For bi-weekly payments, show checkbox for the current week if a bi-weekly payment was made
     if (cadence === 'bi-weekly') {
-      // Check if the previous week has a payment that covers the bi-weekly amount
-      const previousWeek = new Date(date)
-      previousWeek.setDate(previousWeek.getDate() - 7)
-      const previousWeekPayment = getPaymentForWeek(property.id, previousWeek)
+      // Calculate the start of the current bi-weekly period
+      const currentDate = new Date(date)
+      const daysSinceMonday = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1 // Monday = 0
+      const startOfWeek = new Date(currentDate)
+      startOfWeek.setDate(startOfWeek.getDate() - daysSinceMonday)
       
-      if (!previousWeekPayment) return false
+      // Find the start of the bi-weekly period (every other Monday)
+      const weekNumber = Math.floor(startOfWeek.getTime() / (7 * 24 * 60 * 60 * 1000))
+      const biWeeklyStart = new Date(0)
+      biWeeklyStart.setTime((weekNumber - (weekNumber % 2)) * 7 * 24 * 60 * 60 * 1000)
       
-      // Get the expected bi-weekly rent amount from the lease
-      const propertyData = properties.find(p => p.id === property.id)
-      const lease = propertyData?.leases?.[0]
-      const expectedBiWeeklyRent = lease?.rent || propertyData?.monthly_rent || 0
+      // Check if there's a payment within 14 days after the bi-weekly period start
+      const biWeeklyEnd = new Date(biWeeklyStart)
+      biWeeklyEnd.setDate(biWeeklyEnd.getDate() + 14)
       
-      // For bi-weekly, if there was any payment in the previous week, show checkbox for current week
-      return previousWeekPayment.amount > 0
+      // Look for any payment in the bi-weekly period
+      const biWeeklyPayment = payments.find(p => {
+        if (p.property_id !== property.id) return false
+        const paymentDate = new Date(p.payment_date)
+        return paymentDate >= biWeeklyStart && paymentDate <= biWeeklyEnd
+      })
+      
+      if (biWeeklyPayment && biWeeklyPayment.amount > 0) {
+        return true // Found a payment for this bi-weekly period
+      }
+      
+      // Also check tenant payment history
+      if (property?.tenants?.[0]?.payment_history) {
+        const tenantPayment = property.tenants[0].payment_history.find(p => {
+          const paymentDate = new Date(p.date)
+          return paymentDate >= biWeeklyStart && paymentDate <= biWeeklyEnd && p.status === 'completed'
+        })
+        
+        if (tenantPayment && tenantPayment.amount > 0) {
+          return true // Found a tenant payment for this bi-weekly period
+        }
+      }
+      
+      return false // No payment found for this bi-weekly period
     }
     
     // For weekly payments, no checkboxes
@@ -597,7 +845,14 @@ export default function PaymentsPage() {
     if (propertiesCache.length > 0) {
       memoizedLoadData()
     }
-  }, [currentWeekOffset]) // Only depend on currentWeekOffset
+  }, [currentWeekOffset, memoizedLoadData]) // Only depend on currentWeekOffset
+
+  // Restore scroll position after data loads
+  useEffect(() => {
+    if (!loading && scrollPosition > 0 && tableContainerRef.current) {
+      restoreScrollPosition()
+    }
+  }, [loading, scrollPosition, restoreScrollPosition])
 
   // Initial load
   useEffect(() => {
@@ -746,51 +1001,56 @@ export default function PaymentsPage() {
         ) : (
           <div className="bg-white rounded-lg shadow">
             
-            {/* Week Navigation */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <button
-                onClick={() => setCurrentWeekOffset(prev => prev - 1)}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-              >
-                Previous Week
-              </button>
-              
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {weeklyDates[0]?.toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })} - {weeklyDates[weeklyDates.length - 1]?.toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </h2>
-                <p className="text-sm text-gray-600">Weekly payment tracking</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Sorted by payment cadence: Weekly (1) → Bi-weekly (2) → Monthly (3)
-                </p>
+            {/* Week Navigation - Sticky */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between p-4">
+                <button
+                  onClick={() => handleWeekNavigation('prev')}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Previous Week
+                </button>
+                
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {weeklyDates[0]?.toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })} - {weeklyDates[weeklyDates.length - 1]?.toLocaleDateString('en-US', { 
+                      month: 'long', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </h2>
+                  <p className="text-sm text-gray-600">Weekly payment tracking</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sorted by payment cadence: Weekly (1) → Bi-weekly (2) → Monthly (3)
+                  </p>
                 </div>
-              
-              <button
-                onClick={() => setCurrentWeekOffset(prev => prev + 1)}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-              >
-                Next Week
-              </button>
+                
+                <button
+                  onClick={() => handleWeekNavigation('next')}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Next Week
+                </button>
               </div>
+            </div>
 
             {/* Grid View */}
             {viewMode === 'grid' && (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
+              <div 
+                ref={tableContainerRef}
+                className="overflow-x-auto max-h-[calc(100vh-300px)] overflow-y-auto"
+              >
+                <table className="w-full relative">
+                  <thead className="sticky top-0 z-20 bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-50">
                         Property
                       </th>
                       {weeklyDates.map((date, index) => (
-                        <th key={index} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200">
+                        <th key={index} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-50">
                           <div className="flex flex-col">
                             <span className="font-semibold">
                               {date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -803,7 +1063,7 @@ export default function PaymentsPage() {
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="relative z-10">
                     {filteredProperties.map((property, propertyIndex) => (
                       <tr 
                         key={property.id} 
@@ -831,15 +1091,19 @@ export default function PaymentsPage() {
                         {weeklyDates.map((date, dateIndex) => {
                           const payment = getPaymentForWeek(property.id, date)
                           const showCheckbox = shouldShowCheckbox(property, date)
+                          const isOverdue = isPaymentOverdue(property, date)
+                          const isToday = date.toDateString() === new Date().toDateString()
                           
                           return (
                             <td 
                               key={dateIndex} 
-                              className="px-4 py-3 text-center border-r border-gray-200 relative group cursor-pointer hover:bg-blue-50"
+                              className={`px-4 py-3 text-center border-r border-gray-200 relative group cursor-pointer hover:bg-blue-50 ${
+                                isToday ? 'bg-yellow-50' : ''
+                              }`}
                               onDoubleClick={() => handleCellDoubleClick(property, date)}
-                              title="Double-click to add payment"
+                              title={`${date.toLocaleDateString()} - Double-click to add payment`}
                             >
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center min-h-[60px] justify-center">
                                 {payment ? (
                                   <>
                                   <span className="font-semibold text-green-600">
@@ -852,7 +1116,7 @@ export default function PaymentsPage() {
                                     {payment.payment_type}
                                   </span>
                                   </>
-                                                                ) : showCheckbox ? (
+                                ) : showCheckbox ? (
                                   <div className="flex items-center justify-center">
                                       <input
                                         type="checkbox"
@@ -862,9 +1126,18 @@ export default function PaymentsPage() {
                                       />
                                       <span className="text-xs text-green-600 ml-1">Paid</span>
                                   </div>
-                                  ) : (
-                                    <span className="text-gray-300 group-hover:text-gray-500 transition-colors">-</span>
-                                  )}
+                                ) : (
+                                  <div className="flex flex-col items-center">
+                                    <span className={`text-xs transition-colors ${
+                                      isOverdue ? 'text-red-400' : 'text-gray-300 group-hover:text-gray-500'
+                                    }`}>
+                                      {isOverdue ? 'Overdue' : '-'}
+                                    </span>
+                                    {isToday && (
+                                      <span className="text-xs text-blue-600 mt-1">Today</span>
+                                    )}
+                                  </div>
+                                )}
                                 </div>
                             </td>
                           )
@@ -1013,15 +1286,20 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        property={selectedProperty}
-        selectedDate={selectedDate}
-        onSave={handleSavePayment}
-        loading={savingPayment}
-      />
+              {/* Payment Modal */}
+        <PaymentModal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false)
+            setExistingPayment(null)
+          }}
+          property={selectedProperty}
+          selectedDate={selectedDate}
+          existingPayment={existingPayment}
+          onSave={handleSavePayment}
+          onUpdate={handleUpdatePayment}
+          loading={savingPayment}
+        />
     </div>
   )
 } 

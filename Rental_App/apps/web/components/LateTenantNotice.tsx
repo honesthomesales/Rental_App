@@ -75,8 +75,8 @@ export function LateTenantNotice({ tenant }: LateTenantNoticeProps) {
         <div className="bg-red-50 p-4 mb-6 print:mb-4 border-l-4 border-red-500">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-700">Past Due Rent:</span>
-              <span className="font-medium">${(tenant.total_due || 0).toLocaleString()}</span>
+              <span className="text-gray-700">Outstanding Rent:</span>
+              <span className="font-medium">${(tenant.total_outstanding || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Late Fees:</span>

@@ -44,7 +44,6 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
     try {
       setLinking(tenantId)
       const response = await TenantsService.update(tenantId, {
-        id: tenantId,
         property_id: propertyId
       })
       
@@ -66,7 +65,6 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
     try {
       setUnlinking(tenantId)
       const response = await TenantsService.update(tenantId, {
-        id: tenantId,
         property_id: undefined
       })
       

@@ -30,7 +30,12 @@ export function getSupabaseClient() {
   }
   
   if (!supabaseClient) {
-    supabaseClient = createSupabaseClient();
+    try {
+      supabaseClient = createSupabaseClient();
+    } catch (error) {
+      console.error('Failed to create Supabase client:', error);
+      throw error;
+    }
   }
   
   return supabaseClient;
