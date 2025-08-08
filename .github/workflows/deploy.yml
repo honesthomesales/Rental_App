@@ -31,7 +31,14 @@ jobs:
         run: npm ci
         
       - name: Build packages
-        run: npm run build:packages
+        run: |
+          echo "Building API package..."
+          cd packages/api
+          npm run build
+          echo "Building UI package..."
+          cd ../ui
+          npm run build
+          echo "Packages built successfully"
         
       - name: Install web app dependencies
         run: |
