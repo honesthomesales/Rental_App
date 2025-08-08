@@ -29,22 +29,10 @@ export class PropertiesService {
         return createApiResponse(null, 'Supabase client not available');
       }
       
-      // Use a more efficient query with left join to get tenants in one query
+      // Select properties only; fetch tenants separately to avoid FK join dependency
       let query = supabase!
         .from('RENT_properties')
-        .select(`
-          *,
-          RENT_tenants!RENT_tenants_property_id_fkey (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            is_active,
-            lease_start_date,
-            lease_end_date
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -64,18 +52,27 @@ export class PropertiesService {
         query = query.eq('state', filters.state);
       }
 
-      const { data: propertiesWithTenants, error } = await query;
+      const { data: propertiesList, error } = await query;
 
       if (error) {
         console.error('PropertiesService.getAll error:', error);
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // Transform the data to match the expected format
-      const properties = (propertiesWithTenants as any[]).map(property => ({
-        ...property,
-        tenants: property.RENT_tenants || []
-      }));
+      // Fetch tenants for each property (avoids PostgREST relationship requirement)
+      const properties = await Promise.all(
+        (propertiesList as any[]).map(async (property) => {
+          try {
+            const { data: tenantsData } = await supabase!
+              .from('RENT_tenants')
+              .select('id, first_name, last_name, email, phone, is_active, lease_start_date, lease_end_date')
+              .eq('property_id', property.id);
+            return { ...property, tenants: tenantsData || [] };
+          } catch {
+            return { ...property, tenants: [] };
+          }
+        })
+      );
 
       // Cache the result
       propertiesCache.set(cacheKey, { data: properties, timestamp: Date.now() });
