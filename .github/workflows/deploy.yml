@@ -30,6 +30,11 @@ jobs:
       - name: Install all dependencies
         run: npm ci
         
+      - name: Install web app dependencies
+        run: |
+          cd apps/web
+          npm ci
+        
       - name: Build web application
         run: |
           echo "Building web application..."
