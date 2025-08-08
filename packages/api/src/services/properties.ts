@@ -239,6 +239,11 @@ export class PropertiesService {
   ): Promise<ApiResponse<PaginatedResponse<Property>>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const offset = (page - 1) * limit;
 
       let query = supabase
@@ -307,6 +312,11 @@ export class PropertiesService {
   static async search(searchTerm: string): Promise<ApiResponse<Property[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_properties')
         .select('*')
@@ -359,6 +369,10 @@ export class PropertiesService {
     try {
       const supabase = getSupabaseClient();
       
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       // Check if property has active tenants
       const { data: tenants, error: tenantsError } = await supabase
         .from('RENT_tenants')
@@ -396,6 +410,10 @@ export class PropertiesService {
   static async updateAllPropertyStatuses(): Promise<ApiResponse<number>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
       
       // Get all properties
       const { data: properties, error: propertiesError } = await supabase
