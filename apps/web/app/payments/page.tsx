@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { PaymentsService } from '@rental-app/api/src/services/payments'
-import { PropertiesService } from '@rental-app/api/src/services/properties'
-import { TenantsService } from '@rental-app/api/src/services/tenants'
+import { PaymentsService, PropertiesService, TenantsService } from '@rental-app/api'
 
 interface Payment {
   id: string
@@ -312,7 +310,7 @@ export default function PaymentsPage() {
         setLoadingMessage('Loading properties and tenants...')
         
         // Load properties with active tenants
-        const propertiesResponse = await PaymentsService.getPropertiesWithTenants()
+        const propertiesResponse = await PropertiesService.getPropertiesWithTenants()
         if (!propertiesResponse.success || !propertiesResponse.data) {
           throw new Error(propertiesResponse.error || 'Failed to load properties')
         }
