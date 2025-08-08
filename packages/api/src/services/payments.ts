@@ -38,6 +38,11 @@ export class PaymentsService {
   static async getAll() {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_payments')
         .select('*')
@@ -61,6 +66,11 @@ export class PaymentsService {
   static async getByDateRange(startDate: string, endDate: string): Promise<ApiResponse<Payment[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_payments')
         .select('*')

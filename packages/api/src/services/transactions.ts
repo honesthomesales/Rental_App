@@ -15,6 +15,11 @@ export class TransactionsService {
   }): Promise<ApiResponse<Transaction[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       let query = supabase
         .from('RENT_transactions')
         .select('*')
