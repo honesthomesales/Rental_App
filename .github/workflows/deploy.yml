@@ -32,11 +32,13 @@ jobs:
         
       - name: Build packages
         run: |
-          echo "Building API package..."
+          echo "Installing and building API package..."
           cd packages/api
+          npm install
           npm run build
-          echo "Building UI package..."
+          echo "Installing and building UI package..."
           cd ../ui
+          npm install
           npm run build
           echo "Packages built successfully"
         

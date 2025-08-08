@@ -274,7 +274,7 @@ export class TransactionsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
+      const total = data?.reduce((sum: number, transaction: any) => sum + (transaction.amount || 0), 0) || 0;
       return createApiResponse(total);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
@@ -299,7 +299,7 @@ export class TransactionsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      const total = data?.reduce((sum, transaction) => sum + (transaction.amount || 0), 0) || 0;
+      const total = data?.reduce((sum: number, transaction: any) => sum + (transaction.amount || 0), 0) || 0;
       return createApiResponse(total);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));

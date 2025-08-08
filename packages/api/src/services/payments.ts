@@ -150,10 +150,10 @@ export class PaymentsService {
       }
 
       // Combine the data
-      const propertiesWithData = (properties || []).map(property => {
-        const propertyTenants = (tenants || []).filter(tenant => tenant.property_id === property.id);
-        const propertyLeases = (leases || []).filter(lease => 
-          propertyTenants.some(tenant => tenant.id === lease.tenant_id)
+      const propertiesWithData = (properties || []).map((property: any) => {
+        const propertyTenants = (tenants || []).filter((tenant: any) => tenant.property_id === property.id);
+        const propertyLeases = (leases || []).filter((lease: any) => 
+          propertyTenants.some((tenant: any) => tenant.id === lease.tenant_id)
         );
 
         return {

@@ -153,7 +153,7 @@ export class TenantsService {
         .order('payment_date', { ascending: false });
 
       // Transform payment history to match PaymentHistoryItem type
-      const transformedPaymentHistory = (paymentHistory || []).map(payment => ({
+      const transformedPaymentHistory = (paymentHistory || []).map((payment: any) => ({
         date: payment.payment_date,
         amount: payment.amount,
         status: payment.status
