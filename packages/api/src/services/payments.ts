@@ -94,6 +94,11 @@ export class PaymentsService {
   static async getMostRecentMonthWithPayments(): Promise<ApiResponse<{ year: number; month: number }>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_payments')
         .select('payment_date')
@@ -128,6 +133,10 @@ export class PaymentsService {
   static async getPropertiesWithTenants(): Promise<ApiResponse<any[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
       
       // Get all properties
       const { data: properties, error: propertiesError } = await supabase
@@ -186,6 +195,10 @@ export class PaymentsService {
     try {
       const supabase = getSupabaseClient();
       
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       // Create the payment record
       const { data, error } = await supabase
         .from('RENT_payments')
@@ -220,6 +233,11 @@ export class PaymentsService {
   ): Promise<ApiResponse<Payment[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_payments')
         .select('*')
@@ -244,6 +262,10 @@ export class PaymentsService {
   static async updatePayment(paymentData: UpdatePaymentData): Promise<ApiResponse<Payment>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
       
       const { id, ...updateData } = paymentData;
       

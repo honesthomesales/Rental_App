@@ -67,6 +67,11 @@ export class TransactionsService {
   static async getById(id: string): Promise<ApiResponse<Transaction>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_transactions')
         .select('*')
@@ -89,6 +94,11 @@ export class TransactionsService {
   static async create(transactionData: CreateTransactionData): Promise<ApiResponse<Transaction>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_transactions')
         .insert([transactionData])
@@ -111,6 +121,11 @@ export class TransactionsService {
   static async update(id: string, transactionData: UpdateTransactionData): Promise<ApiResponse<Transaction>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_transactions')
         .update(transactionData)
@@ -134,6 +149,11 @@ export class TransactionsService {
   static async delete(id: string): Promise<ApiResponse<boolean>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { error } = await supabase
         .from('RENT_transactions')
         .delete()
@@ -166,6 +186,11 @@ export class TransactionsService {
   ): Promise<ApiResponse<PaginatedResponse<Transaction>>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const offset = (page - 1) * limit;
 
       let query = supabase
@@ -267,6 +292,11 @@ export class TransactionsService {
   static async getTotalIncome(startDate: string, endDate: string): Promise<ApiResponse<number>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_transactions')
         .select('amount')
@@ -292,6 +322,11 @@ export class TransactionsService {
   static async getTotalExpenses(startDate: string, endDate: string): Promise<ApiResponse<number>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_transactions')
         .select('amount')
