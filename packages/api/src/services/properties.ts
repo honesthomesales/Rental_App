@@ -30,7 +30,7 @@ export class PropertiesService {
       }
       
       // Use a more efficient query with left join to get tenants in one query
-      let query = supabase
+      let query = supabase!
         .from('RENT_properties')
         .select(`
           *,
@@ -105,7 +105,7 @@ export class PropertiesService {
         return createApiResponse(null, 'Supabase client not available');
       }
       
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('RENT_properties')
         .select('*')
         .eq('id', id)
@@ -116,7 +116,7 @@ export class PropertiesService {
       }
 
       // Fetch tenants for this property
-      const { data: tenantsData } = await supabase
+      const { data: tenantsData } = await supabase!
         .from('RENT_tenants')
         .select('*')
         .eq('property_id', id);
@@ -139,7 +139,11 @@ export class PropertiesService {
     try {
       const supabase = getSupabaseClient();
       
-      const { data, error } = await supabase
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
+      const { data, error } = await supabase!
         .from('RENT_properties')
         .insert([propertyData])
         .select()
@@ -164,9 +168,14 @@ export class PropertiesService {
   static async update(propertyData: UpdatePropertyData): Promise<ApiResponse<Property>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { id, ...updateData } = propertyData;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('RENT_properties')
         .update(updateData)
         .eq('id', id)
@@ -192,7 +201,12 @@ export class PropertiesService {
   static async delete(id: string): Promise<ApiResponse<boolean>> {
     try {
       const supabase = getSupabaseClient();
-      const { error } = await supabase
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
+      const { error } = await supabase!
         .from('RENT_properties')
         .delete()
         .eq('id', id);

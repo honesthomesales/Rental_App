@@ -35,7 +35,8 @@ jobs:
           echo "Building web application..."
           echo "NODE_ENV: $NODE_ENV"
           echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
-          npm run build:web
+          cd apps/web
+          npm run build
         env:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

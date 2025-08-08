@@ -25,8 +25,12 @@ export class TenantsService {
 
       const supabase = getSupabaseClient();
       
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       // Use a more efficient query with joins to get all related data in one query
-      let query = supabase
+      let query = supabase!
         .from('RENT_tenants')
         .select(`
           *,
