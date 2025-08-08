@@ -310,7 +310,7 @@ export default function PaymentsPage() {
         setLoadingMessage('Loading properties and tenants...')
         
         // Load properties with active tenants
-        const propertiesResponse = await PropertiesService.getPropertiesWithTenants()
+        const propertiesResponse = await PaymentsService.getPropertiesWithTenants()
         if (!propertiesResponse.success || !propertiesResponse.data) {
           throw new Error(propertiesResponse.error || 'Failed to load properties')
         }
