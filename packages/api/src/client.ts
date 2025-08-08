@@ -11,7 +11,8 @@ let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 // Create a function to get the client with proper error handling
 function createSupabaseClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables. Please check your .env.local file.');
+    console.warn('Missing Supabase environment variables. Please check your .env.local file.');
+    return null;
   }
   
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -25,8 +26,8 @@ function createSupabaseClient() {
 
 export function getSupabaseClient() {
   if (typeof window === 'undefined') {
-    // Server-side: return null or throw error
-    throw new Error('Supabase client cannot be used on the server side');
+    // Server-side: return null instead of throwing error
+    return null;
   }
   
   if (!supabaseClient) {
@@ -34,7 +35,7 @@ export function getSupabaseClient() {
       supabaseClient = createSupabaseClient();
     } catch (error) {
       console.error('Failed to create Supabase client:', error);
-      throw error;
+      return null;
     }
   }
   

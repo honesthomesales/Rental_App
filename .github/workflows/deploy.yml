@@ -31,7 +31,11 @@ jobs:
         run: npm ci
         
       - name: Build web application
-        run: npm run build:web
+        run: |
+          echo "Building web application..."
+          echo "NODE_ENV: $NODE_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
+          npm run build:web
         env:
           NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -43,6 +47,8 @@ jobs:
           ls -la apps/web/
           echo "Checking if out directory was created:"
           ls -la apps/web/out/ || echo "out directory not found"
+          echo "Checking if .next directory exists:"
+          ls -la apps/web/.next/ || echo ".next directory not found"
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4

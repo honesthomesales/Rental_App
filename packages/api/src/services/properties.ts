@@ -25,6 +25,10 @@ export class PropertiesService {
 
       const supabase = getSupabaseClient();
       
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       // Use a more efficient query with left join to get tenants in one query
       let query = supabase
         .from('RENT_properties')
@@ -96,6 +100,11 @@ export class PropertiesService {
   static async getById(id: string): Promise<ApiResponse<Property>> {
     try {
       const supabase = getSupabaseClient();
+      
+      if (!supabase) {
+        return createApiResponse(null, 'Supabase client not available');
+      }
+      
       const { data, error } = await supabase
         .from('RENT_properties')
         .select('*')
