@@ -33,6 +33,11 @@ jobs:
       - name: Build packages
         run: npm run build:packages
         
+      - name: Install web app dependencies
+        run: |
+          cd apps/web
+          npm install
+        
       - name: Build web application
         run: |
           echo "Building web application..."
