@@ -30,22 +30,8 @@ jobs:
       - name: Install all dependencies
         run: npm ci
         
-      - name: Build API package
-        run: |
-          cd packages/api
-          npm ci
-          npm run build
-        
-      - name: Build UI package
-        run: |
-          cd packages/ui
-          npm ci
-          npm run build
-        
-      - name: Install web app dependencies
-        run: |
-          cd apps/web
-          npm ci
+      - name: Build packages
+        run: npm run build:packages
         
       - name: Build web application
         run: |
