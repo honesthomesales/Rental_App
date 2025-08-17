@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@rental-app/api/src/client'
-import { normalizeRentToMonthly, extractRentCadence, formatRentWithCadence } from '../../lib/utils'
-import type { Property } from '@/types/property'
-import { Plus, Search, Edit, Trash2, Home, DollarSign, MapPin, Users, Link as LinkIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { PropertiesService } from '@rental-app/api'
+import type { Property } from '@rental-app/api'
+import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 import { TenantLinkModal } from '@/components/TenantLinkModal'
+import { extractRentCadence, formatRentWithCadence } from '../../lib/utils'
 
 export default function PropertiesPage() {
+  const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -23,21 +24,13 @@ export default function PropertiesPage() {
   const loadProperties = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const response = await PropertiesService.getAll()
       
-      if (error) {
-        console.error('Database error:', error)
-        toast.error('Failed to load properties')
-        return
-      }
-      
-      if (data) {
-        setProperties(data)
+      if (response.success && response.data) {
+        setProperties(response.data)
       } else {
-        toast.error('No properties found')
+        console.error('Failed to load properties:', response.error)
+        toast.error('Failed to load properties')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -51,19 +44,15 @@ export default function PropertiesPage() {
     if (!confirm('Are you sure you want to delete this property?')) return
 
     try {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', propertyId)
+      const response = await PropertiesService.delete(propertyId)
       
-      if (error) {
-        console.error('Delete error:', error)
+      if (response.success) {
+        toast.success('Property deleted successfully')
+        loadProperties() // Reload the list
+      } else {
+        console.error('Delete error:', response.error)
         toast.error('Failed to delete property')
-        return
       }
-      
-      toast.success('Property deleted successfully')
-      loadProperties() // Reload the list
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error deleting property')
@@ -143,13 +132,13 @@ export default function PropertiesPage() {
                 <p className="text-sm text-gray-600">Total Properties</p>
                 <p className="text-2xl font-bold text-primary-600">{properties.length}</p>
               </div>
-              <Link
-                href="/properties/new"
+              <button
+                onClick={() => router.push('/properties/new')}
                 className="btn btn-primary"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Property
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -191,10 +180,13 @@ export default function PropertiesPage() {
                 }
               </p>
               {!searchTerm && (
-                <Link href="/properties/new" className="btn btn-primary">
+                <button
+                  onClick={() => router.push('/properties/new')}
+                  className="btn btn-primary"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Property
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -274,13 +266,13 @@ export default function PropertiesPage() {
                   </div>
 
                   <div className="flex space-x-2">
-                    <Link
-                      href={`/properties/${property.id}`}
+                    <button
+                      onClick={() => router.push(`/properties/${property.id}`)}
                       className="btn btn-sm btn-secondary flex-1"
                     >
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
-                    </Link>
+                    </button>
                     <button
                       onClick={() => handleOpenTenantModal(property)}
                       className="btn btn-sm btn-primary"

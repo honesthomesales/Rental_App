@@ -2,19 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@rental-app/api/src/client'
-import { normalizeRentToMonthly, extractRentCadence, formatRentWithCadence } from '../lib/utils'
-import { 
-  Home, 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
-  AlertTriangle,
-  Plus,
-  Search,
-  Filter
-} from 'lucide-react'
+import { PropertiesService, TenantsService } from '@rental-app/api'
+import { Plus, Search, Home, Users, DollarSign, TrendingUp, AlertTriangle, Filter } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { extractRentCadence, normalizeRentToMonthly, formatRentWithCadence, calculateTotalLatePayments, isTenantLate } from '../lib/utils'
 
 interface Property {
   id: string
@@ -87,68 +78,60 @@ export default function Dashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    loadDashboardData()
+    setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      loadDashboardData()
+    }
+  }, [mounted])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
+      console.log('Starting dashboard data load...')
       
-      // Direct Supabase query to get properties
-      const { data: propertiesData, error: propertiesError } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Load properties
+      const propertiesResponse = await PropertiesService.getAll()
+      const propertiesData = propertiesResponse.data
+      console.log('Properties loaded:', propertiesData?.length || 0)
       
-      if (propertiesError) {
-        console.error('Database error:', propertiesError)
-        toast.error('Failed to load properties')
-        return
-      }
+      // Load all tenants with property information for late payment calculations
+      const tenantsResponse = await TenantsService.getAll()
+      const tenantsData = tenantsResponse.data
+      console.log('Tenants loaded:', tenantsData?.length || 0)
       
-      // Query to get count of occupied properties (properties with tenants who have non-blank first names)
-      let occupiedData: any[] = []
-      let occupiedError: any = null
-      
-      // Try the main query first (removed is_active filter)
-      const { data: mainData, error: mainError } = await supabase
-        .from('tenants')
-        .select('property_id')
-        .not('first_name', 'is', null)
-        .neq('first_name', '')
-      
-      console.log('Main query data:', mainData)
-      console.log('Main query error:', mainError)
-      
-      if (mainData && mainData.length > 0) {
-        occupiedData = mainData
-      } else {
-        // Try alternative query without the is_active filter
-        console.log('Trying alternative query...')
-        const { data: altData, error: altError } = await supabase
-          .from('tenants')
-          .select('property_id')
-          .not('first_name', 'is', null)
-          .neq('first_name', '')
-        
-        console.log('Alternative data:', altData)
-        console.log('Alternative error:', altError)
-        
-        if (altData && altData.length > 0) {
-          occupiedData = altData
-        }
-      }
-      
-      if (occupiedError) {
-        console.error('Database error:', occupiedError)
-        // Don't fail completely, just set occupied count to 0
-        console.log('Using fallback for tenant data')
+      // Debug: Check first tenant structure
+      if (tenantsData && tenantsData.length > 0) {
+        console.log('First tenant structure:', JSON.stringify(tenantsData[0], null, 2))
       }
       
       if (propertiesData) {
-        setProperties(propertiesData)
+        // Convert API Property type to local Property type
+        const convertedProperties = propertiesData.map(property => ({
+          ...property,
+          bedrooms: property.bedrooms ?? null,
+          bathrooms: property.bathrooms ?? null,
+          square_feet: property.square_feet ?? null,
+          year_built: property.year_built ?? null,
+          purchase_price: property.purchase_price ?? null,
+          purchase_date: property.purchase_date ?? null,
+          current_value: property.current_value ?? null,
+          monthly_rent: property.monthly_rent ?? null,
+          insurance_policy_number: property.insurance_policy_number ?? null,
+          insurance_provider: property.insurance_provider ?? null,
+          insurance_expiry_date: property.insurance_expiry_date ?? null,
+          insurance_premium: property.insurance_premium ?? null,
+          owner_name: property.owner_name ?? null,
+          owner_phone: property.owner_phone ?? null,
+          owner_email: property.owner_email ?? null,
+          notes: property.notes ?? null
+        }))
+        setProperties(convertedProperties)
         
         // Calculate basic stats with normalized rent amounts
         const totalRent = propertiesData.reduce((sum, property) => {
@@ -164,25 +147,78 @@ export default function Dashboard() {
           return acc
         }, {} as Record<string, number>)
         
-        // Count unique occupied properties (with fallback)
+        // Count unique occupied properties
         let occupiedCount = 0
-        
-        if (occupiedData && occupiedData.length > 0) {
-          const occupiedPropertyIds = new Set(occupiedData.map((tenant: any) => tenant.property_id))
+        if (tenantsData && tenantsData.length > 0) {
+          const occupiedPropertyIds = new Set(tenantsData.map((tenant: any) => tenant.property_id))
           occupiedCount = occupiedPropertyIds.size
         }
         
-        console.log('Final occupied count:', occupiedCount)
+        // Calculate late tenants count using new pay period system
+        let lateTenantsCount = 0
+        let totalOutstanding = 0
+        
+        if (tenantsData && tenantsData.length > 0) {
+          console.log('Checking', tenantsData.length, 'tenants for late payments...')
+          
+          let processedCount = 0
+          let skippedCount = 0
+          
+          lateTenantsCount = tenantsData.filter((tenant: any) => {
+            try {
+              // Find the property for this tenant
+              const property = propertiesData.find((p: any) => p.id === tenant.property_id)
+              
+              if (!property) {
+                console.log('SKIP: Tenant', tenant.first_name, tenant.last_name, '- No property found for ID:', tenant.property_id)
+                skippedCount++
+                return false
+              }
+              
+              // Get lease data from the joined leases table
+              const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
+              if (!lease || !lease.lease_start_date) {
+                console.log('SKIP: Tenant', tenant.first_name, tenant.last_name, '- No lease found or no lease start date')
+                skippedCount++
+                return false
+              }
+              
+              processedCount++
+              console.log('PROCESSING: Tenant', tenant.first_name, tenant.last_name, 'Property:', property.name, 'Lease start:', lease.lease_start_date)
+              
+              // Use the new pay period calculation with lease data
+              const tenantWithLease = { ...tenant, lease_start_date: lease.lease_start_date }
+              const propertyWithNotes = { ...property, notes: property.notes || '' }
+              
+              const isLate = isTenantLate(tenantWithLease, propertyWithNotes)
+              console.log('RESULT: Tenant', tenant.first_name, tenant.last_name, 'Is late:', isLate)
+              
+              if (isLate) {
+                const latePaymentInfo = calculateTotalLatePayments(tenantWithLease, propertyWithNotes)
+                console.log('LATE TENANT:', tenant.first_name, tenant.last_name, '- Total due:', latePaymentInfo.totalDue, 'Late periods:', latePaymentInfo.latePeriods)
+                totalOutstanding += latePaymentInfo.totalDue
+              }
+              return isLate
+            } catch (error) {
+              console.error('Error checking if tenant is late:', error)
+              return false
+            }
+          }).length
+          
+          console.log('Summary - Processed:', processedCount, 'Skipped:', skippedCount, 'Late:', lateTenantsCount)
+        }
+        
+        console.log('Final - Late tenants count:', lateTenantsCount, 'Total outstanding:', totalOutstanding)
         
         setStats({
           total_properties: propertiesData.length,
-          total_tenants: occupiedCount, // Count of occupied properties
-          outstanding_balances: 0, // Will be calculated from transactions
+          total_tenants: occupiedCount,
+          outstanding_balances: totalOutstanding, // Calculated from late payments
           monthly_income: totalRent,
           monthly_expenses: totalRent * 0.3, // Estimate 30% expenses
           profit: totalRent * 0.7,
           total_bank_balance: 45000, // From seed data
-          late_tenants_count: 0, // Will be calculated from tenant data
+          late_tenants_count: lateTenantsCount,
           property_type_breakdown: {
             house: typeBreakdown.house || 0,
             singlewide: typeBreakdown.singlewide || 0,
@@ -206,6 +242,11 @@ export default function Dashboard() {
     property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     property.address.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return null
+  }
 
   if (loading) {
     return (
@@ -234,11 +275,11 @@ export default function Dashboard() {
                 Add Property
               </button>
               <button 
-                onClick={() => router.push('/late-tenants')}
+                onClick={() => router.push('/late-payments')}
                 className="btn btn-warning btn-lg"
               >
                 <AlertTriangle className="w-5 h-5 mr-2" />
-                Late Tenants
+                Late Payments
               </button>
             </div>
           </div>
@@ -292,7 +333,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/late-payments')}>
             <div className="card-content">
               <div className="flex items-center">
                 <div className="p-2 bg-danger-100 rounded-lg">
@@ -301,6 +342,22 @@ export default function Dashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Late Payments</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.late_tenants_count}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/late-payments')}>
+            <div className="card-content">
+              <div className="flex items-center">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    ${stats.outstanding_balances.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -441,4 +498,4 @@ export default function Dashboard() {
       </div>
     </div>
   )
-} 
+}

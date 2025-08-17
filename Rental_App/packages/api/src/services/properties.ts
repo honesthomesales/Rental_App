@@ -1,4 +1,4 @@
-import { supabase, handleSupabaseError, createApiResponse } from '../client';
+import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Property, CreatePropertyData, UpdatePropertyData, ApiResponse, PaginatedResponse } from '../types';
 
 export class PropertiesService {
@@ -12,6 +12,7 @@ export class PropertiesService {
     state?: string;
   }): Promise<ApiResponse<Property[]>> {
     try {
+      const supabase = getSupabaseClient();
       let query = supabase
         .from('properties')
         .select('*')
@@ -50,6 +51,7 @@ export class PropertiesService {
    */
   static async getById(id: string): Promise<ApiResponse<Property>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('properties')
         .select('*')
@@ -71,6 +73,7 @@ export class PropertiesService {
    */
   static async create(propertyData: CreatePropertyData): Promise<ApiResponse<Property>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('properties')
         .insert([propertyData])
@@ -92,6 +95,7 @@ export class PropertiesService {
    */
   static async update(propertyData: UpdatePropertyData): Promise<ApiResponse<Property>> {
     try {
+      const supabase = getSupabaseClient();
       const { id, ...updateData } = propertyData;
 
       const { data, error } = await supabase
@@ -116,6 +120,7 @@ export class PropertiesService {
    */
   static async delete(id: string): Promise<ApiResponse<boolean>> {
     try {
+      const supabase = getSupabaseClient();
       const { error } = await supabase
         .from('properties')
         .delete()
@@ -132,7 +137,7 @@ export class PropertiesService {
   }
 
   /**
-   * Get properties with pagination
+   * Get paginated properties
    */
   static async getPaginated(
     page: number = 1,
@@ -145,6 +150,7 @@ export class PropertiesService {
     }
   ): Promise<ApiResponse<PaginatedResponse<Property>>> {
     try {
+      const supabase = getSupabaseClient();
       const offset = (page - 1) * limit;
 
       let query = supabase
@@ -193,14 +199,15 @@ export class PropertiesService {
   }
 
   /**
-   * Search properties by name or address
+   * Search properties
    */
   static async search(searchTerm: string): Promise<ApiResponse<Property[]>> {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`)
+        .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false });
 
       if (error) {

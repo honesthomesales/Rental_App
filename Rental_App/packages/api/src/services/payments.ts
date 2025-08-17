@@ -1,4 +1,4 @@
-import { supabase, handleSupabaseError, createApiResponse } from '../client';
+import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 
 export class PaymentsService {
   /**
@@ -6,6 +6,7 @@ export class PaymentsService {
    */
   static async getAll() {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('payments')
         .select('*')

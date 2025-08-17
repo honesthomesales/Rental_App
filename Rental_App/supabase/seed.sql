@@ -2,10 +2,10 @@
 
 -- Insert sample properties
 INSERT INTO properties (name, address, city, state, zip_code, property_type, status, bedrooms, bathrooms, square_feet, year_built, purchase_price, purchase_date, current_value, monthly_rent, is_for_rent, is_for_sale, insurance_policy_number, insurance_provider, insurance_expiry_date, insurance_premium, owner_name, owner_phone, owner_email, notes) VALUES
-('Sunset Mobile Home Park Lot 101', '123 Main St, Lot 101', 'Austin', 'TX', '78701', 'singlewide', 'rented', 2, 1.0, 1000, 2015, 250000.00, '2020-03-15', 280000.00, 1800.00, true, false, 'POL-001-2024', 'State Farm', '2024-12-31', 1200.00, 'John Smith', '512-555-0101', 'john@example.com', 'Great location near downtown'),
-('Oak Ridge House', '456 Oak Ridge Dr', 'Austin', 'TX', '78703', 'house', 'rented', 3, 2.5, 2100, 2010, 450000.00, '2019-07-20', 520000.00, 2800.00, true, false, 'POL-002-2024', 'Allstate', '2024-11-30', 1800.00, 'John Smith', '512-555-0101', 'john@example.com', 'Beautiful oak trees in backyard'),
-('Riverside Doublewide', '789 Riverside Blvd, Lot 5B', 'Austin', 'TX', '78701', 'doublewide', 'owner_finance', 3, 2.0, 1800, 2018, 320000.00, '2021-01-10', 350000.00, 2200.00, true, false, 'POL-003-2024', 'Liberty Mutual', '2024-10-15', 900.00, 'John Smith', '512-555-0101', 'john@example.com', 'Spacious doublewide with great views'),
-('Mobile Home Park Lot 15', '321 Park Ave, Lot 15', 'Austin', 'TX', '78704', 'singlewide', 'empty', 2, 1.5, 1200, 2005, 180000.00, '2018-11-05', 220000.00, 1400.00, true, false, 'POL-004-2024', 'Farmers', '2024-09-30', 800.00, 'John Smith', '512-555-0101', 'john@example.com', 'Affordable singlewide in quiet park');
+('Sunset Mobile Home Park Lot 101', '123 Main St, Lot 101', 'Austin', 'TX', '78701', 'singlewide', 'rented', 2, 1.0, 1000, 2015, 250000.00, '2020-03-15', 280000.00, 1800.00, true, false, 'POL-001-2024', 'State Farm', '2024-12-31', 1200.00, 'John Smith', '512-555-0101', 'john@example.com', 'Great location near downtown. Rent cadence: weekly'),
+('Oak Ridge House', '456 Oak Ridge Dr', 'Austin', 'TX', '78703', 'house', 'rented', 3, 2.5, 2100, 2010, 450000.00, '2019-07-20', 520000.00, 2800.00, true, false, 'POL-002-2024', 'Allstate', '2024-11-30', 1800.00, 'John Smith', '512-555-0101', 'john@example.com', 'Beautiful oak trees in backyard. Rent cadence: biweekly'),
+('Riverside Doublewide', '789 Riverside Blvd, Lot 5B', 'Austin', 'TX', '78701', 'doublewide', 'owner_finance', 3, 2.0, 1800, 2018, 320000.00, '2021-01-10', 350000.00, 2200.00, true, false, 'POL-003-2024', 'Liberty Mutual', '2024-10-15', 900.00, 'John Smith', '512-555-0101', 'john@example.com', 'Spacious doublewide with great views. Rent cadence: monthly'),
+('Mobile Home Park Lot 15', '321 Park Ave, Lot 15', 'Austin', 'TX', '78704', 'singlewide', 'empty', 2, 1.5, 1200, 2005, 180000.00, '2018-11-05', 220000.00, 1400.00, true, false, 'POL-004-2024', 'Farmers', '2024-09-30', 800.00, 'John Smith', '512-555-0101', 'john@example.com', 'Affordable singlewide in quiet park. Rent cadence: monthly');
 
 -- Insert sample bank accounts
 INSERT INTO bank_accounts (name, account_number, routing_number, bank_name, account_type, current_balance, outstanding_checks, notes) VALUES
@@ -20,10 +20,12 @@ INSERT INTO loans (property_id, lender_name, loan_number, original_amount, curre
 
 -- Insert sample tenants
 INSERT INTO tenants (property_id, first_name, last_name, email, phone, emergency_contact_name, emergency_contact_phone, move_in_date, lease_start_date, lease_end_date, monthly_rent, security_deposit, payment_history, late_fees_owed, late_status, last_payment_date, notes, is_active) VALUES
-((SELECT id FROM properties WHERE name = 'Sunset Mobile Home Park Lot 101'), 'Sarah', 'Johnson', 'sarah.johnson@email.com', '512-555-0201', 'Mike Johnson', '512-555-0202', '2023-06-01', '2023-06-01', '2024-05-31', 1800.00, 1800.00, '[{"date": "2024-01-01", "amount": 1800.00, "status": "completed"}, {"date": "2024-02-01", "amount": 1800.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2024-02-01', 'Great tenant, always pays on time', true),
-((SELECT id FROM properties WHERE name = 'Oak Ridge House'), 'David', 'Chen', 'david.chen@email.com', '512-555-0301', 'Lisa Chen', '512-555-0302', '2023-08-15', '2023-08-15', '2024-08-14', 2800.00, 2800.00, '[{"date": "2024-01-01", "amount": 2800.00, "status": "completed"}, {"date": "2024-02-01", "amount": 2800.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2024-02-01', 'Family with two kids, very responsible', true),
-((SELECT id FROM properties WHERE name = 'Riverside Doublewide'), 'Emily', 'Rodriguez', 'emily.rodriguez@email.com', '512-555-0401', 'Carlos Rodriguez', '512-555-0402', '2023-09-01', '2023-09-01', '2024-08-31', 2200.00, 2200.00, '[{"date": "2024-01-01", "amount": 2200.00, "status": "completed"}, {"date": "2024-02-01", "amount": 2200.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2024-02-01', 'Young professional, works downtown', true),
-((SELECT id FROM properties WHERE name = 'Mobile Home Park Lot 15'), 'ABC Coffee Shop', 'ABC Coffee', 'manager@abccoffee.com', '512-555-0501', 'Maria Garcia', '512-555-0502', '2023-03-01', '2023-03-01', '2025-02-28', 1400.00, 2800.00, '[{"date": "2024-01-01", "amount": 1400.00, "status": "completed"}, {"date": "2024-02-01", "amount": 1400.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2024-02-01', 'Commercial tenant, 2-year lease', true);
+((SELECT id FROM properties WHERE name = 'Sunset Mobile Home Park Lot 101'), 'Sarah', 'Johnson', 'sarah.johnson@email.com', '512-555-0201', 'Mike Johnson', '512-555-0202', '2025-01-15', '2025-01-15', '2030-01-01', 1800.00, 1800.00, '[{"date": "2025-01-15", "amount": 1800.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2025-01-15', 'Great tenant, always pays on time', true),
+((SELECT id FROM properties WHERE name = 'Oak Ridge House'), 'David', 'Chen', 'david.chen@email.com', '512-555-0301', 'Lisa Chen', '512-555-0302', '2025-01-15', '2025-01-15', '2030-01-01', 2800.00, 2800.00, '[{"date": "2025-01-15", "amount": 2800.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2025-01-15', 'Family with two kids, very responsible', true),
+((SELECT id FROM properties WHERE name = 'Riverside Doublewide'), 'Emily', 'Rodriguez', 'emily.rodriguez@email.com', '512-555-0401', 'Carlos Rodriguez', '512-555-0402', '2025-01-15', '2025-01-15', '2030-01-01', 2200.00, 2200.00, '[{"date": "2025-01-15", "amount": 2200.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2025-01-15', 'Young professional, works downtown', true),
+((SELECT id FROM properties WHERE name = 'Mobile Home Park Lot 15'), 'ABC Coffee Shop', 'ABC Coffee', 'manager@abccoffee.com', '512-555-0501', 'Maria Garcia', '512-555-0502', '2025-01-15', '2025-01-15', '2030-01-01', 1400.00, 2800.00, '[{"date": "2025-01-15", "amount": 1400.00, "status": "completed"}]'::jsonb, 0.00, 'on_time', '2025-01-15', 'Commercial tenant, 2-year lease', true),
+-- Add a late tenant for testing
+((SELECT id FROM properties WHERE name = 'Sunset Mobile Home Park Lot 101'), 'Late', 'Tenant', 'late.tenant@email.com', '512-555-0601', 'Emergency Contact', '512-555-0602', '2025-01-15', '2025-01-15', '2030-01-01', 1800.00, 1800.00, '[]'::jsonb, 0.00, 'late', '2025-01-15', 'Tenant with late payments for testing', true);
 
 -- Insert sample transactions
 INSERT INTO transactions (property_id, tenant_id, loan_id, bank_account_id, transaction_type, amount, description, transaction_date, payment_status, reference_number, notes) VALUES
@@ -40,11 +42,57 @@ INSERT INTO transactions (property_id, tenant_id, loan_id, bank_account_id, tran
 (NULL, NULL, (SELECT id FROM loans WHERE loan_number = 'BOA-2021-002'), (SELECT id FROM bank_accounts WHERE name = 'Main Operating Account'), 'loan_payment', 1200.00, 'January 2024 mortgage payment', '2024-01-10', 'completed', 'LOAN-2024-01-002', 'Bank of America mortgage payment'),
 (NULL, NULL, (SELECT id FROM loans WHERE loan_number = 'BOA-2021-002'), (SELECT id FROM bank_accounts WHERE name = 'Main Operating Account'), 'loan_payment', 1200.00, 'February 2024 mortgage payment', '2024-02-10', 'completed', 'LOAN-2024-02-002', 'Bank of America mortgage payment');
 
+-- Insert lease records for all existing tenants (6 months ago start, 2030 end)
+INSERT INTO leases (tenant_id, property_id, start_date, end_date, rent, rent_cadence, move_in_fee, late_fee_amount, lease_pdf, status, notes) VALUES
+((SELECT id FROM tenants WHERE first_name = 'Sarah' AND last_name = 'Johnson'), (SELECT id FROM properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2025-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', ''),
+((SELECT id FROM tenants WHERE first_name = 'David' AND last_name = 'Chen'), (SELECT id FROM properties WHERE name = 'Oak Ridge House'), '2025-01-23', '2030-01-01', 2800.00, 'biweekly', 2800.00, 20.00, NULL, 'active', ''),
+((SELECT id FROM tenants WHERE first_name = 'Emily' AND last_name = 'Rodriguez'), (SELECT id FROM properties WHERE name = 'Riverside Doublewide'), '2025-01-23', '2030-01-01', 2200.00, 'monthly', 2200.00, 45.00, NULL, 'active', ''),
+((SELECT id FROM tenants WHERE first_name = 'ABC Coffee Shop'), (SELECT id FROM properties WHERE name = 'Mobile Home Park Lot 15'), '2025-01-23', '2030-01-01', 1400.00, 'monthly', 2800.00, 45.00, NULL, 'active', ''),
+((SELECT id FROM tenants WHERE first_name = 'Late' AND last_name = 'Tenant'), (SELECT id FROM properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2025-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', '');
+
 -- Insert sample scraped payments
 INSERT INTO scraped_payments (source, raw_data, extracted_amount, extracted_date, sender_name, sender_email, sender_phone, description, is_processed, proposed_property_id, proposed_tenant_id, proposed_transaction_type, confidence_score) VALUES
 ('gmail', '{"subject": "Rent Payment - Sarah Johnson", "body": "Hi, I sent the rent payment for March. Please confirm receipt.", "from": "sarah.johnson@email.com"}', 1800.00, '2024-03-01', 'Sarah Johnson', 'sarah.johnson@email.com', NULL, 'March 2024 rent payment from Sarah Johnson', false, (SELECT id FROM properties WHERE name = 'Sunset Apartments Unit 101'), (SELECT id FROM tenants WHERE first_name = 'Sarah' AND last_name = 'Johnson'), 'rent_payment', 0.95),
 ('sms', '{"message": "Sent $2800 for March rent. -David", "from": "+15125550301"}', 2800.00, '2024-03-01', 'David Chen', NULL, '512-555-0301', 'March 2024 rent payment from David Chen', false, (SELECT id FROM properties WHERE name = 'Oak Ridge House'), (SELECT id FROM tenants WHERE first_name = 'David' AND last_name = 'Chen'), 'rent_payment', 0.90),
 ('cashapp', '{"note": "March rent", "amount": 2200, "sender": "emily.r"}', 2200.00, '2024-03-01', 'Emily Rodriguez', NULL, NULL, 'March 2024 rent payment from Emily Rodriguez', false, (SELECT id FROM properties WHERE name = 'Downtown Condo'), (SELECT id FROM tenants WHERE first_name = 'Emily' AND last_name = 'Rodriguez'), 'rent_payment', 0.85); 
+
+-- Populate leases table using properties and tenants as driver
+-- Lease start date: 6 months ago (January 2025)
+-- Lease end date: January 1, 2030
+INSERT INTO leases (property_id, tenant_id, lease_start_date, lease_end_date, rent, rent_cadence, move_in_fee, late_fee_amount, lease_pdf, status, notes, created_at, updated_at)
+SELECT 
+    t.property_id,
+    t.id as tenant_id,
+    '2025-01-15' as lease_start_date,  -- 6 months ago
+    '2030-01-01' as lease_end_date,
+    t.monthly_rent as rent,
+    CASE 
+        WHEN p.notes ILIKE '%weekly%' THEN 'weekly'
+        WHEN p.notes ILIKE '%bi-weekly%' OR p.notes ILIKE '%biweekly%' THEN 'bi-weekly'
+        ELSE 'monthly'
+    END as rent_cadence,
+    t.security_deposit as move_in_fee,
+    CASE 
+        WHEN p.notes ILIKE '%weekly%' THEN 10
+        WHEN p.notes ILIKE '%bi-weekly%' OR p.notes ILIKE '%biweekly%' THEN 20
+        ELSE 45
+    END as late_fee_amount,
+    NULL as lease_pdf,
+    'active' as status,
+    '' as notes,
+    NOW() as created_at,
+    NOW() as updated_at
+FROM tenants t
+JOIN properties p ON t.property_id = p.id
+WHERE t.is_active = true;
+
+-- Update tenant lease_start_date to match the new lease records
+UPDATE tenants 
+SET 
+    lease_start_date = '2025-01-15',  -- 6 months ago
+    lease_end_date = '2030-01-01',
+    updated_at = NOW()
+WHERE is_active = true;
 
 -- Query to find property by address and get its ID
 -- Replace '123 Main St' with the actual property address you're looking for

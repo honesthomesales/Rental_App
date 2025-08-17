@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartScheduler - App Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background: white;
+            margin: 20px auto;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .status-bar {
+            height: 44px;
+            background: #6200ee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .top-bar {
+            height: 56px;
+            background: #6200ee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            color: white;
+        }
+        
+        .top-bar h1 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .task-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+        }
+        
+        .priority-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        
+        .priority-high {
+            background: #ffeb3b;
+            color: #333;
+        }
+        
+        .priority-medium {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .priority-low {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .priority-urgent {
+            background: #f44336;
+            color: white;
+        }
+        
+        .task-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .task-meta {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .task-meta span {
+            margin-right: 12px;
+        }
+        
+        .bottom-nav {
+            height: 80px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .nav-item.active {
+            color: #6200ee;
+        }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            background: #ddd;
+            border-radius: 4px;
+        }
+        
+        .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #6200ee;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(98, 0, 238, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>SmartScheduler</span>
+            <span>100%</span>
+        </div>
+        
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1>Smart Scheduler</h1>
+            <span style="font-size: 20px;">⚙️</span>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Sample Tasks -->
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">Complete project proposal</div>
+                    <div class="priority-badge priority-high">HIGH</div>
+                </div>
+                <div class="task-description">Write and submit the quarterly project proposal</div>
+                <div class="task-meta">
+                    <span>📅 Dec 17, 14:30</span>
+                    <span>•</span>
+                    <span>Work</span>
+                </div>
+            </div>
+            
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">Buy groceries</div>
+                    <div class="priority-badge priority-medium">MEDIUM</div>
+                </div>
+                <div class="task-description">Milk, bread, eggs, and vegetables</div>
+                <div class="task-meta">
+                    <span>📅 Dec 15, 17:30</span>
+                    <span>•</span>
+                    <span>Personal</span>
+                </div>
+            </div>
+            
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">Prepare presentation</div>
+                    <div class="priority-badge priority-urgent">URGENT</div>
+                </div>
+                <div class="task-description">Create slides for team meeting</div>
+                <div class="task-meta">
+                    <span>📅 Dec 16, 10:00</span>
+                    <span>•</span>
+                    <span>Work</span>
+                </div>
+            </div>
+            
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">Call dentist</div>
+                    <div class="priority-badge priority-low">LOW</div>
+                </div>
+                <div class="task-description">Schedule annual checkup</div>
+                <div class="task-meta">
+                    <span>📅 Dec 20, 09:00</span>
+                    <span>•</span>
+                    <span>Health</span>
+                </div>
+            </div>
+            
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">Read book chapter</div>
+                    <div class="priority-badge priority-medium">MEDIUM</div>
+                </div>
+                <div class="task-description">Chapter 5 of 'Clean Code'</div>
+                <div class="task-meta">
+                    <span>📅 Dec 18, 20:00</span>
+                    <span>•</span>
+                    <span>Learning</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Button -->
+        <div class="fab">+</div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-icon"></div>
+                <span>Tasks</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon"></div>
+                <span>Kanban</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon"></div>
+                <span>Gantt</span>
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px; font-family: Arial, sans-serif;">
+        <h2>SmartScheduler App Preview</h2>
+        <p>This is a visual representation of what the SmartScheduler app would look like when running.</p>
+        <p>The app features:</p>
+        <ul style="list-style: none; padding: 0;">
+            <li>✅ Material Design 3 UI with purple theme</li>
+            <li>✅ Top bar with app name and settings icon</li>
+            <li>✅ Bottom navigation with Tasks, Kanban, and Gantt tabs</li>
+            <li>✅ Task list with title, description, due date, and priority badges</li>
+            <li>✅ Floating Action Button for adding new tasks</li>
+            <li>✅ Color-coded priority badges (Low, Medium, High, Urgent)</li>
+            <li>✅ Category information and due dates</li>
+        </ul>
+    </div>
+</body>
+</html> 

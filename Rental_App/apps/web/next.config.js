@@ -9,6 +9,13 @@ const nextConfig = {
   generateBuildId: async () => {
     return 'build'
   },
+  experimental: {
+    appDir: true,
+  },
+  // Disable static generation for error pages
+  async generateStaticParams() {
+    return []
+  },
 }
 
 module.exports = nextConfig 

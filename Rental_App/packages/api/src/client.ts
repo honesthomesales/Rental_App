@@ -20,7 +20,24 @@ function createSupabaseClient() {
   });
 }
 
-export const supabase = createSupabaseClient();
+// Create client only on the client side to prevent SSR issues
+let supabaseClient: ReturnType<typeof createSupabaseClient> | null = null;
+
+export function getSupabaseClient() {
+  if (typeof window === 'undefined') {
+    // Server-side: return null or throw error
+    throw new Error('Supabase client cannot be used on the server side');
+  }
+  
+  if (!supabaseClient) {
+    supabaseClient = createSupabaseClient();
+  }
+  
+  return supabaseClient;
+}
+
+// Export the client for backward compatibility (will only work on client side)
+export const supabase = typeof window !== 'undefined' ? getSupabaseClient() : null;
 
 // Helper function to handle Supabase errors
 export function handleSupabaseError(error: any): string {
