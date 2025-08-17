@@ -5,7 +5,9 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaXNnZm9qenJybmlkaXpyeWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjgyMDMsImV4cCI6MjA2NzM0NDIwM30.jLRIt4mqNa-6rnWudT_ciCvfPC0i0WlWFrCgC7NbhYM',
   },
   output: 'export',
-  trailingSlash: false,
+  basePath: '/Rental_App',
+  assetPrefix: '/Rental_App/',
+  trailingSlash: true,
   generateBuildId: async () => {
     return 'build'
   },
