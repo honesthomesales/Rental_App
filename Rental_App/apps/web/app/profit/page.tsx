@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
 import { Calendar, DollarSign, TrendingUp, PieChart, Plus, Minus, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
-import { getSupabaseClient } from '@rental-app/api'
+import { supabase } from '@rental-app/api'
 import { normalizeRentToMonthly, extractRentCadence } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
@@ -54,9 +54,8 @@ export default function ProfitPage() {
   // Function to find the most recent month with data
   const findMostRecentMonthWithData = async () => {
     try {
-      const supabase = getSupabaseClient()
       const { data, error } = await supabase
-        .from('payments')
+        .from('RENT_payments')
         .select('payment_date')
         .order('payment_date', { ascending: false })
         .limit(1)
@@ -136,9 +135,7 @@ export default function ProfitPage() {
      try {
        setLoading(true)
        
-       const supabase = getSupabaseClient()
-
-       // Fetch properties
+               // Fetch properties
        const { data: propertiesData, error: propertiesError } = await supabase
          .from('RENT_properties')
          .select('*')
@@ -348,10 +345,9 @@ export default function ProfitPage() {
       return
     }
 
-    const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('other_entries')
-      .insert({
+         const { error } = await supabase
+       .from('RENT_other')
+       .insert({
         date: newEntry.date,
         type: newEntry.type,
         amount: newEntry.amount,
@@ -391,10 +387,9 @@ export default function ProfitPage() {
       return
     }
 
-    const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('other_entries')
-      .update({
+         const { error } = await supabase
+       .from('RENT_other')
+       .update({
         id: editingEntry.id,
         date: newEntry.date,
         type: newEntry.type,
@@ -421,10 +416,9 @@ export default function ProfitPage() {
   }
 
   const removeEntry = async (id: string) => {
-    const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('other_entries')
-      .delete()
+         const { error } = await supabase
+       .from('RENT_other')
+       .delete()
       .eq('id', id)
 
     if (error) {
