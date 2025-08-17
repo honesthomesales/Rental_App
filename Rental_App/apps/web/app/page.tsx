@@ -500,9 +500,9 @@ export default function Dashboard() {
                           {property.status}
                         </span>
                       </td>
-                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                         {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
-                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handlePropertyClick(property.id)}
