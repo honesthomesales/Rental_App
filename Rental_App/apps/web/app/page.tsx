@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Plus, Search, DollarSign, Home, Users, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { PropertiesService } from '@rental-app/api/src/services/properties'
-import { TenantsService } from '@rental-app/api/src/services/tenants'
+import { PropertiesService } from '@rental-app/api'
+import { TenantsService } from '@rental-app/api'
 import { extractRentCadence, normalizeRentToMonthly } from '../lib/utils'
 
 interface Property {
