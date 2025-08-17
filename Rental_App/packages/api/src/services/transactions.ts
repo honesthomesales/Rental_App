@@ -16,13 +16,8 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       let query = supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `)
+        .from('RENT_transactions')
+        .select('*')
         .order('transaction_date', { ascending: false });
 
       if (filters?.transaction_type) {
@@ -68,13 +63,8 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `)
+        .from('RENT_transactions')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -95,7 +85,7 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .insert([transactionData])
         .select()
         .single();
@@ -117,7 +107,7 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .update(transactionData)
         .eq('id', id)
         .select()
@@ -140,7 +130,7 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .delete()
         .eq('id', id);
 
@@ -174,13 +164,8 @@ export class TransactionsService {
       const offset = (page - 1) * limit;
 
       let query = supabase
-        .from('transactions')
-        .select(`
-          *,
-          properties(name, address),
-          tenants(first_name, last_name, email),
-          loans(lender_name, loan_number)
-        `, { count: 'exact' })
+        .from('RENT_transactions')
+        .select('*', { count: 'exact' })
         .order('transaction_date', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -278,7 +263,7 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .select('amount')
         .in('transaction_type', ['rent_payment', 'income', 'property_sale'])
         .gte('transaction_date', startDate)
@@ -303,7 +288,7 @@ export class TransactionsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('transactions')
+        .from('RENT_transactions')
         .select('amount')
         .in('transaction_type', ['expense', 'loan_payment', 'property_purchase'])
         .gte('transaction_date', startDate)

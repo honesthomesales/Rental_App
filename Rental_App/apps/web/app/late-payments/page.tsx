@@ -92,8 +92,36 @@ export default function LatePaymentsPage() {
         }
       })
 
-      // Sort by total amount owed (highest first)
-      lateTenantsList.sort((a, b) => b.total_owed - a.total_owed)
+      // Sort by payment cadence first (weekly, bi-weekly, monthly), then by total amount owed
+      lateTenantsList.sort((a, b) => {
+        // First, sort by cadence priority
+        const getCadencePriority = (cadence: string): number => {
+          const normalized = cadence.toLowerCase().trim();
+          
+          switch (normalized) {
+            case 'weekly':
+              return 1;
+            case 'bi-weekly':
+            case 'biweekly':
+            case 'bi_weekly':
+              return 2;
+            case 'monthly':
+            default:
+              return 3;
+          }
+        };
+
+        const priorityA = getCadencePriority(a.rent_cadence);
+        const priorityB = getCadencePriority(b.rent_cadence);
+
+        // If cadence priorities are different, sort by cadence
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        // If cadence is the same, sort by total amount owed (highest first)
+        return b.total_owed - a.total_owed;
+      });
       
       setLateTenants(lateTenantsList)
     } catch (error) {
@@ -115,7 +143,7 @@ export default function LatePaymentsPage() {
 
   const handleModalSave = async (updatedData: any) => {
     // Here you would save the updated data to the database
-    console.log('Saving updated data:', updatedData)
+    
     
     // Reload the data to reflect changes
     await loadLatePayments()
@@ -184,6 +212,9 @@ export default function LatePaymentsPage() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Late Payment Details</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Sorted by payment cadence: Weekly (1) → Bi-weekly (2) → Monthly (3), then by total amount owed
+            </p>
           </div>
           
           <div className="overflow-x-auto">
@@ -195,6 +226,9 @@ export default function LatePaymentsPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Property Address
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rent Cadence
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rent
@@ -220,6 +254,19 @@ export default function LatePaymentsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{tenant.property_address}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600 capitalize">{tenant.rent_cadence}</span>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                          tenant.rent_cadence.toLowerCase() === 'weekly' ? 'bg-red-100 text-red-800' :
+                          tenant.rent_cadence.toLowerCase() === 'bi-weekly' || tenant.rent_cadence.toLowerCase() === 'biweekly' || tenant.rent_cadence.toLowerCase() === 'bi_weekly' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {tenant.rent_cadence.toLowerCase() === 'weekly' ? '1' : 
+                           tenant.rent_cadence.toLowerCase() === 'bi-weekly' || tenant.rent_cadence.toLowerCase() === 'biweekly' || tenant.rent_cadence.toLowerCase() === 'bi_weekly' ? '2' : '3'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">${tenant.rent.toLocaleString()}</div>

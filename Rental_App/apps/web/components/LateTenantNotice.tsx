@@ -1,16 +1,42 @@
 'use client'
 
 import { TenantsService } from '@rental-app/api'
-import type { Tenant } from '@rental-app/api'
+import type { LateTenant } from '@rental-app/api'
 
 interface LateTenantNoticeProps {
-  tenant: Tenant
+  tenant: LateTenant
 }
 
 export function LateTenantNotice({ tenant }: LateTenantNoticeProps) {
   const today = new Date()
-  const noticeDate = new Date(today.getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days from today
-  const totalDue = TenantsService.calculateTotalDue(tenant)
+  
+  // Function to calculate 5 weekdays from tomorrow, excluding weekends
+  const calculateNoticeDate = () => {
+    let noticeDate = new Date(today)
+    noticeDate.setDate(noticeDate.getDate() + 1) // Start from tomorrow
+    
+    let weekdaysCounted = 0
+    let currentDate = new Date(noticeDate)
+    
+    // Count 5 weekdays (Monday-Friday), excluding weekends (Saturday=6, Sunday=0)
+    while (weekdaysCounted < 5) {
+      // Check if current date is a weekday (Monday = 1, Tuesday = 2, ..., Friday = 5)
+      if (currentDate.getDay() >= 1 && currentDate.getDay() <= 5) {
+        weekdaysCounted++
+      }
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // Subtract one day since we went one day too far
+    currentDate.setDate(currentDate.getDate() - 1)
+    
+    return currentDate
+  }
+  
+  const noticeDate = calculateNoticeDate()
+  const totalDue = (tenant.total_due || 0) + (tenant.total_late_fees || 0)
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -69,13 +95,28 @@ export function LateTenantNotice({ tenant }: LateTenantNoticeProps) {
         </div>
         
         <p className="text-gray-700 mb-4">
-          As of the date of this notice, you owe the total amount of:
+          As of the date of this notice, you owe the following amounts:
         </p>
         
         <div className="bg-red-50 p-4 mb-6 print:mb-4 border-l-4 border-red-500">
-          <p className="text-2xl font-bold text-red-600 print:text-xl">
-            ${totalDue.toLocaleString()}
-          </p>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Past Due Rent:</span>
+              <span className="font-medium">${(tenant.total_due || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Late Fees:</span>
+              <span className="font-medium">${(tenant.total_late_fees || tenant.late_fees_owed || 0).toLocaleString()}</span>
+            </div>
+            <div className="border-t border-red-200 pt-2 mt-2">
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-semibold">Total Amount Due:</span>
+                <span className="text-2xl font-bold text-red-600 print:text-xl">
+                  ${totalDue.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
         
         <p className="text-gray-700 mb-4">

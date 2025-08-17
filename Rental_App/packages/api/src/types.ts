@@ -3,6 +3,7 @@ export type PropertyStatus = 'rented' | 'empty' | 'owner_finance' | 'lease_purch
 export type TransactionType = 'rent_payment' | 'loan_payment' | 'property_sale' | 'property_purchase' | 'expense' | 'income';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
 export type LateStatus = 'on_time' | 'late_5_days' | 'late_10_days' | 'eviction_notice';
+export type PaymentFrequency = 'monthly' | 'bi_weekly' | 'weekly';
 
 export interface Property {
   id: string;
@@ -18,6 +19,7 @@ export interface Property {
   square_feet?: number;
   year_built?: number;
   purchase_price?: number;
+  purchase_payment?: number;
   purchase_date?: string;
   current_value?: number;
   monthly_rent?: number;
@@ -27,13 +29,18 @@ export interface Property {
   insurance_provider?: string;
   insurance_expiry_date?: string;
   insurance_premium?: number;
+  property_tax?: number;
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  latitude?: number;
+  longitude?: number;
   notes?: string;
   created_at: string;
   updated_at: string;
   tenants?: Tenant[];
+  active_leases?: Lease[];
+  active_lease_count?: number;
 }
 
 export interface Tenant {
@@ -45,7 +52,6 @@ export interface Tenant {
   phone?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  move_in_date?: string;
   lease_start_date?: string;
   lease_end_date?: string;
   monthly_rent?: number;
@@ -55,17 +61,64 @@ export interface Tenant {
   late_fees_owed: number;
   late_status: LateStatus;
   last_payment_date?: string;
+  currently_paid_up_date?: string; // New field: when tenant was last fully paid up
   notes?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   properties?: Property; // Add property information for late tenant queries
+  payment_frequency?: PaymentFrequency;
+  leases?: Lease[]; // Add lease information
+}
+
+export interface Lease {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  lease_start_date: string;
+  lease_end_date: string;
+  rent: number;
+  rent_cadence: string;
+  move_in_fee: number;
+  late_fee_amount: number;
+  lease_pdf?: string;
+  status: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PaymentHistoryItem {
   date: string;
   amount: number;
   status: PaymentStatus;
+}
+
+export interface RentPeriod {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  lease_id: string;
+  period_due_date: string;
+  rent_amount: number;
+  rent_cadence: string;
+  status: 'paid' | 'unpaid' | 'partial' | 'overdue';
+  amount_paid: number;
+  late_fee_applied: number;
+  late_fee_waived: boolean;
+  due_date_override?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentAllocation {
+  id: string;
+  payment_id: string;
+  rent_period_id: string;
+  amount_allocated: number;
+  allocation_date: string;
+  created_at: string;
 }
 
 export interface BankAccount {
@@ -174,7 +227,10 @@ export interface CreatePropertyData {
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
+  latitude?: number;
+  longitude?: number;
   notes?: string;
+  rent_cadence?: string;
 }
 
 export interface UpdatePropertyData extends Partial<CreatePropertyData> {
@@ -189,11 +245,11 @@ export interface CreateTenantData {
   phone?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  move_in_date?: string;
   lease_start_date?: string;
   lease_end_date?: string;
   monthly_rent?: number;
   security_deposit?: number;
+  rent_cadence?: string;
   notes?: string;
 }
 
@@ -241,4 +297,7 @@ export interface LateTenant extends Tenant {
   properties: Property;
   total_due: number;
   days_late: number;
+  total_late_fees?: number;
+  total_outstanding?: number;
+  late_periods?: number;
 } 

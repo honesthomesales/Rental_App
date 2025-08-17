@@ -10,18 +10,18 @@ import { X, Save, User, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const tenantSchema = z.object({
-  property_id: z.string().optional(),
+  property_id: z.string().min(1, 'Property is required'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
-  move_in_date: z.string().optional(),
   lease_start_date: z.string().optional(),
   lease_end_date: z.string().optional(),
-  monthly_rent: z.number().optional(),
-  security_deposit: z.number().optional(),
+  monthly_rent: z.number().min(0, 'Rent must be positive').optional(),
+  security_deposit: z.number().min(0, 'Security deposit must be positive').optional(),
+  rent_cadence: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -44,26 +44,39 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
     reset,
   } = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
-    defaultValues: tenant ? {
-      property_id: tenant.property_id || undefined,
-      first_name: tenant.first_name,
-      last_name: tenant.last_name,
-      email: tenant.email || undefined,
-      phone: tenant.phone || undefined,
-      emergency_contact_name: tenant.emergency_contact_name || undefined,
-      emergency_contact_phone: tenant.emergency_contact_phone || undefined,
-      move_in_date: tenant.move_in_date || undefined,
-      lease_start_date: tenant.lease_start_date || undefined,
-      lease_end_date: tenant.lease_end_date || undefined,
-      monthly_rent: tenant.monthly_rent || undefined,
-      security_deposit: tenant.security_deposit || undefined,
-      notes: tenant.notes || undefined,
-    } : {}
   })
 
   useEffect(() => {
     loadProperties()
   }, [])
+
+  // Reset form when tenant prop changes
+  useEffect(() => {
+    if (tenant) {
+      console.log('TenantForm: Received tenant data:', tenant)
+      console.log('TenantForm: Leases array:', tenant.leases)
+      
+      // Get lease information from the first active lease
+      const activeLease = tenant.leases?.[0]
+      console.log('TenantForm: Active lease:', activeLease)
+      
+      reset({
+        property_id: tenant.property_id || undefined,
+        first_name: tenant.first_name,
+        last_name: tenant.last_name,
+        email: tenant.email || undefined,
+        phone: tenant.phone || undefined,
+        emergency_contact_name: tenant.emergency_contact_name || undefined,
+        emergency_contact_phone: tenant.emergency_contact_phone || undefined,
+        lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
+        lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
+        monthly_rent: activeLease?.rent || tenant.monthly_rent || undefined,
+        security_deposit: tenant.security_deposit || undefined,
+        rent_cadence: activeLease?.rent_cadence || undefined,
+        notes: tenant.notes || undefined,
+      })
+    }
+  }, [tenant, reset])
 
   const loadProperties = async () => {
     try {
@@ -215,17 +228,6 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Move-in Date
-              </label>
-              <input
-                {...register('move_in_date')}
-                type="date"
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Lease Start Date
               </label>
               <input
@@ -270,6 +272,18 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
                 className="input"
                 placeholder="0.00"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rent Cadence
+              </label>
+              <select {...register('rent_cadence')} className="input">
+                <option value="">Select rent cadence</option>
+                <option value="weekly">Weekly</option>
+                <option value="bi-weekly">Bi-weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
             </div>
 
             {/* Emergency Contact */}

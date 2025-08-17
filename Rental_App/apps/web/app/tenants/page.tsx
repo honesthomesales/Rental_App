@@ -11,6 +11,7 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
     loadTenants()
@@ -110,9 +111,34 @@ export default function TenantsPage() {
                 <p className="text-sm text-gray-600">Total Tenants</p>
                 <p className="text-2xl font-bold text-primary-600">{tenants.length}</p>
               </div>
+              
+              {/* View Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Grid View
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  List View
+                </button>
+              </div>
+              
               <Link
                 href="/tenants/new"
-                className="btn btn-primary"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Tenant
@@ -143,7 +169,7 @@ export default function TenantsPage() {
           </div>
         </div>
 
-        {/* Tenants Grid */}
+        {/* Tenants Display */}
         {filteredTenants.length === 0 ? (
           <div className="card">
             <div className="card-content text-center py-12">
@@ -158,7 +184,7 @@ export default function TenantsPage() {
                 }
               </p>
               {!searchTerm && (
-                <Link href="/tenants/new" className="btn btn-primary">
+                <Link href="/tenants/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Tenant
                 </Link>
@@ -166,74 +192,181 @@ export default function TenantsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTenants.map((tenant) => (
-              <div key={tenant.id} className="card hover:shadow-lg transition-shadow">
-                <div className="card-content">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {tenant.first_name} {tenant.last_name}
-                      </h3>
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
-                          {getLateStatusLabel(tenant.late_status)}
-                        </span>
+          <>
+            {/* Grid View */}
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTenants.map((tenant) => (
+                  <div key={tenant.id} className="card hover:shadow-lg transition-shadow">
+                    <div className="card-content">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {tenant.first_name} {tenant.last_name}
+                          </h3>
+                          <div className="flex items-center text-sm text-gray-500 mb-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+                              {getLateStatusLabel(tenant.late_status)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        {tenant.phone && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Phone className="w-4 h-4 mr-2" />
+                            {tenant.phone}
+                          </div>
+                        )}
+                        {tenant.email && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Mail className="w-4 h-4 mr-2" />
+                            {tenant.email}
+                          </div>
+                        )}
+                        {tenant.properties && (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Property:</span> {tenant.properties.name}
+                          </div>
+                        )}
+                        {tenant.leases && tenant.leases.length > 0 && (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
+                          </div>
+                        )}
+                        {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Lease Start:</span> {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <Link
+                          href={`/tenants/${tenant.id}`}
+                          className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(tenant.id)}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  <div className="space-y-2 mb-4">
-                    {tenant.phone && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="w-4 h-4 mr-2" />
-                        {tenant.phone}
-                      </div>
-                    )}
-                    {tenant.email && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="w-4 h-4 mr-2" />
-                        {tenant.email}
-                      </div>
-                    )}
-                    {tenant.monthly_rent && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        ${tenant.monthly_rent.toLocaleString()}/month
-                      </div>
-                    )}
-                    {tenant.move_in_date && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Moved in: {new Date(tenant.move_in_date).toLocaleDateString()}
-                      </div>
-                    )}
-                    {tenant.properties && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">Property:</span> {tenant.properties.name}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Link
-                      href={`/tenants/${tenant.id}`}
-                      className="btn btn-sm btn-secondary flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(tenant.id)}
-                      className="btn btn-sm btn-danger"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+            {/* List View */}
+            {viewMode === 'list' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-full">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tenant
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Property
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Rent
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredTenants.map((tenant) => (
+                        <tr key={tenant.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {tenant.first_name} {tenant.last_name}
+                              </div>
+                              {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
+                                <div className="text-xs text-gray-500">
+                                  Since: {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="text-sm text-gray-900 space-y-1">
+                              {tenant.phone && (
+                                <div className="flex items-center">
+                                  <Phone className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate max-w-32">{tenant.phone}</span>
+                                </div>
+                              )}
+                              {tenant.email && (
+                                <div className="flex items-center">
+                                  <Mail className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate max-w-40">{tenant.email}</span>
+                                </div>
+                              )}
+                              {!tenant.phone && !tenant.email && (
+                                <span className="text-gray-500">No contact info</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            <div className="truncate max-w-32">
+                              {tenant.properties?.name || 'No property assigned'}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            {tenant.leases && tenant.leases.length > 0 
+                              ? `$${tenant.leases[0].rent.toLocaleString()}/month` 
+                              : tenant.monthly_rent 
+                                ? `$${tenant.monthly_rent.toLocaleString()}/month` 
+                                : 'Not set'}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+                              {getLateStatusLabel(tenant.late_status)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <Link
+                                href={`/tenants/${tenant.id}`}
+                                className="text-blue-600 hover:text-blue-900 flex items-center"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                              </Link>
+                              <button
+                                onClick={() => handleDelete(tenant.id)}
+                                className="text-red-600 hover:text-red-900 flex items-center"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

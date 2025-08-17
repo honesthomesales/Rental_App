@@ -1,5 +1,5 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
-import type { Tenant, CreateTenantData, UpdateTenantData, ApiResponse, PaginatedResponse } from '../types';
+import type { Tenant, CreateTenantData, UpdateTenantData, ApiResponse, PaginatedResponse, LateTenant, Property } from '../types';
 
 export class TenantsService {
   /**
@@ -13,12 +13,8 @@ export class TenantsService {
     try {
       const supabase = getSupabaseClient();
       let query = supabase
-        .from('tenants')
-        .select(`
-          *,
-          properties(name, address, notes, monthly_rent),
-          leases(lease_start_date, lease_end_date, rent, rent_cadence, move_in_fee, late_fee_amount, status, notes)
-        `)
+        .from('RENT_tenants')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (filters?.property_id) {
@@ -33,13 +29,42 @@ export class TenantsService {
         query = query.eq('late_status', filters.late_status);
       }
 
-      const { data, error } = await query;
+      const { data: tenants, error } = await query;
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant[]);
+      // Fetch properties and leases separately
+      const tenantsWithRelations = await Promise.all(
+        (tenants as Tenant[]).map(async (tenant) => {
+          // Fetch property
+          let property: any = null;
+          if (tenant.property_id) {
+            const { data: propData } = await supabase
+              .from('RENT_properties')
+              .select('id, name, address, notes, monthly_rent')
+              .eq('id', tenant.property_id)
+              .single();
+            property = propData;
+          }
+
+          // Fetch leases
+          const { data: leasesData } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('lease_start_date', { ascending: false });
+
+          return {
+            ...tenant,
+            properties: property,
+            leases: leasesData || []
+          } as Tenant;
+        })
+      );
+
+      return createApiResponse(tenantsWithRelations);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -51,9 +76,9 @@ export class TenantsService {
   static async getById(id: string): Promise<ApiResponse<Tenant>> {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*, properties(name, address, notes, monthly_rent)')
+      const { data: tenant, error } = await supabase
+        .from('RENT_tenants')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -61,7 +86,31 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant);
+      // Fetch property
+      let property: any = null;
+      if (tenant.property_id) {
+        const { data: propData } = await supabase
+          .from('RENT_properties')
+          .select('id, name, address, notes, monthly_rent')
+          .eq('id', tenant.property_id)
+          .single();
+        property = propData;
+      }
+
+      // Fetch leases
+      const { data: leasesData } = await supabase
+        .from('RENT_leases')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .order('lease_start_date', { ascending: false });
+
+      const tenantWithRelations = {
+        ...tenant,
+        properties: property,
+        leases: leasesData || []
+      } as Tenant;
+
+      return createApiResponse(tenantWithRelations);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -74,16 +123,59 @@ export class TenantsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('tenants')
+        .from('RENT_tenants')
         .insert([tenantData])
-        .select('*, properties(name, address, notes, monthly_rent)')
+        .select('*')
         .single();
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant);
+      // Create lease if rent_cadence is provided
+      if (tenantData.rent_cadence && data.property_id) {
+        const leaseData = {
+          tenant_id: data.id,
+          property_id: data.property_id,
+          lease_start_date: tenantData.lease_start_date || new Date().toISOString(),
+          lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          rent: tenantData.monthly_rent || 0,
+          rent_cadence: tenantData.rent_cadence,
+          move_in_fee: 0,
+          late_fee_amount: 50,
+          status: 'active'
+        };
+
+        await supabase
+          .from('RENT_leases')
+          .insert([leaseData]);
+      }
+
+      // Fetch property data separately
+      let property: any = null;
+      if (data.property_id) {
+        const { data: propData } = await supabase
+          .from('RENT_properties')
+          .select('id, name, address, notes, monthly_rent')
+          .eq('id', data.property_id)
+          .single();
+        property = propData;
+      }
+
+      // Fetch leases
+      const { data: leasesData } = await supabase
+        .from('RENT_leases')
+        .select('*')
+        .eq('tenant_id', data.id)
+        .order('lease_start_date', { ascending: false });
+
+      const tenantWithRelations = {
+        ...data,
+        properties: property,
+        leases: leasesData || []
+      };
+
+      return createApiResponse(tenantWithRelations as Tenant);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -96,17 +188,82 @@ export class TenantsService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('tenants')
+        .from('RENT_tenants')
         .update(tenantData)
         .eq('id', id)
-        .select('*, properties(name, address, notes, monthly_rent)')
+        .select('*')
         .single();
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant);
+      // Update lease if rent_cadence is provided
+      if (tenantData.rent_cadence && data.property_id) {
+        // Check if lease exists
+        const { data: existingLease } = await supabase
+          .from('RENT_leases')
+          .select('id, lease_start_date, lease_end_date')
+          .eq('tenant_id', data.id)
+          .eq('status', 'active')
+          .single();
+
+        if (existingLease) {
+          // Update existing lease
+          await supabase
+            .from('RENT_leases')
+            .update({
+              rent_cadence: tenantData.rent_cadence,
+              rent: tenantData.monthly_rent || 0,
+              lease_start_date: tenantData.lease_start_date || existingLease.lease_start_date,
+              lease_end_date: tenantData.lease_end_date || existingLease.lease_end_date
+            })
+            .eq('id', existingLease.id);
+        } else {
+          // Create new lease
+          const leaseData = {
+            tenant_id: data.id,
+            property_id: data.property_id,
+            lease_start_date: tenantData.lease_start_date || new Date().toISOString(),
+            lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+            rent: tenantData.monthly_rent || 0,
+            rent_cadence: tenantData.rent_cadence,
+            move_in_fee: 0,
+            late_fee_amount: 50,
+            status: 'active'
+          };
+
+          await supabase
+            .from('RENT_leases')
+            .insert([leaseData]);
+        }
+      }
+
+      // Fetch property data separately
+      let property: any = null;
+      if (data.property_id) {
+        const { data: propData } = await supabase
+          .from('RENT_properties')
+          .select('id, name, address, notes, monthly_rent')
+          .eq('id', data.property_id)
+          .single();
+        property = propData;
+      }
+
+      // Fetch leases
+      const { data: leasesData } = await supabase
+        .from('RENT_leases')
+        .select('*')
+        .eq('tenant_id', data.id)
+        .order('lease_start_date', { ascending: false });
+
+      const tenantWithRelations = {
+        ...data,
+        properties: property,
+        leases: leasesData || []
+      };
+
+      return createApiResponse(tenantWithRelations as Tenant);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -119,7 +276,7 @@ export class TenantsService {
     try {
       const supabase = getSupabaseClient();
       const { error } = await supabase
-        .from('tenants')
+        .from('RENT_tenants')
         .delete()
         .eq('id', id);
 
@@ -150,8 +307,8 @@ export class TenantsService {
       const offset = (page - 1) * limit;
 
       let query = supabase
-        .from('tenants')
-        .select('*, properties(name, address)', { count: 'exact' })
+        .from('RENT_tenants')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -167,24 +324,48 @@ export class TenantsService {
         query = query.eq('late_status', filters.late_status);
       }
 
-      const { data, error, count } = await query;
+      const { data: tenants, error, count } = await query;
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      const total = count || 0;
-      const hasMore = offset + limit < total;
+      // Fetch properties and leases separately
+      const tenantsWithRelations = await Promise.all(
+        (tenants as Tenant[]).map(async (tenant) => {
+          // Fetch property
+          let property: any = null;
+          if (tenant.property_id) {
+            const { data: propData } = await supabase
+              .from('RENT_properties')
+              .select('id, name, address')
+              .eq('id', tenant.property_id)
+              .single();
+            property = propData;
+          }
 
-      const response: PaginatedResponse<Tenant> = {
-        data: data as Tenant[],
-        total,
+          // Fetch leases
+          const { data: leasesData } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('lease_start_date', { ascending: false });
+
+          return {
+            ...tenant,
+            properties: property,
+            leases: leasesData || []
+          };
+        })
+      );
+
+      return createApiResponse({
+        data: tenantsWithRelations,
+        total: count || 0,
         page,
         limit,
-        hasMore
-      };
-
-      return createApiResponse(response);
+        hasMore: offset + limit < (count || 0)
+      });
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -196,9 +377,9 @@ export class TenantsService {
   static async search(searchTerm: string): Promise<ApiResponse<Tenant[]>> {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*, properties(name, address)')
+      const { data: tenants, error } = await supabase
+        .from('RENT_tenants')
+        .select('*')
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false });
 
@@ -206,7 +387,36 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant[]);
+      // Fetch properties and leases separately
+      const tenantsWithRelations = await Promise.all(
+        (tenants as Tenant[]).map(async (tenant) => {
+          // Fetch property
+          let property: any = null;
+          if (tenant.property_id) {
+            const { data: propData } = await supabase
+              .from('RENT_properties')
+              .select('id, name, address')
+              .eq('id', tenant.property_id)
+              .single();
+            property = propData;
+          }
+
+          // Fetch leases
+          const { data: leasesData } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('lease_start_date', { ascending: false });
+
+          return {
+            ...tenant,
+            properties: property,
+            leases: leasesData || []
+          };
+        })
+      );
+
+      return createApiResponse(tenantsWithRelations);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -225,9 +435,9 @@ export class TenantsService {
   static async getLate(): Promise<ApiResponse<Tenant[]>> {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*, properties(name, address)')
+      const { data: tenants, error } = await supabase
+        .from('RENT_tenants')
+        .select('*')
         .neq('late_status', 'on_time')
         .order('created_at', { ascending: false });
 
@@ -235,7 +445,36 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant[]);
+      // Fetch properties and leases separately
+      const tenantsWithRelations = await Promise.all(
+        (tenants as Tenant[]).map(async (tenant) => {
+          // Fetch property
+          let property: any = null;
+          if (tenant.property_id) {
+            const { data: propData } = await supabase
+              .from('RENT_properties')
+              .select('id, name, address')
+              .eq('id', tenant.property_id)
+              .single();
+            property = propData;
+          }
+
+          // Fetch leases
+          const { data: leasesData } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('lease_start_date', { ascending: false });
+
+          return {
+            ...tenant,
+            properties: property,
+            leases: leasesData || []
+          };
+        })
+      );
+
+      return createApiResponse(tenantsWithRelations);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -262,8 +501,8 @@ export class TenantsService {
       
       // First, get the current tenant with property information
       const { data: currentTenant, error: getError } = await supabase
-        .from('tenants')
-        .select('*, properties(name, address, notes, monthly_rent)')
+        .from('RENT_tenants')
+        .select('*')
         .eq('id', tenantId)
         .single();
 
@@ -273,6 +512,17 @@ export class TenantsService {
 
       if (!currentTenant) {
         return createApiResponse(null, 'Tenant not found');
+      }
+
+      // Fetch property data separately
+      let property: any = null;
+      if (currentTenant.property_id) {
+        const { data: propData } = await supabase
+          .from('RENT_properties')
+          .select('id, name, address, notes, monthly_rent')
+          .eq('id', currentTenant.property_id)
+          .single();
+        property = propData;
       }
 
       // Update payment history
@@ -289,13 +539,13 @@ export class TenantsService {
       let newLateStatus: 'on_time' | 'late_5_days' | 'late_10_days' | 'eviction_notice' = 'on_time';
       let newLateFeesOwed = 0;
 
-      if (currentTenant.properties && currentTenant.lease_start_date) {
+      if (property && currentTenant.lease_start_date) {
         const tenantWithUpdatedHistory = {
           ...currentTenant,
           payment_history: updatedPaymentHistory
         };
         
-        const latePaymentInfo = this.calculateTotalLatePayments(tenantWithUpdatedHistory, currentTenant.properties);
+        const latePaymentInfo = this.calculateTotalLatePayments(tenantWithUpdatedHistory, property);
         
         if (latePaymentInfo.totalDue > 0) {
           newLateFeesOwed = latePaymentInfo.totalLateFees;
@@ -312,7 +562,7 @@ export class TenantsService {
 
       // Update tenant with new payment history and calculated late status
       const { data, error } = await supabase
-        .from('tenants')
+        .from('RENT_tenants')
         .update({
           payment_history: updatedPaymentHistory,
           last_payment_date: paymentData.payment_date,
@@ -320,7 +570,7 @@ export class TenantsService {
           late_status: newLateStatus
         })
         .eq('id', tenantId)
-        .select('*, properties(name, address, notes, monthly_rent)')
+        .select('*, RENT_properties(name, address, notes, monthly_rent)')
         .single();
 
       if (error) {
@@ -334,49 +584,227 @@ export class TenantsService {
   }
 
   /**
-   * Get late tenants with detailed information using new pay period calculation
+   * Get late tenants with detailed information using existing database structure
    */
-  static async getLateTenants(): Promise<ApiResponse<Tenant[]>> {
+  static async getLateTenants(): Promise<ApiResponse<LateTenant[]>> {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('tenants')
-        .select(`
-          *,
-          properties (
-            id,
-            name,
-            address,
-            city,
-            state,
-            zip_code,
-            property_type,
-            monthly_rent,
-            notes
-          )
-        `)
+      const { data: tenants, error } = await supabase
+        .from('RENT_tenants')
+        .select('*')
+        .eq('is_active', true) // Only check active tenants
         .order('created_at', { ascending: false });
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // Calculate late tenants using new pay period logic
-      const lateTenants = (data as Tenant[]).filter(tenant => {
-        if (!tenant.properties || !tenant.lease_start_date) return false;
-        return this.isTenantLate(tenant, tenant.properties);
-      }).map(tenant => {
-        const latePaymentInfo = this.calculateTotalLatePayments(tenant, tenant.properties);
+      // Fetch properties, leases, and payments for each tenant
+      const tenantsWithRelations = await Promise.all(
+        (tenants as Tenant[]).map(async (tenant) => {
+          // Fetch property
+          let property: any = null;
+          if (tenant.property_id) {
+            const { data: propData } = await supabase
+              .from('RENT_properties')
+              .select('id, name, address, city, state, zip_code, property_type, monthly_rent, notes')
+              .eq('id', tenant.property_id)
+              .single();
+            property = propData;
+          }
+
+          // Fetch active leases
+          const { data: leasesData } = await supabase
+            .from('RENT_leases')
+            .select('id, lease_start_date, lease_end_date, rent, rent_cadence, status')
+            .eq('tenant_id', tenant.id)
+            .eq('status', 'active')
+            .order('lease_start_date', { ascending: false });
+
+          // Fetch actual payments from RENT_payments table
+          const { data: paymentsData } = await supabase
+            .from('RENT_payments')
+            .select('id, amount, payment_date, payment_type')
+            .eq('tenant_id', tenant.id)
+            .order('payment_date', { ascending: false });
+
+          return {
+            ...tenant,
+            properties: property,
+            leases: leasesData || [],
+            actualPayments: paymentsData || []
+          } as Tenant & { 
+            actualPayments: any[] 
+          };
+        })
+      );
+
+      // Calculate late tenants using lease start dates and payments
+      const lateTenants: LateTenant[] = [];
+      
+      for (const tenant of tenantsWithRelations) {
+        if (!tenant.properties || !tenant.leases || tenant.leases.length === 0) {
+          continue;
+        }
         
-        return {
-          ...tenant,
-          total_due: latePaymentInfo.totalDue,
-          total_late_fees: latePaymentInfo.totalLateFees,
-          total_outstanding: latePaymentInfo.totalOutstanding,
-          late_periods: latePaymentInfo.latePeriods,
-          days_late: this.calculateDaysLate(tenant.last_payment_date)
-        };
-      });
+        const activeLease = tenant.leases[0];
+        if (!activeLease.lease_start_date || !activeLease.rent) {
+          continue;
+        }
+
+        // Validate lease start date is not in the future
+        const leaseStart = new Date(activeLease.lease_start_date);
+        const today = new Date();
+        if (leaseStart > today) {
+          continue;
+        }
+
+        // Validate rent amount is positive
+        if (activeLease.rent <= 0) {
+          continue;
+        }
+
+        // Calculate based on lease start date and payments
+        const daysSinceStart = Math.floor((today.getTime() - leaseStart.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Skip if lease started less than 7 days ago (too early to be late)
+        if (daysSinceStart < 7) {
+          continue;
+        }
+        
+        // Check for extremely old lease start dates (more than 10 years) that might indicate data issues
+        if (daysSinceStart > 3650) {
+          continue;
+        }
+        
+        // Calculate expected payments based on rent cadence
+        const rentCadence = activeLease.rent_cadence || 'monthly';
+        let expectedPayments = 0;
+        let daysPerPeriod = 30;
+        
+        switch (rentCadence.toLowerCase().trim()) {
+          case 'weekly':
+            expectedPayments = Math.ceil(daysSinceStart / 7);
+            daysPerPeriod = 7;
+            break;
+          case 'bi-weekly':
+          case 'biweekly':
+          case 'bi_weekly':
+            expectedPayments = Math.ceil(daysSinceStart / 14);
+            daysPerPeriod = 14;
+            break;
+          case 'monthly':
+          default:
+            expectedPayments = Math.ceil(daysSinceStart / 30);
+            daysPerPeriod = 30;
+            break;
+        }
+        
+        // Calculate total expected rent
+        const totalExpectedRent = activeLease.rent * expectedPayments;
+        
+        // Calculate total payments received
+        const totalPaymentsReceived = (tenant.actualPayments || []).reduce((sum, payment) => sum + payment.amount, 0);
+        
+        // More sophisticated check: analyze payment timing vs expected due dates
+        let isActuallyLate = false;
+        let totalDue = 0;
+        let latePeriods = 0;
+        let daysLate = 0;
+        
+        // Simple but effective check: if total payments < expected rent, tenant is late
+        if (totalPaymentsReceived < totalExpectedRent) {
+          isActuallyLate = true;
+          totalDue = totalExpectedRent - totalPaymentsReceived;
+          
+          // Calculate how many periods they're behind
+          const amountPerPeriod = activeLease.rent;
+          const periodsBehind = Math.ceil(totalDue / amountPerPeriod);
+          latePeriods = periodsBehind;
+          
+          // Calculate days late based on when they should have made their last payment
+          if (expectedPayments > 0) {
+            // Calculate when the last expected payment should have been made
+            const lastExpectedPaymentDate = new Date(leaseStart);
+            lastExpectedPaymentDate.setDate(lastExpectedPaymentDate.getDate() + (daysPerPeriod * (expectedPayments - 1)));
+            
+            // Add grace period (5 days)
+            const gracePeriodEnd = new Date(lastExpectedPaymentDate);
+            gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 5);
+            
+            // Calculate days late from the grace period end
+            if (today > gracePeriodEnd) {
+              daysLate = Math.floor((today.getTime() - gracePeriodEnd.getTime()) / (1000 * 60 * 60 * 24));
+            } else {
+              // If they're within grace period, calculate days since last expected payment
+              daysLate = Math.floor((today.getTime() - lastExpectedPaymentDate.getTime()) / (1000 * 60 * 60 * 24));
+              if (daysLate < 0) daysLate = 0; // Don't show negative days
+            }
+          }
+        } else {
+          // Even if they have enough total payments, check if they're paying on time
+          // This catches tenants who pay late but eventually catch up
+          const payments = (tenant.actualPayments || []).sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
+          
+          if (payments.length > 0) {
+            // Check the most recent payment period
+            const lastPayment = payments[payments.length - 1];
+            const lastPaymentDate = new Date(lastPayment.payment_date);
+            
+            // Calculate when the last expected payment should have been made
+            const lastExpectedPaymentDate = new Date(leaseStart);
+            lastExpectedPaymentDate.setDate(lastExpectedPaymentDate.getDate() + (daysPerPeriod * (expectedPayments - 1)));
+            
+            // Add grace period (5 days)
+            const gracePeriodEnd = new Date(lastExpectedPaymentDate);
+            gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 5);
+            
+            // If last payment was after grace period, tenant is late
+            if (lastPaymentDate > gracePeriodEnd) {
+              isActuallyLate = true;
+              totalDue = activeLease.rent; // They owe the current period
+              latePeriods = 1;
+              daysLate = Math.floor((today.getTime() - gracePeriodEnd.getTime()) / (1000 * 60 * 60 * 24));
+            }
+          }
+        }
+        
+        if (isActuallyLate) {
+          // Calculate late fees
+          let lateFeePerPeriod = 0;
+          switch (rentCadence.toLowerCase().trim()) {
+            case 'weekly':
+              lateFeePerPeriod = 10;
+              break;
+            case 'bi-weekly':
+            case 'biweekly':
+            case 'bi_weekly':
+              lateFeePerPeriod = 20;
+              break;
+            case 'monthly':
+            default:
+              lateFeePerPeriod = 50;
+              break;
+          }
+          
+          const totalLateFees = lateFeePerPeriod * latePeriods;
+          
+          // Create proper LateTenant object
+          const lateTenant: LateTenant = {
+            ...tenant,
+            properties: tenant.properties as Property,
+            total_due: totalDue,
+            total_late_fees: totalLateFees,
+            total_outstanding: totalDue,
+            late_periods: latePeriods,
+            days_late: Math.max(0, daysLate)
+          };
+          
+          lateTenants.push(lateTenant);
+        } else {
+          // Tenant is current
+        }
+      }
 
       return createApiResponse(lateTenants);
     } catch (error) {
@@ -408,6 +836,206 @@ export class TenantsService {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays;
+  }
+
+  /**
+   * Calculate late periods based on days late and rent cadence
+   */
+  static calculateLatePeriods(tenant: Tenant, daysLate: number): number {
+    if (!tenant.leases || tenant.leases.length === 0) return 0;
+    
+    const cadence = tenant.leases[0].rent_cadence || 'monthly';
+    const normalizedCadence = cadence.toLowerCase().trim();
+    
+    switch (normalizedCadence) {
+      case 'weekly':
+        return Math.ceil(daysLate / 7);
+      case 'bi-weekly':
+      case 'biweekly':
+      case 'bi_weekly':
+        return Math.ceil(daysLate / 14);
+      case 'monthly':
+      default:
+        return Math.ceil(daysLate / 30);
+    }
+  }
+
+  /**
+   * Calculate late fees based on late periods and rent cadence
+   */
+  static calculateLateFees(tenant: Tenant, latePeriods: number): number {
+    if (!tenant.leases || tenant.leases.length === 0) return 0;
+    
+    const cadence = tenant.leases[0].rent_cadence || 'monthly';
+    const normalizedCadence = cadence.toLowerCase().trim();
+    
+    let lateFeePerPeriod = 0;
+    switch (normalizedCadence) {
+      case 'weekly':
+        lateFeePerPeriod = 10;
+        break;
+      case 'bi-weekly':
+      case 'biweekly':
+      case 'bi_weekly':
+        lateFeePerPeriod = 20;
+        break;
+      case 'monthly':
+      default:
+        lateFeePerPeriod = 50;
+        break;
+    }
+    
+    return latePeriods * lateFeePerPeriod;
+  }
+
+  /**
+   * Calculate total due including late fees
+   */
+  static calculateTotalDueWithLateFees(tenant: Tenant, lateFees: number): number {
+    const baseRent = tenant.leases && tenant.leases.length > 0 
+      ? tenant.leases[0].rent 
+      : tenant.monthly_rent || 0;
+    
+    return baseRent + lateFees;
+  }
+
+  /**
+   * Calculate what a tenant actually owes using the currently_paid_up_date
+   * This is the new improved calculation system
+   */
+  static calculateTenantOwedAmount(tenant: Tenant): {
+    totalOwed: number;
+    totalLateFees: number;
+    missedPeriods: number;
+    missedPayments: Array<{
+      dueDate: Date;
+      amount: number;
+      isLate: boolean;
+      lateFee: number;
+    }>;
+  } {
+    if (!tenant.leases || tenant.leases.length === 0) {
+      return {
+        totalOwed: 0,
+        totalLateFees: 0,
+        missedPeriods: 0,
+        missedPayments: []
+      };
+    }
+
+    const activeLease = tenant.leases[0];
+    const rentAmount = activeLease.rent || tenant.monthly_rent || 0;
+    const rentCadence = activeLease.rent_cadence || 'monthly';
+    
+    // Use currently_paid_up_date if available, otherwise fall back to last_payment_date
+    const paidUpDate = tenant.currently_paid_up_date 
+      ? new Date(tenant.currently_paid_up_date)
+      : tenant.last_payment_date 
+        ? new Date(tenant.last_payment_date)
+        : new Date(activeLease.lease_start_date);
+
+    const today = new Date();
+    let currentDate = new Date(paidUpDate);
+    let totalOwed = 0;
+    let totalLateFees = 0;
+    let missedPeriods = 0;
+    const missedPayments: Array<{
+      dueDate: Date;
+      amount: number;
+      isLate: boolean;
+      lateFee: number;
+    }> = [];
+
+    // Calculate missed payments from paid up date to today
+    while (currentDate <= today) {
+      const dueDate = new Date(currentDate);
+      const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const isLate = daysLate > 5;
+      const lateFee = isLate ? this.getLateFeeAmount(rentCadence) : 0;
+      
+      totalOwed += rentAmount + lateFee;
+      totalLateFees += lateFee;
+      missedPeriods++;
+      
+      missedPayments.push({
+        dueDate,
+        amount: rentAmount,
+        isLate,
+        lateFee
+      });
+
+      // Move to next payment date based on cadence
+      switch (rentCadence.toLowerCase().trim()) {
+        case 'weekly':
+          currentDate.setDate(currentDate.getDate() + 7);
+          break;
+        case 'bi-weekly':
+        case 'biweekly':
+        case 'bi_weekly':
+          currentDate.setDate(currentDate.getDate() + 14);
+          break;
+        case 'monthly':
+        default:
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+      }
+    }
+
+    return {
+      totalOwed,
+      totalLateFees,
+      missedPeriods,
+      missedPayments
+    };
+  }
+
+  /**
+   * Calculate days late from the currently paid up date
+   */
+  static calculateDaysLateFromPaidUpDate(tenant: Tenant): number {
+    if (!tenant.leases || tenant.leases.length === 0) return 0;
+    
+    const activeLease = tenant.leases[0];
+    const rentCadence = activeLease.rent_cadence || 'monthly';
+    
+    // Use currently_paid_up_date if available, otherwise fall back to last_payment_date
+    const paidUpDate = tenant.currently_paid_up_date 
+      ? new Date(tenant.currently_paid_up_date)
+      : tenant.last_payment_date 
+        ? new Date(tenant.last_payment_date)
+        : new Date(activeLease.lease_start_date);
+
+    const today = new Date();
+    let currentDate = new Date(paidUpDate);
+    let totalDaysLate = 0;
+
+    // Calculate total days late by summing up late days for each missed period
+    while (currentDate <= today) {
+      const dueDate = new Date(currentDate);
+      const daysLate = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysLate > 5) {
+        totalDaysLate += daysLate - 5; // Only count days beyond the 5-day grace period
+      }
+
+      // Move to next payment date based on cadence
+      switch (rentCadence.toLowerCase().trim()) {
+        case 'weekly':
+          currentDate.setDate(currentDate.getDate() + 7);
+          break;
+        case 'bi-weekly':
+        case 'biweekly':
+        case 'bi_weekly':
+          currentDate.setDate(currentDate.getDate() + 14);
+          break;
+        case 'monthly':
+        default:
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+      }
+    }
+
+    return totalDaysLate;
   }
 
   /**
@@ -573,7 +1201,7 @@ export class TenantsService {
       outstanding: number;
     }>;
   } {
-    if (!tenant.lease_start_date || !property?.monthly_rent) {
+    if (!tenant.leases || tenant.leases.length === 0) {
       return {
         totalLateFees: 0,
         totalOutstanding: 0,
@@ -583,9 +1211,20 @@ export class TenantsService {
       };
     }
     
-    const cadence = this.extractRentCadence(property.notes);
-    const rentAmount = property.monthly_rent;
-    const expectedDates = this.getLastExpectedPaymentDates(tenant.lease_start_date, cadence, 12);
+    const activeLease = tenant.leases[0]; // Get the first (active) lease
+    if (!activeLease.lease_start_date || !activeLease.rent) {
+      return {
+        totalLateFees: 0,
+        totalOutstanding: 0,
+        totalDue: 0,
+        latePeriods: 0,
+        payPeriods: []
+      };
+    }
+    
+    const cadence = activeLease.rent_cadence || 'monthly';
+    const rentAmount = activeLease.rent;
+    const expectedDates = this.getLastExpectedPaymentDates(activeLease.lease_start_date, cadence, 12);
     
     let totalLateFees = 0;
     let totalOutstanding = 0;
@@ -639,7 +1278,6 @@ export class TenantsService {
     phone?: string;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
-    move_in_date?: string;
     lease_start_date?: string;
     lease_end_date?: string;
     monthly_rent?: number;
@@ -651,7 +1289,7 @@ export class TenantsService {
       
       // First, find the property by address
       const { data: property, error: propertyError } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .select('id, monthly_rent')
         .ilike('address', `%${tenantData.property_address}%`)
         .single();
@@ -669,9 +1307,9 @@ export class TenantsService {
       };
 
       const { data, error } = await supabase
-        .from('tenants')
+        .from('RENT_tenants')
         .insert([tenantDataWithProperty])
-        .select('*, properties(name, address)')
+        .select('*, RENT_properties(name, address)')
         .single();
 
       if (error) {
@@ -695,7 +1333,6 @@ export class TenantsService {
     phone?: string;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
-    move_in_date?: string;
     lease_start_date?: string;
     lease_end_date?: string;
     monthly_rent?: number;

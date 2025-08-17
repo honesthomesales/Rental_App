@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "generate-periods": "node scripts/run-generate-periods.js",
+    "test-late-tenants": "node scripts/test-late-tenants.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",

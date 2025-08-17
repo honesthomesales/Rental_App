@@ -1,0 +1,8 @@
+rootProject.name = 'RentalAppAndroid'
+
+// React Native configuration
+gradle.beforeProject { project ->
+    project.ext.reactNativeDir = file("../node_modules/react-native")
+}
+
+include ':app'

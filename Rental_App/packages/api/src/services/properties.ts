@@ -1,5 +1,6 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Property, CreatePropertyData, UpdatePropertyData, ApiResponse, PaginatedResponse } from '../types';
+import { LeasesService } from './leases';
 
 export class PropertiesService {
   /**
@@ -13,11 +14,39 @@ export class PropertiesService {
   }): Promise<ApiResponse<Property[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      // Build the base query with field selection to reduce payload
       let query = supabase
-        .from('properties')
-        .select('*')
+        .from('RENT_properties')
+        .select(`
+          id,
+          name,
+          address,
+          city,
+          state,
+          zip_code,
+          property_type,
+          status,
+          bedrooms,
+          bathrooms,
+          square_feet,
+          year_built,
+          purchase_price,
+          purchase_payment,
+          purchase_date,
+          current_value,
+          monthly_rent,
+          is_for_rent,
+          is_for_sale,
+          insurance_premium,
+          property_tax,
+          notes,
+          created_at,
+          updated_at
+        `)
         .order('created_at', { ascending: false });
 
+      // Apply filters
       if (filters?.is_for_rent !== undefined) {
         query = query.eq('is_for_rent', filters.is_for_rent);
       }
@@ -34,14 +63,44 @@ export class PropertiesService {
         query = query.eq('state', filters.state);
       }
 
-      const { data, error } = await query;
+      const { data: properties, error } = await query;
 
       if (error) {
+        console.error('PropertiesService.getAll error:', error);
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Property[]);
+      // Get lease status for all properties
+      const leaseStatusResponse = await LeasesService.getAllPropertiesWithLeaseStatus();
+      
+      if (!leaseStatusResponse.success || !leaseStatusResponse.data) {
+        // Return properties without lease status rather than failing completely
+        return createApiResponse(properties as Property[]);
+      }
+
+      const leaseStatusMap = new Map(
+        leaseStatusResponse.data.map(item => [item.property_id, item])
+      );
+
+      // Attach lease status and update property status based on active leases
+      const propertiesWithLeaseStatus = (properties as Property[]).map(property => {
+        const leaseStatus = leaseStatusMap.get(property.id);
+        const hasActiveLeases = leaseStatus?.has_active_lease || false;
+        
+        // Update property status based on active leases
+        const newStatus = hasActiveLeases ? 'rented' : 'empty';
+        
+        return {
+          ...property,
+          status: newStatus as any, // Cast to avoid type issues
+          active_leases: leaseStatus?.active_leases || [],
+          active_lease_count: leaseStatus?.active_lease_count || 0
+        };
+      });
+
+      return createApiResponse(propertiesWithLeaseStatus);
     } catch (error) {
+      console.error('PropertiesService.getAll exception:', error);
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
@@ -53,7 +112,7 @@ export class PropertiesService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .select('*')
         .eq('id', id)
         .single();
@@ -62,7 +121,19 @@ export class PropertiesService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Property);
+      // Fetch tenants for this property (only active ones)
+      const { data: tenantsData } = await supabase
+        .from('RENT_tenants')
+        .select('*')
+        .eq('property_id', id)
+        .eq('is_active', true);
+
+      const propertyWithTenants = {
+        ...data,
+        tenants: tenantsData || []
+      };
+
+      return createApiResponse(propertyWithTenants as Property);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -74,8 +145,9 @@ export class PropertiesService {
   static async create(propertyData: CreatePropertyData): Promise<ApiResponse<Property>> {
     try {
       const supabase = getSupabaseClient();
+      
       const { data, error } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .insert([propertyData])
         .select()
         .single();
@@ -99,7 +171,7 @@ export class PropertiesService {
       const { id, ...updateData } = propertyData;
 
       const { data, error } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -122,7 +194,7 @@ export class PropertiesService {
     try {
       const supabase = getSupabaseClient();
       const { error } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .delete()
         .eq('id', id);
 
@@ -154,7 +226,7 @@ export class PropertiesService {
       const offset = (page - 1) * limit;
 
       let query = supabase
-        .from('properties')
+        .from('RENT_properties')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
@@ -181,11 +253,26 @@ export class PropertiesService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
+      // Fetch tenants for each property
+      const propertiesWithTenants = await Promise.all(
+        (data as Property[]).map(async (property) => {
+          const { data: tenantsData } = await supabase
+            .from('RENT_tenants')
+            .select('*')
+            .eq('property_id', property.id);
+          
+          return {
+            ...property,
+            tenants: tenantsData || []
+          };
+        })
+      );
+
       const total = count || 0;
       const hasMore = offset + limit < total;
 
       const response: PaginatedResponse<Property> = {
-        data: data as Property[],
+        data: propertiesWithTenants,
         total,
         page,
         limit,
@@ -205,7 +292,7 @@ export class PropertiesService {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from('properties')
+        .from('RENT_properties')
         .select('*')
         .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false });
@@ -214,7 +301,22 @@ export class PropertiesService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Property[]);
+      // Fetch tenants for each property
+      const propertiesWithTenants = await Promise.all(
+        (data as Property[]).map(async (property) => {
+          const { data: tenantsData } = await supabase
+            .from('RENT_tenants')
+            .select('*')
+            .eq('property_id', property.id);
+          
+          return {
+            ...property,
+            tenants: tenantsData || []
+          };
+        })
+      );
+
+      return createApiResponse(propertiesWithTenants);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
