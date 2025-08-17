@@ -31,8 +31,24 @@
     @apply px-3 py-1.5 text-xs;
   }
 
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
   .card {
     @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200;
+  }
+
+  .card-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+
+  .card-description {
+    @apply text-sm text-gray-600 mt-1;
   }
 
   .card-content {
