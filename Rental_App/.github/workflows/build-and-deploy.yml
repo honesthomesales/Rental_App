@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -10,50 +10,36 @@ permissions:
   id-token: write
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Setup Node.js
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd apps/web
-          npm install
-          
-      - name: Build Next.js app
+          node-version: 18
+
+      - name: Install deps
         working-directory: apps/web
-        run: |
-          npm run build:static
-          echo "Build completed. Files in out/:"
-          ls -la out/
-          
-      - name: Copy root index.html to build output
+        run: npm ci
+
+      - name: Build static
         working-directory: apps/web
+        run: npm run build:static
+
+      - name: VERIFY: out directory contents
         run: |
-          cp public/index.html out/
-          echo "Root index.html copied to build output"
-          
-      - name: Verify build output structure
-        working-directory: apps/web
-        run: |
-          echo "Final build output structure:"
-          ls -la out/
-          echo "Root index.html exists:"
-          ls -la out/index.html
-          echo "404.html exists:"
-          ls -la out/404.html
-          echo "Rental_App directory exists:"
-          ls -la out/Rental_App/
-          
-      - name: Upload artifact
+          echo "Listing apps/web/out:"
+          ls -lah apps/web/out || true
+          echo "Ensure index.html exists:"
+          test -f apps/web/out/index.html || (echo "ERROR: apps/web/out/index.html missing"; exit 1)
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact (apps/web/out)
         uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/out
