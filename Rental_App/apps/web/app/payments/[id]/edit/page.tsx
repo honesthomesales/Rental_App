@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import EditTransactionClient from './EditTransactionClient'
 
 export async function generateStaticParams() {
-  return []
+  return [{ id: 'example-id' }]
 }
 
 export default function EditTransactionPage({ params }: { params: { id: string } }) {

@@ -2,7 +2,7 @@
 import PaymentDetailClient from './PaymentDetailClient'
 
 export async function generateStaticParams() {
-  return []
+  return [{ id: 'example-id' }]
 }
 
 export default function PaymentDetailPage({ params }: { params: { id: string } }) {

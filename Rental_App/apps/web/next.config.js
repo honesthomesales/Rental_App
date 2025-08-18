@@ -11,12 +11,11 @@ const nextConfig = {
   assetPrefix: '/Rental_App/',
   trailingSlash: true,
   distDir: 'out',
+  
+  // Generate build ID for static export
   generateBuildId: async () => {
     return 'build'
   },
-  
-  // Handle dynamic routes for static export
-  trailingSlash: true,
   
   // Performance optimizations
   compress: true,

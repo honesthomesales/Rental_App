@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import TenantDetailClient from './TenantDetailClient'
 
 export async function generateStaticParams() {
-  return []
+  return [{ id: 'example-id' }]
 }
 
 export default function TenantDetailPage({ params }: { params: { id: string } }) {
