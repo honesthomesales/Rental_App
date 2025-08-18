@@ -24,16 +24,26 @@ jobs:
           
       - name: Install dependencies
         run: |
-          cd apps/web
           npm ci
+          cd apps/web
+          npm install
           
       - name: Build Next.js app
         run: |
           cd apps/web
           npm run build:static
-          ls -la out/
           echo "Build completed. Files in out/:"
-          find out/ -type f | head -20
+          ls -la out/
+          echo "Checking for index.html:"
+          find out/ -name "index.html" -type f
+          echo "Checking for 404.html:"
+          find out/ -name "404.html" -type f
+          
+      - name: Copy root index.html
+        run: |
+          cd apps/web
+          cp public/index.html out/
+          echo "Root index.html copied to out/"
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
