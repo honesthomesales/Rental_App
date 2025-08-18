@@ -1,5 +1,6 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Transaction, CreateTransactionData, UpdateTransactionData, ApiResponse, PaginatedResponse } from '../types';
+import type { TransactionUI } from '../types/ui';
 
 export class TransactionsService {
   /**
@@ -59,7 +60,7 @@ export class TransactionsService {
   /**
    * Get a transaction by ID
    */
-  static async getById(id: string): Promise<ApiResponse<Transaction>> {
+  static async getById(id: string): Promise<ApiResponse<TransactionUI<Transaction>>> {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
@@ -72,7 +73,7 @@ export class TransactionsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Transaction);
+      return createApiResponse(data as TransactionUI<Transaction>);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }

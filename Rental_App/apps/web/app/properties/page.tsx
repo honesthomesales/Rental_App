@@ -35,82 +35,6 @@ export default function PropertiesPage() {
       const response = await PropertiesService.getAll()
       
       if (response.success && response.data) {
-        
-
-        
-
-        
-        // Check for 1044 Howard property specifically
-        const howardProperty = response.data.find(p => p.name.includes('1044 Howard') || p.address.includes('1044 Howard'))
-        if (howardProperty) {
-          console.log('🔍 1044 Howard property details:', howardProperty)
-          console.log('📋 Status:', howardProperty.status)
-          console.log('📋 Active leases:', howardProperty.active_lease_count)
-          console.log('📋 Lease details:', howardProperty.active_leases)
-        }
-        
-        // Check for a few more properties to see the pattern
-        const sampleProperties = response.data.slice(0, 5)
-        console.log('🔍 Sample properties with lease details:')
-        sampleProperties.forEach(prop => {
-          console.log(`  ${prop.name}:`, {
-            status: prop.status,
-            activeLeaseCount: prop.active_lease_count || 0,
-            activeLeases: prop.active_leases?.map(l => ({
-              id: l.id,
-              startDate: l.lease_start_date,
-              endDate: l.lease_end_date,
-              rent: l.rent,
-              status: l.status
-            })) || []
-          })
-        })
-        
-        // Check for properties with active leases
-        const propertiesWithActiveLeases = response.data.filter(p => p.active_lease_count && p.active_lease_count > 0)
-        console.log('🏘️ Properties with active leases:', propertiesWithActiveLeases.length)
-        
-        // Check for properties with active leases vs empty
-        const propertiesWithoutActiveLeases = response.data.filter(p => !p.active_lease_count || p.active_lease_count === 0)
-        
-        console.log('🏘️ Properties with active leases:', propertiesWithActiveLeases.length)
-        console.log('🏚️ Properties without active leases:', propertiesWithoutActiveLeases.length)
-        
-        // Show first few properties with active leases
-        console.log('📝 First 5 properties with active leases:', propertiesWithActiveLeases.slice(0, 5).map(p => ({
-          name: p.name,
-          address: p.address,
-          status: p.status,
-          activeLeaseCount: p.active_lease_count || 0,
-          activeLeases: p.active_leases?.map(l => ({
-            startDate: l.lease_start_date,
-            endDate: l.lease_end_date,
-            rent: l.rent
-          })) || []
-        })))
-        
-        // Show properties WITHOUT active leases
-        console.log('📝 First 5 properties without active leases:', propertiesWithoutActiveLeases.slice(0, 5).map(p => ({
-          name: p.name,
-          address: p.address,
-          status: p.status,
-          activeLeaseCount: p.active_lease_count || 0
-        })))
-        
-        // Debug: Check what the PropertiesService is actually returning
-        console.log('🔍 PropertiesService response data structure:')
-        response.data.forEach((prop, index) => {
-          if (index < 3) { // Only log first 3 properties to avoid spam
-            console.log(`  Property ${index + 1}:`, {
-              name: prop.name,
-              status: prop.status,
-              active_lease_count: prop.active_lease_count,
-              active_leases: prop.active_leases,
-              hasActiveLeases: prop.active_leases && prop.active_leases.length > 0
-            })
-          }
-        })
-        
         setProperties(response.data)
       } else {
         console.error('❌ Failed to load properties:', response.error)
@@ -222,56 +146,7 @@ export default function PropertiesPage() {
     }
   }
 
-  const handleFixPropertyStatuses = async () => {
-    if (!confirm('This will automatically fix property statuses based on active leases:\n\n- Properties with active leases → "rented"\n- Properties without active leases → "empty"\n\nContinue?')) return
 
-    try {
-      setLoading(true)
-      
-      // Get all properties with their lease status
-      const propertiesResponse = await PropertiesService.getAll()
-      if (!propertiesResponse.success || !propertiesResponse.data) {
-        toast.error('Failed to load properties')
-        return
-      }
-
-      const propertiesWithLeases = propertiesResponse.data
-      let updatedCount = 0
-
-      // Update each property's status based on active leases
-      for (const property of propertiesWithLeases) {
-        const hasActiveLeases = property.active_lease_count && property.active_lease_count > 0
-        
-        if (hasActiveLeases && property.status !== 'rented') {
-          // Property has active leases but status is not 'rented'
-          await PropertiesService.update({
-            id: property.id,
-            status: 'rented'
-          })
-          updatedCount++
-        } else if (!hasActiveLeases && property.status !== 'empty') {
-          // Property has no active leases but status is not 'empty'
-          await PropertiesService.update({
-            id: property.id,
-            status: 'empty'
-          })
-          updatedCount++
-        }
-      }
-
-      if (updatedCount > 0) {
-        toast.success(`Updated ${updatedCount} property statuses successfully!`)
-        loadProperties() // Reload the list
-      } else {
-        toast.success('All property statuses are already correct!')
-      }
-    } catch (error) {
-      console.error('Error fixing property statuses:', error)
-      toast.error('Error fixing property statuses')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleOpenTenantModal = (property: Property) => {
     setSelectedProperty(property)
@@ -353,14 +228,6 @@ export default function PropertiesPage() {
                 </div>
               </div>
               <div className="flex space-x-3">
-                <button
-                  onClick={handleFixPropertyStatuses}
-                  className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 flex items-center transition-colors"
-                  title="Fix property statuses based on tenant assignments"
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Fix Statuses
-                </button>
                 <button
                   onClick={() => router.push('/properties/new')}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center transition-colors"

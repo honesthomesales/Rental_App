@@ -1,5 +1,6 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Property, CreatePropertyData, UpdatePropertyData, ApiResponse, PaginatedResponse } from '../types';
+import type { PropertyUI } from '../types/ui';
 import { LeasesService } from './leases';
 
 export class PropertiesService {
@@ -108,7 +109,7 @@ export class PropertiesService {
   /**
    * Get a property by ID
    */
-  static async getById(id: string): Promise<ApiResponse<Property>> {
+  static async getById(id: string): Promise<ApiResponse<PropertyUI<Property>>> {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
@@ -133,7 +134,7 @@ export class PropertiesService {
         tenants: tenantsData || []
       };
 
-      return createApiResponse(propertyWithTenants as Property);
+      return createApiResponse(propertyWithTenants as PropertyUI<Property>);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }

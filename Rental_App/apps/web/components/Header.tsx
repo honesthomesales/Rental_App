@@ -71,7 +71,7 @@ export function Header() {
         </button>
         <span className="text-xl font-bold text-gray-900">Rental Management App</span>
         <div className="ml-4 flex items-center">
-          <HonestHomeSalesLogo className="w-[67px] h-[67px]" />
+          <HonestHomeSalesLogo className="w-16 h-16" />
         </div>
       </header>
 

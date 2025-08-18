@@ -1,5 +1,5 @@
 {
-  "name": "RentalAppAndroid",
+  "name": "@rental-app/android",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -7,25 +7,19 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "build": "cd android && gradlew.bat assembleRelease",
+    "build:debug": "cd android && gradlew.bat assembleDebug",
+    "clean": "cd android && gradlew.bat clean"
   },
   "dependencies": {
-    "@react-navigation/bottom-tabs": "^6.5.11",
-    "@react-navigation/native": "^6.1.9",
-    "@react-navigation/stack": "^6.3.20",
     "react": "18.2.0",
     "react-native": "0.73.11",
-    "react-native-gesture-handler": "^2.15.0",
-    "react-native-paper": "^5.12.3",
-    "react-native-reanimated": "^3.7.0",
-    "react-native-safe-area-context": "^4.9.0",
-    "react-native-screens": "^3.29.0",
-    "react-native-vector-icons": "^9.2.0"
+    "@babel/runtime": "^7.20.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@babel/preset-env": "^7.20.0",
-    "@babel/runtime": "^7.20.0",
     "@react-native/babel-preset": "0.73.21",
     "@react-native/eslint-config": "0.73.2",
     "@react-native/metro-config": "0.73.5",

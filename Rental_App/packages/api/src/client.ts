@@ -37,7 +37,34 @@ export function getSupabaseClient() {
 }
 
 // Export the client for backward compatibility (will only work on client side)
-export const supabase = typeof window !== 'undefined' ? getSupabaseClient() : null;
+export const supabase = (() => {
+  if (typeof window === 'undefined') {
+    // During build time, return a mock that satisfies all TypeScript requirements
+    const mockClient = {
+      from: (table: string) => ({
+        select: (columns?: string) => ({
+          order: (column: string, options?: { ascending: boolean }) => ({
+            limit: (count: number) => Promise.resolve({ data: [], error: null })
+          }),
+          gte: (column: string, value: any) => ({
+            lte: (column: string, value: any) => Promise.resolve({ data: [], error: null })
+          }),
+          insert: (data: any) => ({
+            eq: (column: string, value: any) => Promise.resolve({ data: null, error: null })
+          }),
+          update: (data: any) => ({
+            eq: (column: string, value: any) => Promise.resolve({ data: null, error: null })
+          }),
+          delete: () => ({
+            eq: (column: string, value: any) => Promise.resolve({ data: null, error: null })
+          })
+        })
+      })
+    };
+    return mockClient;
+  }
+  return getSupabaseClient();
+})() as any;
 
 // Helper function to handle Supabase errors
 export function handleSupabaseError(error: any): string {

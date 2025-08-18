@@ -1,5 +1,6 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Tenant, CreateTenantData, UpdateTenantData, ApiResponse, PaginatedResponse, LateTenant, Property } from '../types';
+import type { TenantUI } from '../types/ui';
 
 export class TenantsService {
   /**
@@ -73,7 +74,7 @@ export class TenantsService {
   /**
    * Get a tenant by ID
    */
-  static async getById(id: string): Promise<ApiResponse<Tenant>> {
+  static async getById(id: string): Promise<ApiResponse<TenantUI<Tenant>>> {
     try {
       const supabase = getSupabaseClient();
       const { data: tenant, error } = await supabase
@@ -108,7 +109,7 @@ export class TenantsService {
         ...tenant,
         properties: property,
         leases: leasesData || []
-      } as Tenant;
+      } as TenantUI<Tenant>;
 
       return createApiResponse(tenantWithRelations);
     } catch (error) {

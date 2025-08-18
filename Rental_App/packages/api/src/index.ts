@@ -1,6 +1,7 @@
 // Export types
 export * from './types';
 export * from './database.types';
+export * from './types/ui';
 
 // Export client
 export { supabase, handleSupabaseError, createApiResponse } from './client';

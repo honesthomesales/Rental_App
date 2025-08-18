@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,50 +15,17 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  };
+
+  const textStyle = {
+    color: isDarkMode ? Colors.white : Colors.black,
   };
 
   return (
@@ -71,25 +37,32 @@ function App(): React.JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, textStyle]}>Rental Management</Text>
+          <Text style={[styles.headerSubtitle, textStyle]}>Honest Home Sales</Text>
+        </View>
+        
+        <View style={styles.content}>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, textStyle]}>Welcome!</Text>
+            <Text style={[styles.sectionText, textStyle]}>
+              Your Android rental management app is now running successfully!
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, textStyle]}>Quick Stats</Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, textStyle]}>✓</Text>
+                <Text style={[styles.statLabel, textStyle]}>App Running</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={[styles.statNumber, textStyle]}>✓</Text>
+                <Text style={[styles.statLabel, textStyle]}>Build Success</Text>
+              </View>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -97,21 +70,54 @@ function App(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  header: {
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  content: {
+    padding: 20,
+  },
+  section: {
+    marginBottom: 30,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
+    marginBottom: 15,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  sectionText: {
+    fontSize: 16,
+    lineHeight: 24,
   },
-  highlight: {
-    fontWeight: '700',
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    color: '#4CAF50',
+  },
+  statLabel: {
+    fontSize: 14,
+    opacity: 0.7,
+    textAlign: 'center',
   },
 });
 

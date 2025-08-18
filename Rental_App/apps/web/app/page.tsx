@@ -168,11 +168,10 @@ export default function Dashboard() {
       return acc
     }, {} as Record<string, number>)
     
-    // Count unique occupied properties
+    // Count occupied properties using the same method as PropertiesService
     let occupiedCount = 0
-    if (tenantsData && tenantsData.length > 0) {
-      const occupiedPropertyIds = new Set(tenantsData.map((tenant: any) => tenant.property_id))
-      occupiedCount = occupiedPropertyIds.size
+    if (propertiesData && propertiesData.length > 0) {
+      occupiedCount = propertiesData.filter(property => property.status === 'rented').length
     }
     
     // Calculate late tenants count using new pay period system
@@ -340,7 +339,7 @@ export default function Dashboard() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Occupied</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total_tenants}</p>
+                  <p className="text-2xl font-bold text-gray-900">{properties.filter(p => p.status === 'rented').length}</p>
                 </div>
               </div>
             </div>

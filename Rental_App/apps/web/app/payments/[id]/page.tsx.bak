@@ -1,9 +1,9 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { TransactionsService, type TransactionUI, type Transaction } from '@rental-app/api'
-import type { Property, Tenant, Loan } from '@rental-app/api'
+import { TransactionsService } from '@rental-app/api'
+import type { Transaction, Property, Tenant, Loan } from '@rental-app/api'
 import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, FileText, MapPin, User, Building } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 export default function TransactionDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const [transaction, setTransaction] = useState<TransactionUI<Transaction> | null>(null)
+  const [transaction, setTransaction] = useState<Transaction | null>(null)
   const [property, setProperty] = useState<Property | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [loading, setLoading] = useState(true)
@@ -231,4 +231,3 @@ export default function TransactionDetailPage() {
     </div>
   )
 }
-
