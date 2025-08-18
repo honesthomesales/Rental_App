@@ -1,0 +1,45 @@
+name: Deploy static site to /docs
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install deps
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build static (Next.js export)
+        working-directory: apps/web
+        run: npm run build:static
+
+      - name: VERIFY output
+        run: |
+          ls -lah apps/web/out || true
+          test -f apps/web/out/index.html || (echo "ERROR: apps/web/out/index.html missing"; exit 1)
+
+      - name: Replace docs with fresh build
+        run: |
+          rm -rf docs
+          mkdir -p docs
+          cp -r apps/web/out/* docs/
+
+      - name: Commit docs
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "docs --force"
+          message: "Deploy static site to /docs"
