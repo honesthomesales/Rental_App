@@ -30,7 +30,7 @@ jobs:
       - name: Build Next.js app
         run: |
           cd apps/web
-          npm run build
+          npm run build:static
           ls -la out/
           echo "Build completed. Files in out/:"
           find out/ -type f | head -20
