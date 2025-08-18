@@ -7,8 +7,6 @@ const nextConfig = {
   
   // Static export for GitHub Pages
   output: 'export',
-  basePath: '/Rental_App',
-  assetPrefix: '/Rental_App/',
   trailingSlash: true,
   distDir: 'out',
   

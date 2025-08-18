@@ -68,7 +68,7 @@ export default function PropertyDetailClient({ id }: { id: string }) {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <Link
-              href="/Rental_App/"
+              href="/"
               className="inline-flex items-center px-4 py-2 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
