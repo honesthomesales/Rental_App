@@ -45,6 +45,15 @@ jobs:
           cp public/index.html out/
           echo "Root index.html copied to out/"
           
+      - name: Verify upload contents
+        run: |
+          cd apps/web
+          echo "Final contents of out/ directory:"
+          ls -la out/
+          echo "Checking for critical files:"
+          ls -la out/index.html
+          ls -la out/404.html
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
