@@ -45,22 +45,24 @@ jobs:
           cp public/index.html out/
           echo "Root index.html copied to out/"
           
-      - name: Copy build output to repo root
+      - name: Create public directory and copy build output
         run: |
-          echo "Copying build output to repo root..."
-          cp -r apps/web/out/* ./
-          echo "Files copied to root:"
-          ls -la
-          echo "Checking for critical files at root:"
-          ls -la index.html
-          ls -la 404.html
+          echo "Creating public directory at project root..."
+          mkdir -p public
+          echo "Copying build output to public directory..."
+          cp -r apps/web/out/* public/
+          echo "Files in public directory:"
+          ls -la public/
+          echo "Checking for critical files:"
+          ls -la public/index.html
+          ls -la public/404.html
           echo "Checking for Rental_App directory:"
-          ls -la Rental_App/
+          ls -la public/Rental_App/
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ./public
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
