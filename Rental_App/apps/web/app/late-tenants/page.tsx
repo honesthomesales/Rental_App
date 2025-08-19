@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TenantsService, RentPeriodsService } from '@rental-app/api'
+import { TenantsService, RentPeriodsService, supabase } from '@rental-app/api'
 import type { LateTenant, RentPeriod } from '@rental-app/api'
 import { 
   AlertTriangle, 
@@ -89,14 +89,45 @@ export default function LateTenantsPage() {
 
   const viewPeriods = async (tenant: LateTenant) => {
     try {
-      const response = await RentPeriodsService.getTenantRentPeriods(tenant.id)
-      if (response.success && response.data) {
-        setSelectedTenantPeriods(response.data)
+      console.log('View periods clicked for tenant:', tenant.id, tenant.first_name, tenant.last_name)
+      console.log('Tenant data:', tenant)
+      
+      // Store the selected tenant for the modal
+      setSelectedTenant(tenant)
+      
+      // Get rent periods
+      const periodsResponse = await RentPeriodsService.getTenantRentPeriods(tenant.id)
+      console.log('Rent periods response:', periodsResponse)
+      
+      // Get actual payments to match the late tenants calculation
+      const { data: paymentsData } = await supabase
+        .from('RENT_payments')
+        .select('id, amount, payment_date, payment_type')
+        .eq('tenant_id', tenant.id)
+        .order('payment_date', { ascending: false })
+      
+      console.log('Payments data:', paymentsData)
+      
+      if (periodsResponse.success && periodsResponse.data) {
+        console.log('Setting tenant periods:', periodsResponse.data)
+        console.log('Number of periods found:', periodsResponse.data.length)
+        
+        if (periodsResponse.data.length === 0) {
+          toast.error('No rent periods found for this tenant. They may need rent periods generated.')
+          // Still show the modal with the summary
+          setShowPeriodsModal(true)
+          return
+        }
+        
+        setSelectedTenantPeriods(periodsResponse.data)
         setShowPeriodsModal(true)
+        console.log('Modal should now be visible, showPeriodsModal:', true)
       } else {
-        toast.error('Failed to load rent periods')
+        console.error('Failed to load rent periods:', periodsResponse.error)
+        toast.error(`Failed to load rent periods: ${periodsResponse.error}`)
       }
     } catch (error) {
+      console.error('Error loading rent periods:', error)
       toast.error('Error loading rent periods')
     }
   }
@@ -133,6 +164,9 @@ export default function LateTenantsPage() {
       </div>
     )
   }
+
+  // Debug logging
+  console.log('LateTenantsPage render - showPeriodsModal:', showPeriodsModal, 'selectedTenantPeriods:', selectedTenantPeriods)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -291,99 +325,192 @@ export default function LateTenantsPage() {
               </button>
             </div>
             <div className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Due Date</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Rent Amount</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Amount Paid</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Late Fee</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedTenantPeriods.map((period) => (
-                      <tr key={period.id} className="border-b border-gray-100">
-                        <td className="py-4 px-4">
-                          {new Date(period.period_due_date).toLocaleDateString()}
-                        </td>
-                        <td className="py-4 px-4 font-medium">
-                          ${period.rent_amount.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4">
-                          ${period.amount_paid.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            period.status === 'paid' ? 'bg-green-100 text-green-800' :
-                            period.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {period.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          {editingPeriod?.periodId === period.id ? (
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              defaultValue={period.late_fee_applied}
-                              className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                              onChange={(e) => setEditingLateFeeValue(parseFloat(e.target.value) || 0)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleLateFeeOverride(period.id, editingLateFeeValue)
-                                }
-                              }}
-                            />
-                          ) : (
-                            <span className={`font-medium ${period.late_fee_waived ? 'text-gray-500 line-through' : 'text-red-600'}`}>
-                              ${period.late_fee_applied.toLocaleString()}
-                              {period.late_fee_waived && ' (waived)'}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          {editingPeriod?.periodId === period.id ? (
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => {
-                                  handleLateFeeOverride(period.id, editingLateFeeValue);
-                                }}
-                                className="bg-green-600 text-white p-1 rounded text-xs hover:bg-green-700"
-                              >
-                                <Check className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingPeriod(null);
-                                  setEditingLateFeeValue(0);
-                                }}
-                                className="bg-gray-600 text-white p-1 rounded text-xs hover:bg-gray-700"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setEditingLateFeeValue(period.late_fee_applied);
-                                setEditingPeriod({ tenantId: period.tenant_id, periodId: period.id, lateFee: period.late_fee_applied });
-                              }}
-                              className="bg-blue-600 text-white p-1 rounded text-xs hover:bg-blue-700"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {selectedTenantPeriods.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Rent Periods Found</h3>
+                  <p className="text-gray-600 mb-4">
+                    No rent periods have been generated for this tenant yet.
+                  </p>
+                  <div className="bg-gray-50 p-4 rounded-lg text-left max-w-md mx-auto">
+                    <h4 className="font-medium text-gray-900 mb-2">Tenant Summary:</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p><span className="font-medium">Total Due:</span> ${(selectedTenant?.total_due || 0).toLocaleString()}</p>
+                      <p><span className="font-medium">Late Fees:</span> ${(selectedTenant?.total_late_fees || 0).toLocaleString()}</p>
+                      <p><span className="font-medium">Late Periods:</span> {selectedTenant?.late_periods || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Summary Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                    <h4 className="font-medium text-gray-900 mb-3">Totals Comparison:</h4>
+                    
+                    {/* Late Tenants Service Calculation (Correct) */}
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+                      <h5 className="font-medium text-green-800 mb-2">✓ Late Tenants Service (Correct):</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-600">Total Due:</span>
+                          <p className="text-lg font-semibold text-green-600">${(selectedTenant?.total_due || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Late Fees:</span>
+                          <p className="text-lg font-semibold text-green-600">${(selectedTenant?.total_late_fees || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Late Periods:</span>
+                          <p className="text-lg font-semibold text-green-600">{selectedTenant?.late_periods || 0}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Days Late:</span>
+                          <p className="text-lg font-semibold text-green-600">{selectedTenant?.days_late || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Rent Periods Calculation (For Reference) */}
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                      <h5 className="font-medium text-blue-800 mb-2">ℹ Rent Periods Data (For Reference):</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-600">Total Periods:</span>
+                          <p className="text-lg font-semibold text-blue-600">{selectedTenantPeriods.length}</p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Unpaid Amount:</span>
+                          <p className="text-lg font-semibold text-blue-600">
+                            ${selectedTenantPeriods
+                              .filter(p => p.status !== 'paid')
+                              .reduce((sum, p) => sum + (p.rent_amount - p.amount_paid), 0)
+                              .toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Late Fees:</span>
+                          <p className="text-lg font-semibold text-blue-600">
+                            ${selectedTenantPeriods
+                              .filter(p => !p.late_fee_waived)
+                              .reduce((sum, p) => sum + p.late_fee_applied, 0)
+                              .toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-600">Total Due:</span>
+                          <p className="text-lg font-semibold text-blue-600">
+                            ${(selectedTenantPeriods
+                              .filter(p => p.status !== 'paid')
+                              .reduce((sum, p) => sum + (p.rent_amount - p.amount_paid), 0) +
+                              selectedTenantPeriods
+                                .filter(p => !p.late_fee_waived)
+                                .reduce((sum, p) => sum + p.late_fee_applied, 0)
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 text-sm text-gray-600">
+                      <p><strong>Note:</strong> The Late Tenants Service uses a different calculation method based on lease start dates and actual payments, which is why the totals may differ from the rent periods data.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Due Date</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Rent Amount</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Amount Paid</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Late Fee</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedTenantPeriods.map((period) => (
+                          <tr key={period.id} className="border-b border-gray-100">
+                            <td className="py-4 px-4">
+                              {new Date(period.period_due_date).toLocaleDateString()}
+                            </td>
+                            <td className="py-4 px-4 font-medium">
+                              ${period.rent_amount.toLocaleString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              ${period.amount_paid.toLocaleString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                period.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                period.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {period.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4">
+                              {editingPeriod?.periodId === period.id ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  defaultValue={period.late_fee_applied}
+                                  className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                                  onChange={(e) => setEditingLateFeeValue(parseFloat(e.target.value) || 0)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleLateFeeOverride(period.id, editingLateFeeValue)
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className={`font-medium ${period.late_fee_waived ? 'text-gray-500 line-through' : 'text-red-600'}`}>
+                                  ${period.late_fee_applied.toLocaleString()}
+                                  {period.late_fee_waived && ' (waived)'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4">
+                              {editingPeriod?.periodId === period.id ? (
+                                <div className="flex space-x-1">
+                                  <button
+                                    onClick={() => {
+                                      handleLateFeeOverride(period.id, editingLateFeeValue);
+                                    }}
+                                    className="bg-green-600 text-white p-1 rounded text-xs hover:bg-green-700"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingPeriod(null);
+                                      setEditingLateFeeValue(0);
+                                    }}
+                                    className="bg-gray-600 text-white p-1 rounded text-xs hover:bg-gray-700"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingLateFeeValue(period.late_fee_applied);
+                                    setEditingPeriod({ tenantId: period.tenant_id, periodId: period.id, lateFee: period.late_fee_applied });
+                                  }}
+                                  className="bg-blue-600 text-white p-1 rounded text-xs hover:bg-blue-700"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
