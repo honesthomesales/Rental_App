@@ -4,19 +4,49 @@ on:
   push:
     branches: [ master ]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write    # required for OIDC authentication
-      pages: write       # to deploy to GitHub Pages
-      contents: read     # to read repo contents
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          path: '.'
-      - uses: actions/deploy-pages@v4
+          node-version: 18
+
+      - name: Install deps
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build static
+        working-directory: apps/web
+        run: npm run build:static
+
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Copy build output to docs
+        run: cp -r apps/web/out/* docs/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact (docs)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
