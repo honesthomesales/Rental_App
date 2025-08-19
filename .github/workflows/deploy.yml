@@ -43,6 +43,13 @@ jobs:
       - name: Copy build output to docs
         run: cp -r Rental_App/apps/web/out/* docs/
 
+      - name: Fix asset paths
+        run: |
+          cd docs
+          find . -name "*.html" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+          find . -name "*.js" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+          find . -name "*.css" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+
       - name: Configure Pages
         uses: actions/configure-pages@v4
 
