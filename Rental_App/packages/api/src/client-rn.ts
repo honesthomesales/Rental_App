@@ -3,7 +3,7 @@ import type { Database } from './database.types';
 
 // React Native compatible environment variables
 // These should be set in your React Native app's environment
-const supabaseUrl = 'https://gnisgfojzrrnidizrrnidizrycj.supabase.co';
+const supabaseUrl = 'https://gnisgfojzrrnidizrycj.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaXNnZm9qenJybmlkaXpyeWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjgyMDMsImV4cCI6MjA2NzM0NDIwM30.jLRIt4mqNa-6rnWudT_ciCvfPC0i0WlWFrCgC7NbhYM';
 
 // Global singleton instance

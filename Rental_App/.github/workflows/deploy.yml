@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
 
 permissions:
   contents: read
@@ -42,20 +42,6 @@ jobs:
 
       - name: Copy build output to docs
         run: cp -rv Rental_App/apps/web/out/* docs/
-
-      - name: Fix asset paths for GitHub Pages
-        run: |
-          cd docs
-          echo "=== FIXING ASSET PATHS ==="
-          # Fix _next asset paths to include /Rental_App prefix
-          # Use more precise patterns that will actually match
-          find . -name "*.html" -exec sed -i 's|href="/_next/|href="/Rental_App/_next/|g' {} \;
-          find . -name "*.html" -exec sed -i 's|src="/_next/|src="/Rental_App/_next/|g' {} \;
-          find . -name "*.js" -exec sed -i 's|"/_next/|"/Rental_App/_next/|g' {} \;
-          find . -name "*.js" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
-          find . -name "*.css" -exec sed -i 's|url("/_next/|url("/Rental_App/_next/|g' {} \;
-          find . -name "*.css" -exec sed -i 's|url(/_next/|url(/Rental_App/_next/|g' {} \;
-          echo "Asset paths fixed"
 
       - name: Configure Pages
         uses: actions/configure-pages@v4
