@@ -49,7 +49,7 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
-  // Use basePath for navigation
+  // Hardcoded paths for GitHub Pages deployment
   const basePath = '/Rental_App'
 
   const navLinks = [

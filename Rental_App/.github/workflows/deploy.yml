@@ -43,18 +43,31 @@ jobs:
       - name: Copy build output to docs
         run: cp -rv Rental_App/apps/web/out/* docs/
 
-      - name: Fix asset paths for GitHub Pages
+      - name: Fix ALL paths for GitHub Pages
         run: |
           cd docs
-          echo "=== FIXING ASSET PATHS ==="
-          # Fix _next asset paths to include /Rental_App prefix
+          echo "=== FIXING ALL PATHS ==="
+          # Fix _next asset paths
           find . -name "*.html" -exec sed -i 's|href="/_next/|href="/Rental_App/_next/|g' {} \;
           find . -name "*.html" -exec sed -i 's|src="/_next/|src="/Rental_App/_next/|g' {} \;
           find . -name "*.js" -exec sed -i 's|"/_next/|"/Rental_App/_next/|g' {} \;
           find . -name "*.js" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
           find . -name "*.css" -exec sed -i 's|url("/_next/|url("/Rental_App/_next/|g' {} \;
           find . -name "*.css" -exec sed -i 's|url(/_next/|url(/Rental_App/_next/|g' {} \;
-          echo "Asset paths fixed"
+          
+          # Fix navigation paths (href attributes)
+          find . -name "*.html" -exec sed -i 's|href="/"|href="/Rental_App/"|g' {} \;
+          find . -name "*.html" -exec sed -i 's|href="/properties"|href="/Rental_App/properties"|g' {} \;
+          find . -name "*.html" -exec sed -i 's|href="/tenants"|href="/Rental_App/tenants"|g' {} \;
+          find . -name "*.html" -exec sed -i 's|href="/payments"|href="/Rental_App/payments"|g' {} \;
+          find . -name "*.html" -exec sed -i 's|href="/late-tenants"|href="/Rental_App/late-tenants"|g' {} \;
+          find . -name "*.html" -exec sed -i 's|href="/profit"|href="/Rental_App/profit"|g' {} \;
+          
+          # Fix any remaining absolute paths
+          find . -name "*.html" -exec sed -i 's|href="/\([^"]*\)"|href="/Rental_App/\1"|g' {} \;
+          find . -name "*.js" -exec sed -i 's|"/\([^"]*\)"|"/Rental_App/\1"|g' {} \;
+          
+          echo "All paths fixed"
 
       - name: Configure Pages
         uses: actions/configure-pages@v4
