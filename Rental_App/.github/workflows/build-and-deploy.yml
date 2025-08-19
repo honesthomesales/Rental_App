@@ -25,12 +25,11 @@ jobs:
           node-version: 18
 
       - name: Install deps
-        working-directory: apps/web
         run: npm ci
 
       - name: Build static
         working-directory: apps/web
-        run: npm run build:static
+        run: npm run build
 
       - name: VERIFY: out directory contents
         run: |
