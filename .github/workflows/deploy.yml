@@ -29,6 +29,10 @@ jobs:
         working-directory: Rental_App
         run: npm install
 
+      - name: Build packages first
+        working-directory: Rental_App
+        run: npm run build:packages
+
       - name: Build static
         working-directory: Rental_App/apps/web
         run: npm run build:static
