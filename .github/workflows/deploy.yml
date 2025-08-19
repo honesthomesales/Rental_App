@@ -25,6 +25,14 @@ jobs:
         with:
           node-version: 18
 
+      - name: List directory contents
+        run: |
+          echo "=== DIRECTORY STRUCTURE ==="
+          pwd
+          ls -la
+          echo "=== LOOKING FOR PACKAGE.JSON ==="
+          find . -name "package.json" -type f
+
       - name: Install deps
         run: npm install
 
