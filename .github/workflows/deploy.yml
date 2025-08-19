@@ -41,9 +41,9 @@ jobs:
         run: mkdir -p docs
 
       - name: Copy build output to docs
-        run: cp -r Rental_App/apps/web/out/* docs/
+        run: cp -rv Rental_App/apps/web/out/* docs/
 
-      - name: Fix asset paths
+      - name: Fix asset paths for GitHub Pages
         run: |
           cd docs
           find . -name "*.html" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
