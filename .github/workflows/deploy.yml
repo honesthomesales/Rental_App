@@ -25,16 +25,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: List directory contents
-        run: |
-          echo "=== DIRECTORY STRUCTURE ==="
-          pwd
-          ls -la
-          echo "=== APPS DIRECTORY ==="
-          ls -la apps/ || echo "apps directory not found"
-
       - name: Install deps
-        run: npm ci
+        run: npm install
 
       - name: Build static
         working-directory: apps/web
@@ -52,8 +44,3 @@ jobs:
       - name: Upload artifact (docs)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
