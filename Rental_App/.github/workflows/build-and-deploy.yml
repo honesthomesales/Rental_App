@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ master ]  # change to [ main ] if your default branch is main
+    branches: [ master ]
 
 permissions:
   contents: read
@@ -38,19 +38,25 @@ jobs:
         working-directory: apps/web
         run: npm run build:static
 
-      - name: VERIFY out contents
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Copy build output to docs
+        run: cp -r apps/web/out/* docs/
+
+      - name: VERIFY docs contents
         run: |
-          echo "Listing apps/web/out"
-          ls -lah apps/web/out || true
-          test -f apps/web/out/index.html || (echo "ERROR: apps/web/out/index.html missing"; exit 1)
+          echo "Listing docs directory:"
+          ls -lah docs || true
+          test -f docs/index.html || (echo "ERROR: docs/index.html missing"; exit 1)
 
       - name: Configure Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact (apps/web/out)
+      - name: Upload artifact (docs)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/out
+          path: docs
 
       - name: Deploy to GitHub Pages
         id: deployment
