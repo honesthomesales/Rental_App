@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master ]  # change to [ main ] if your default branch is main
 
 permissions:
   contents: read
@@ -15,6 +15,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,17 +26,17 @@ jobs:
           node-version: 18
 
       - name: Install deps
+        working-directory: apps/web
         run: npm ci
 
       - name: Build static
         working-directory: apps/web
         run: npm run build:static
 
-      - name: VERIFY: out directory contents
+      - name: VERIFY out contents
         run: |
-          echo "Listing apps/web/out:"
+          echo "Listing apps/web/out"
           ls -lah apps/web/out || true
-          echo "Ensure index.html exists:"
           test -f apps/web/out/index.html || (echo "ERROR: apps/web/out/index.html missing"; exit 1)
 
       - name: Configure Pages
@@ -49,5 +50,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-# Workflow updated with environment configuration for GitHub Pages
