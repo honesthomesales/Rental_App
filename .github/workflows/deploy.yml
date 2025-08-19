@@ -20,30 +20,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: DEBUG - Show directory structure
-        run: |
-          echo "=== CURRENT DIRECTORY ==="
-          pwd
-          echo "=== DIRECTORY CONTENTS ==="
-          ls -la
-          echo "=== FIND ALL PACKAGE.JSON FILES ==="
-          find . -name "package.json" -type f
-          echo "=== CHECK IF APPS/WEB EXISTS ==="
-          ls -la apps/ || echo "apps directory not found"
-          ls -la apps/web/ || echo "apps/web directory not found"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      - name: Install deps
+        working-directory: Rental_App
+        run: npm install
+
+      - name: Build static
+        working-directory: Rental_App/apps/web
+        run: npm run build:static
+
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Copy build output to docs
+        run: cp -r Rental_App/apps/web/out/* docs/
+
       - name: Configure Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact (current directory)
+      - name: Upload artifact (docs)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: docs
 
       - name: Deploy to GitHub Pages
         id: deployment
