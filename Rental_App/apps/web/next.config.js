@@ -6,4 +6,6 @@ module.exports = {
   // Remove basePath and assetPrefix for GitHub Pages deployment
   // basePath: isProd ? '/Rental_App' : '',
   // assetPrefix: isProd ? '/Rental_App/' : '',
+  
+  // Config updated for GitHub Pages deployment
 }; 
