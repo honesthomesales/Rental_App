@@ -25,8 +25,15 @@ jobs:
         with:
           node-version: 18
 
+      - name: List directory contents
+        run: |
+          echo "=== DIRECTORY STRUCTURE ==="
+          pwd
+          ls -la
+          echo "=== APPS DIRECTORY ==="
+          ls -la apps/ || echo "apps directory not found"
+
       - name: Install deps
-        working-directory: apps/web
         run: npm ci
 
       - name: Build static
