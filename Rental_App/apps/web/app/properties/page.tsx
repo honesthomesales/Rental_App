@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { PropertiesService, TenantsService, LeasesService } from '@rental-app/api'
 import type { Property } from '@rental-app/api'
-import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon, Map, List, Calendar } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon, Map, List, Calendar, Shield } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TenantLinkModal } from '@/components/TenantLinkModal'
 import PropertiesMap from '@/components/PropertiesMap'
@@ -22,7 +22,7 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   
   // Sorting state
-  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address'>('name')
+  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address' | 'premium'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
@@ -73,6 +73,10 @@ export default function PropertiesPage() {
           aValue = a.address?.toLowerCase() || ''
           bValue = b.address?.toLowerCase() || ''
           break
+        case 'premium':
+          aValue = a.insurance_premium || 0
+          bValue = b.insurance_premium || 0
+          break
         default:
           return 0
       }
@@ -84,7 +88,7 @@ export default function PropertiesPage() {
   }, [properties, sortField, sortDirection])
 
   // Handle sort column click
-  const handleSort = (field: 'name' | 'status' | 'rent' | 'address') => {
+  const handleSort = (field: 'name' | 'status' | 'rent' | 'address' | 'premium') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -146,8 +150,6 @@ export default function PropertiesPage() {
     }
   }
 
-
-
   const handleOpenTenantModal = (property: Property) => {
     setSelectedProperty(property)
     setShowTenantModal(true)
@@ -161,8 +163,6 @@ export default function PropertiesPage() {
   const handleTenantLinkSuccess = () => {
     loadProperties() // Reload properties to update any tenant counts
   }
-
-
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -308,30 +308,30 @@ export default function PropertiesPage() {
         {/* Map View */}
         {viewMode === 'map' && (
           <div className="mb-6">
-                            <PropertiesMap properties={sortedProperties.filter(property => {
-                  if (searchTerm && !property.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-                      !property.address.toLowerCase().includes(searchTerm.toLowerCase())) {
-                    return false
-                  }
-                  if (statusFilter !== 'all' && property.status !== statusFilter) {
-                    return false
-                  }
-                  return true
-                })} height="500px" />
+            <PropertiesMap properties={sortedProperties.filter(property => {
+              if (searchTerm && !property.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+                  !property.address.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return false
+              }
+              if (statusFilter !== 'all' && property.status !== statusFilter) {
+                return false
+              }
+              return true
+            })} height="500px" />
           </div>
         )}
 
         {/* Properties List */}
-                        {sortedProperties.filter(property => {
-                  if (searchTerm && !property.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-                      !property.address.toLowerCase().includes(searchTerm.toLowerCase())) {
-                    return false
-                  }
-                  if (statusFilter !== 'all' && property.status !== statusFilter) {
-                    return false
-                  }
-                  return true
-                }).length === 0 ? (
+        {sortedProperties.filter(property => {
+          if (searchTerm && !property.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+              !property.address.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false
+          }
+          if (statusFilter !== 'all' && property.status !== statusFilter) {
+            return false
+          }
+          return true
+        }).length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="text-center py-12">
               <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -357,9 +357,8 @@ export default function PropertiesPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-
             <div className="overflow-x-auto w-full">
-              <table className="w-full min-w-[1400px]">
+              <table className="w-full min-w-[1600px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th 
@@ -405,6 +404,20 @@ export default function PropertiesPage() {
                       </div>
                     </th>
                     <th 
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('premium')}
+                    >
+                      <div className="flex items-center">
+                        <Shield className="w-4 h-4 mr-1" />
+                        Insurance
+                        {sortField === 'premium' && (
+                          <span className="ml-1 text-blue-600">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
                       className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] cursor-pointer hover:bg-gray-100 select-none"
                       onClick={() => handleSort('status')}
                     >
@@ -421,7 +434,7 @@ export default function PropertiesPage() {
                       Active Leases
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -483,6 +496,15 @@ export default function PropertiesPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
+                        {property.insurance_premium ? (
+                          <div className="text-sm font-medium text-blue-600">
+                            ${property.insurance_premium.toLocaleString()}/year
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">N/A</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(property.status)}`}>
                           {getStatusLabel(property.status)}
                         </span>
@@ -524,7 +546,6 @@ export default function PropertiesPage() {
                             Link
                           </button>
 
-                          
                           {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
                             <button
                               onClick={() => handleMarkVacant(property)}
