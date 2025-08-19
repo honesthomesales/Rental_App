@@ -9,10 +9,15 @@ permissions:
   pages: write
   id-token: write
 
+# Optional but recommended: avoid overlapping runs for Pages
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  deploy:                      # <-- the job id MUST be exactly "deploy"
     runs-on: ubuntu-latest
-    environment:
+    environment:              # <-- required by actions/deploy-pages@v4
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
