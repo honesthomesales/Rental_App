@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Home, Users, FileText, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react'
 
@@ -47,16 +47,10 @@ function HonestHomeSalesLogo({ className = "w-8 h-8" }: { className?: string }) 
 
 export function Header() {
   const [open, setOpen] = useState(false)
-  const [basePath, setBasePath] = useState('')
   const router = useRouter()
 
-  useEffect(() => {
-    // Check if we're on GitHub Pages by looking at the current URL
-    if (typeof window !== 'undefined') {
-      const isGitHubPages = window.location.hostname === 'honesthomesales.github.io'
-      setBasePath(isGitHubPages ? '/Rental_App' : '')
-    }
-  }, [])
+  // Hardcoded base path for GitHub Pages deployment
+  const basePath = '/Rental_App'
 
   const navLinks = [
     { label: 'Dashboard', icon: <Home className="w-5 h-5 mr-2" />, href: `${basePath}/` },
