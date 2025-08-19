@@ -26,11 +26,15 @@ jobs:
           node-version: 18
 
       - name: Install deps
-        working-directory: apps/web
-        run: npm ci
+        working-directory: Rental_App
+        run: npm install
+
+      - name: Build packages first
+        working-directory: Rental_App
+        run: npm run build:packages
 
       - name: Build static
-        working-directory: apps/web
+        working-directory: Rental_App/apps/web
         run: npm run build:static
 
       - name: DEBUG: Check build output
@@ -38,11 +42,9 @@ jobs:
           echo "=== BUILD OUTPUT DEBUG ==="
           echo "Current directory: $(pwd)"
           echo "Listing apps/web/out:"
-          ls -la apps/web/out || echo "out directory not found"
-          echo "Listing apps/web/.next:"
-          ls -la apps/web/.next || echo ".next directory not found"
+          ls -la Rental_App/apps/web/out || echo "out directory not found"
           echo "Checking for index.html:"
-          find apps/web -name "index.html" -type f || echo "No index.html found"
+          find Rental_App/apps/web/out -name "index.html" -type f || echo "No index.html found"
 
       - name: Create docs directory
         run: mkdir -p docs
@@ -50,10 +52,19 @@ jobs:
       - name: Copy build output to docs
         run: |
           echo "=== COPY DEBUG ==="
-          echo "Copying from apps/web/out to docs"
-          cp -rv apps/web/out/* docs/ || echo "Copy failed"
+          echo "Copying from Rental_App/apps/web/out to docs"
+          cp -rv Rental_App/apps/web/out/* docs/ || echo "Copy failed"
           echo "Listing docs after copy:"
           ls -la docs || echo "docs directory empty"
+
+      - name: Fix asset paths for GitHub Pages
+        run: |
+          echo "=== FIXING ASSET PATHS ==="
+          cd docs
+          find . -name "*.html" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+          find . -name "*.js" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+          find . -name "*.css" -exec sed -i 's|/_next/|/Rental_App/_next/|g' {} \;
+          echo "Asset paths fixed"
 
       - name: VERIFY docs contents
         run: |
@@ -62,6 +73,8 @@ jobs:
           ls -la docs || echo "docs directory not found"
           echo "Checking for index.html in docs:"
           test -f docs/index.html && echo "SUCCESS: docs/index.html exists" || (echo "ERROR: docs/index.html missing"; exit 1)
+          echo "Checking if asset paths were fixed:"
+          grep -r "_next" docs/ | head -5 || echo "No _next references found"
 
       - name: Configure Pages
         uses: actions/configure-pages@v4
