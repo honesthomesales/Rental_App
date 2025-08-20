@@ -5,9 +5,16 @@ import EditTransactionClient from './EditTransactionClient'
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  // Provide at least one concrete param so Next can statically export this route.
-  // Use 'example-id' unless the file already imports or expects a different param shape.
-  return [{ id: 'example-id' }];
+  // Match the parent layout's static params exactly
+  const ids = [
+    'example-id-1',
+    'example-id-2', 
+    'example-id-3',
+    'example-id-4',
+    'example-id-5'
+  ];
+  
+  return ids.map(id => ({ id }));
 }
 
 export default function PaymentEditPage({ params }: { params: { id: string } }) {
