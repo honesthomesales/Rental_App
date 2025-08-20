@@ -100,6 +100,12 @@ export default function LateTenantsPage() {
       console.log('Rent periods response:', periodsResponse)
       
       // Get actual payments to match the late tenants calculation
+      if (!supabase) {
+        console.error('Supabase client not available')
+        toast.error('Database connection not available')
+        return
+      }
+      
       const { data: paymentsData } = await supabase
         .from('RENT_payments')
         .select('id, amount, payment_date, payment_type')
