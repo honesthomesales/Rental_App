@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PropertiesService, type PropertyUI, type Property } from '@rental-app/api'
-import { ArrowLeft, Home, MapPin, DollarSign, Calendar, User, Building } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, DollarSign, Calendar, User, Building, Edit } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -77,9 +77,10 @@ export default function PropertyDetailClient({ id }: { id: string }) {
             <h1 className="text-3xl font-bold text-gray-900">Property Details</h1>
           </div>
           <Link
-            href={`/properties/${property.id}/edit`}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            href={`/properties/edit/${property.id}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
           >
+            <Edit className="w-4 h-4 mr-2" />
             Edit Property
           </Link>
         </div>

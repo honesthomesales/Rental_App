@@ -531,7 +531,7 @@ export default function PropertiesPage() {
                       <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-2">
                           <button
-                            onClick={() => router.push(`/properties/${property.id}/edit`)}
+                            onClick={() => router.push(`/properties/edit/${property.id}`)}
                             className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
                           >
                             <Edit className="w-3 h-3 mr-1" />

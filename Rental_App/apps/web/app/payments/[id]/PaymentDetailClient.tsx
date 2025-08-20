@@ -128,11 +128,11 @@ export default function PaymentDetailClient({ id }: { id: string }) {
           </div>
           <div className="flex space-x-3">
             <Link
-              href={`/payments/${transaction.id}/edit`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              href={`/payments/edit/${transaction.id}`}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
             >
               <Edit className="w-4 h-4 mr-2" />
-              Edit
+              Edit Payment
             </Link>
             <button
               onClick={handleDelete}

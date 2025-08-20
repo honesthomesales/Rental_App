@@ -493,7 +493,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => router.push(`/properties/${property.id}/edit`)}
+                          onClick={() => router.push(`/properties/edit/${property.id}`)}
                           className="text-primary-600 hover:text-primary-900"
                         >
                           Edit
