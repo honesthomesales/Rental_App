@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import PaymentEditClient from './PaymentEditClient'
+import EditTransactionClient from './EditTransactionClient'
 
 // This ensures the edit page is generated during static export
 export const dynamicParams = false;
@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 export default function PaymentEditPage({ params }: { params: { id: string } }) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <PaymentEditClient id={params.id} />
+      <EditTransactionClient id={params.id} />
     </Suspense>
   )
 }
