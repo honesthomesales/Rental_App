@@ -49,16 +49,13 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
-  // Hardcoded paths for GitHub Pages deployment
-  const basePath = '/Rental_App'
-
   const navLinks = [
-    { label: 'Dashboard', icon: <Home className="w-5 h-5 mr-2" />, href: `${basePath}/` },
-    { label: 'Properties', icon: <FileText className="w-5 h-5 mr-2" />, href: `${basePath}/properties` },
-    { label: 'Tenants', icon: <Users className="w-5 h-5 mr-2" />, href: `${basePath}/tenants` },
-    { label: 'Payments', icon: <DollarSign className="w-5 h-5 mr-2" />, href: `${basePath}/payments` },
-    { label: 'Late Tenants', icon: <AlertTriangle className="w-5 h-5 mr-2" />, href: `${basePath}/late-tenants` },
-    { label: 'Profit', icon: <TrendingUp className="w-5 h-5 mr-2" />, href: `${basePath}/profit` },
+    { label: 'Dashboard', icon: <Home className="w-5 h-5 mr-2" />, href: '/' },
+    { label: 'Properties', icon: <FileText className="w-5 h-5 mr-2" />, href: '/properties' },
+    { label: 'Tenants', icon: <Users className="w-5 h-5 mr-2" />, href: '/tenants' },
+    { label: 'Payments', icon: <DollarSign className="w-5 h-5 mr-2" />, href: '/payments' },
+    { label: 'Late Tenants', icon: <AlertTriangle className="w-5 h-5 mr-2" />, href: '/late-tenants' },
+    { label: 'Profit', icon: <TrendingUp className="w-5 h-5 mr-2" />, href: '/profit' },
   ]
 
   return (
