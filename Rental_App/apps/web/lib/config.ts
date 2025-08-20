@@ -14,7 +14,6 @@ export const config = {
     environment: env.app.environment,
     isProduction: env.app.isProduction,
     isDevelopment: env.app.isDevelopment,
-    basePath: env.app.basePath,
   },
   
   // Feature Flags
@@ -35,4 +34,4 @@ export function getSupabaseConfig() {
 }
 
 // Export environment utilities for convenience
-export { env, validateEnv, isProduction, isDevelopment, getBasePath } from './env';
+export { env, validateEnv, isProduction, isDevelopment } from './env';

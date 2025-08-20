@@ -12,7 +12,6 @@ export const env = {
     environment: process.env.NODE_ENV || 'development',
     isProduction: process.env.NODE_ENV === 'production',
     isDevelopment: process.env.NODE_ENV === 'development',
-    basePath: process.env.NODE_ENV === 'production' ? '/Rental_App' : '',
   },
   
   // Feature Flags
@@ -67,9 +66,4 @@ export function isProduction() {
 // Check if running in development
 export function isDevelopment() {
   return env.app.isDevelopment;
-}
-
-// Get base path for routing
-export function getBasePath() {
-  return env.app.basePath;
 }
