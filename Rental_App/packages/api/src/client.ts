@@ -36,8 +36,18 @@ export function getSupabaseClient() {
   return supabaseClient;
 }
 
-// Export a direct instance for components that need it
-export const supabase = typeof window !== 'undefined' ? createSupabaseClient() : null;
+// Export a single instance to prevent multiple clients
+export const supabase = (() => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  if (!supabaseClient) {
+    supabaseClient = createSupabaseClient();
+  }
+  
+  return supabaseClient;
+})();
 
 export function handleSupabaseError(error: any): string {
   if (error?.message) {

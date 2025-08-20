@@ -19,7 +19,7 @@ walk(OUT, (file) => {
   let txt = fs.readFileSync(file, 'utf8');
   const before = txt;
 
-  // 1) Fix any remaining double prefixes (shouldn't happen with new config, but just in case)
+  // 1) Fix any remaining double prefixes (most critical)
   txt = txt.replaceAll('/Rental_App/Rental_App/', '/Rental_App/');
   txt = txt.replaceAll('/Rental_App/Rental_App', '/Rental_App');
   
@@ -39,6 +39,10 @@ walk(OUT, (file) => {
   txt = txt.replaceAll('src="/Rental_App/', 'src="/');
   txt = txt.replaceAll('url("/Rental_App/', 'url("/');
   txt = txt.replaceAll('"/Rental_App/', '"/');
+  
+  // 5) Fix any remaining double prefixes in asset URLs
+  txt = txt.replaceAll('https://honesthomesales.github.io/Rental_App/Rental_App/', 'https://honesthomesales.github.io/Rental_App/');
+  txt = txt.replaceAll('https://honesthomesales.github.io/Rental_App/Rental_App', 'https://honesthomesales.github.io/Rental_App');
 
   if (txt !== before) {
     fs.writeFileSync(file, txt);
