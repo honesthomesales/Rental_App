@@ -122,12 +122,6 @@ export default function PropertyDetailClient({ id }: { id: string }) {
                     <p className="text-gray-900 mt-1">{property.notes}</p>
                   </div>
                 )}
-                {property.description && (
-                  <div>
-                    <span className="text-gray-600">Description:</span>
-                    <p className="text-gray-900 mt-1">{property.description}</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>

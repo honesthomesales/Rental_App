@@ -166,14 +166,13 @@ export class PropertiesService {
   /**
    * Update an existing property
    */
-  static async update(propertyData: UpdatePropertyData): Promise<ApiResponse<Property>> {
+  static async update(id: string, propertyData: Omit<UpdatePropertyData, 'id'>): Promise<ApiResponse<Property>> {
     try {
       const supabase = getSupabaseClient();
-      const { id, ...updateData } = propertyData;
 
       const { data, error } = await supabase
         .from('RENT_properties')
-        .update(updateData)
+        .update(propertyData)
         .eq('id', id)
         .select()
         .single();

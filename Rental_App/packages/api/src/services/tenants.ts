@@ -185,7 +185,7 @@ export class TenantsService {
   /**
    * Update an existing tenant
    */
-  static async update(id: string, tenantData: UpdateTenantData): Promise<ApiResponse<Tenant>> {
+  static async update(id: string, tenantData: Omit<UpdateTenantData, 'id'>): Promise<ApiResponse<Tenant>> {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase

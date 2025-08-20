@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { TenantsService, type TenantUI, type Tenant } from '@rental-app/api'
+import { TenantsService, type TenantUI, type Tenant, type UpdateTenantData } from '@rental-app/api'
 import { ArrowLeft, Save, User, Phone, Mail, Calendar, MapPin, Building } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -17,7 +17,7 @@ export default function TenantEditClient({ id }: { id: string }) {
     last_name: '',
     phone: '',
     email: '',
-    move_in_date: '',
+    lease_start_date: '',
     notes: '',
     emergency_contact_name: '',
     emergency_contact_phone: ''
@@ -42,7 +42,8 @@ export default function TenantEditClient({ id }: { id: string }) {
           last_name: tenantData.last_name || '',
           phone: tenantData.phone || '',
           email: tenantData.email || '',
-          move_in_date: tenantData.move_in_date ? tenantData.move_in_date.split('T')[0] : '',
+          lease_start_date: tenantData.lease_start_date ? 
+            tenantData.lease_start_date.split('T')[0] : '',
           notes: tenantData.notes || '',
           emergency_contact_name: tenantData.emergency_contact_name || '',
           emergency_contact_phone: tenantData.emergency_contact_phone || ''
@@ -72,12 +73,12 @@ export default function TenantEditClient({ id }: { id: string }) {
     
     try {
       setSaving(true)
-      const updateData = {
+      const updateData: Omit<UpdateTenantData, 'id'> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
         email: formData.email,
-        move_in_date: formData.move_in_date,
+        lease_start_date: formData.lease_start_date,
         notes: formData.notes,
         emergency_contact_name: formData.emergency_contact_name,
         emergency_contact_phone: formData.emergency_contact_phone
@@ -199,12 +200,12 @@ export default function TenantEditClient({ id }: { id: string }) {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Move-in Date
+                  Lease Start Date
                 </label>
                 <input
                   type="date"
-                  name="move_in_date"
-                  value={formData.move_in_date}
+                  name="lease_start_date"
+                  value={formData.lease_start_date}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />

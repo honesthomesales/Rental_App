@@ -53,8 +53,7 @@ export default function BulkGeocoder({ properties, onPropertiesUpdated }: BulkGe
           const longitude = location.lng
           
           // Update the property with coordinates
-          const updateResponse = await PropertiesService.update({
-            id: property.id,
+          const updateResponse = await PropertiesService.update(property.id, {
             latitude,
             longitude
           })
@@ -89,8 +88,7 @@ export default function BulkGeocoder({ properties, onPropertiesUpdated }: BulkGe
           const longitude = parseFloat(result.lon)
           
           // Update the property with coordinates
-          const updateResponse = await PropertiesService.update({
-            id: property.id,
+          const updateResponse = await PropertiesService.update(property.id, {
             latitude,
             longitude
           })

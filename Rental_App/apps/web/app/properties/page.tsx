@@ -135,8 +135,7 @@ export default function PropertiesPage() {
       }
       
       // Update property status to empty
-      await PropertiesService.update({
-        id: property.id,
+      await PropertiesService.update(property.id, {
         status: 'empty'
       })
 

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { PropertiesService, type PropertyUI, type Property } from '@rental-app/api'
+import { PropertiesService, type PropertyUI, type Property, type UpdatePropertyData } from '@rental-app/api'
+import type { PropertyType } from '@rental-app/api'
 import { ArrowLeft, Save, Home, MapPin, DollarSign, Building } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -18,10 +19,9 @@ export default function PropertyEditClient({ id }: { id: string }) {
     city: '',
     state: '',
     zip_code: '',
-    property_type: '',
+    property_type: '' as PropertyType | '',
     monthly_rent: '',
-    notes: '',
-    description: ''
+    notes: ''
   })
 
   useEffect(() => {
@@ -46,8 +46,7 @@ export default function PropertyEditClient({ id }: { id: string }) {
           zip_code: propertyData.zip_code || '',
           property_type: propertyData.property_type || '',
           monthly_rent: propertyData.monthly_rent?.toString() || '',
-          notes: propertyData.notes || '',
-          description: propertyData.description || ''
+          notes: propertyData.notes || ''
         })
       } else {
         toast.error('Property not found')
@@ -63,10 +62,17 @@ export default function PropertyEditClient({ id }: { id: string }) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    if (name === 'property_type') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value as PropertyType
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,16 +80,19 @@ export default function PropertyEditClient({ id }: { id: string }) {
     
     try {
       setSaving(true)
-      const updateData = {
+      const updateData: Omit<UpdatePropertyData, 'id'> = {
         name: formData.name,
         address: formData.address,
         city: formData.city,
         state: formData.state,
         zip_code: formData.zip_code,
-        property_type: formData.property_type,
         monthly_rent: parseFloat(formData.monthly_rent) || 0,
         notes: formData.notes,
-        description: formData.description
+      }
+      
+      // Only include property_type if it's not empty
+      if (formData.property_type) {
+        updateData.property_type = formData.property_type
       }
 
       const response = await PropertiesService.update(id, updateData)
@@ -171,11 +180,9 @@ export default function PropertyEditClient({ id }: { id: string }) {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Type</option>
-                  <option value="apartment">Apartment</option>
                   <option value="house">House</option>
-                  <option value="condo">Condo</option>
-                  <option value="townhouse">Townhouse</option>
-                  <option value="duplex">Duplex</option>
+                  <option value="singlewide">Single Wide</option>
+                  <option value="doublewide">Double Wide</option>
                 </select>
               </div>
               
@@ -247,19 +254,6 @@ export default function PropertyEditClient({ id }: { id: string }) {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
             
             <div>

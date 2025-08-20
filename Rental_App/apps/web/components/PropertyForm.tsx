@@ -95,11 +95,7 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
       
       if (property) {
         // Update existing property
-        const updateData: UpdatePropertyData = {
-          id: property.id,
-          ...data
-        }
-        const response = await PropertiesService.update(updateData)
+        const response = await PropertiesService.update(property.id, data)
         
         if (response.success && response.data) {
           toast.success('Property updated successfully')
