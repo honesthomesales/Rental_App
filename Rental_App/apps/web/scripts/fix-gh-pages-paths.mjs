@@ -19,18 +19,26 @@ walk(OUT, (file) => {
   let txt = fs.readFileSync(file, 'utf8');
   const before = txt;
 
-  // 1) Collapse /Rental_App/Rental_App -> /Rental_App
+  // 1) Collapse /Rental_App/Rental_App -> /Rental_App (any number of repetitions)
   txt = txt.replaceAll('/Rental_App/Rental_App/', '/Rental_App/');
-
-  // 2) If anything referenced "/Rental_App/_next" inside already-prefixed pages that
-  // will be prefixed again at runtime, normalize to "/_next" (Next will add basePath).
-  // This prevents the runtime from turning it into /Rental_App/Rental_App/_next.
+  txt = txt.replaceAll('/Rental_App/Rental_App', '/Rental_App');
+  
+  // 2) Handle cases where Next.js already generated URLs with basePath
+  // These will get prefixed again by GitHub Pages, so normalize them
   txt = txt.replaceAll('href="/Rental_App/_next/', 'href="/_next/');
   txt = txt.replaceAll('src="/Rental_App/_next/', 'src="/_next/');
   txt = txt.replaceAll('url("/Rental_App/_next/', 'url("/_next/');
-
-  // 3) Also normalize any preloads of _next assets
   txt = txt.replaceAll('"/Rental_App/_next/', '"/_next/');
+  
+  // 3) Handle any other basePath references that might get double-prefixed
+  txt = txt.replaceAll('href="/Rental_App/', 'href="/');
+  txt = txt.replaceAll('src="/Rental_App/', 'src="/');
+  txt = txt.replaceAll('url("/Rental_App/', 'url("/');
+  txt = txt.replaceAll('"/Rental_App/', '"/');
+  
+  // 4) Handle CSS imports and other references
+  txt = txt.replaceAll('@import "/Rental_App/', '@import "/');
+  txt = txt.replaceAll('@import url("/Rental_App/', '@import url("/');
 
   if (txt !== before) {
     fs.writeFileSync(file, txt);
