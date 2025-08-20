@@ -1,16 +1,12 @@
 // apps/web/next.config.js
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  basePath: '/Rental_App',
+  assetPrefix: '/Rental_App/',
+  trailingSlash: true,
   images: { unoptimized: true },
-  trailingSlash: false,
-  
-  // Optimize for static export
   swcMinify: true,
-  
-  // TypeScript configuration
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+  typescript: { ignoreBuildErrors: false },
 };
-
 module.exports = nextConfig; 

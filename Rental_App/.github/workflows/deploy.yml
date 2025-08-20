@@ -41,6 +41,16 @@ jobs:
       - name: Copy build output to docs
         run: cp -rv apps/web/out/* docs/
 
+      - name: SPA fallback for deep links
+        run: |
+          # SPA fallback so deep links work on GH Pages
+          cp apps/web/out/index.html apps/web/out/404.html
+          
+          # Publish to docs/ for GH Pages
+          rm -rf docs
+          mkdir -p docs
+          cp -r apps/web/out/* docs/
+
       - name: Configure Pages
         uses: actions/configure-pages@v4
 
