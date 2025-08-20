@@ -97,15 +97,6 @@ export default function Dashboard() {
     try {
       setLoading(true)
   
-      
-      // Check if environment variables are available
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.error('Missing Supabase environment variables')
-        toast.error('Configuration error: Missing Supabase credentials. Please check your .env.local file.')
-        setLoading(false)
-        return
-      }
-      
       // Load properties and tenants in parallel for better performance
       const [propertiesResponse, tenantsResponse] = await Promise.all([
         PropertiesService.getAll(),
@@ -114,8 +105,6 @@ export default function Dashboard() {
       
       const propertiesData = propertiesResponse.data
       const tenantsData = tenantsResponse.data
-      
-      
       
       if (propertiesData) {
         // Convert API Property type to local Property type

@@ -19,26 +19,26 @@ walk(OUT, (file) => {
   let txt = fs.readFileSync(file, 'utf8');
   const before = txt;
 
-  // 1) Collapse /Rental_App/Rental_App -> /Rental_App (any number of repetitions)
+  // 1) Fix any remaining double prefixes (shouldn't happen with new config, but just in case)
   txt = txt.replaceAll('/Rental_App/Rental_App/', '/Rental_App/');
   txt = txt.replaceAll('/Rental_App/Rental_App', '/Rental_App');
   
-  // 2) Handle cases where Next.js already generated URLs with basePath
-  // These will get prefixed again by GitHub Pages, so normalize them
-  txt = txt.replaceAll('href="/Rental_App/_next/', 'href="/_next/');
-  txt = txt.replaceAll('src="/Rental_App/_next/', 'src="/_next/');
-  txt = txt.replaceAll('url("/Rental_App/_next/', 'url("/_next/');
-  txt = txt.replaceAll('"/Rental_App/_next/', '"/_next/');
+  // 2) Ensure all _next asset references use the correct single prefix
+  // Replace any absolute paths that might have been generated incorrectly
+  txt = txt.replaceAll('href="/Rental_App/_next/', 'href="/Rental_App/_next/');
+  txt = txt.replaceAll('src="/Rental_App/_next/', 'src="/Rental_App/_next/');
+  txt = txt.replaceAll('url("/Rental_App/_next/', 'url("/Rental_App/_next/');
+  txt = txt.replaceAll('"/Rental_App/_next/', '"/Rental_App/_next/');
   
-  // 3) Handle any other basePath references that might get double-prefixed
+  // 3) Fix any CSS imports or other asset references
+  txt = txt.replaceAll('@import "/Rental_App/', '@import "/Rental_App/');
+  txt = txt.replaceAll('@import url("/Rental_App/', '@import url("/Rental_App/');
+  
+  // 4) Ensure all internal links use relative paths (Next.js will add basePath)
   txt = txt.replaceAll('href="/Rental_App/', 'href="/');
   txt = txt.replaceAll('src="/Rental_App/', 'src="/');
   txt = txt.replaceAll('url("/Rental_App/', 'url("/');
   txt = txt.replaceAll('"/Rental_App/', '"/');
-  
-  // 4) Handle CSS imports and other references
-  txt = txt.replaceAll('@import "/Rental_App/', '@import "/');
-  txt = txt.replaceAll('@import url("/Rental_App/', '@import url("/');
 
   if (txt !== before) {
     fs.writeFileSync(file, txt);
