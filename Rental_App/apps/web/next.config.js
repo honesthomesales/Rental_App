@@ -1,17 +1,19 @@
-/** @type {import('next').NextConfig} */
+// apps/web/next.config.js
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
+  // Static export (no next export command needed in Next 14+)
   output: 'export',
+
+  // Use ONE prefix only; Next will prepend this to routes and _next assets
   basePath: isProd ? '/Rental_App' : '',
-  // IMPORTANT: remove assetPrefix to avoid /Rental_App/Rental_App
-  // assetPrefix: undefined,
+
+  // Required for GH Pages (no image optimizer runtime)
   images: { unoptimized: true },
-  trailingSlash: true,
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: 'https://gnisgfojzrrnidizrycj.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaXNnZm9qenJybmlkaXpyeWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjgyMDMsImV4cCI6MjA2NzM0NDIwM30.jLRIt4mqNa-6rnWudT_ciCvfPC0i0WlWFrC7NbhYM'
-  },
+
+  // Ensure trailingSlash OFF (default). If you had it on, keep it off unless
+  // you also adjust all links and GH Pages settings consistently.
+  trailingSlash: false,
 };
 
 module.exports = nextConfig; 
