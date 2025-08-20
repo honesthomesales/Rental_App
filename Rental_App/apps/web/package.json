@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "next build && node ./scripts/fix-gh-pages-paths.mjs",
+    "build:static": "next build",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next out"
@@ -15,8 +15,6 @@
     "@hookform/resolvers": "^3.3.0",
     "@rental-app/api": "file:../../packages/api",
     "@rental-app/ui": "file:../../packages/ui",
-    "@supabase/auth-helpers-nextjs": "^0.8.0",
-    "@supabase/auth-helpers-react": "^0.4.0",
     "@supabase/supabase-js": "^2.38.0",
     "@types/leaflet": "^1.9.20",
     "autoprefixer": "^10.4.0",

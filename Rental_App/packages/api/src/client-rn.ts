@@ -6,8 +6,9 @@ import type { Database } from './database.types';
 const supabaseUrl = 'https://gnisgfojzrrnidizrycj.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaXNnZm9qenJybmlkaXpyeWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjgyMDMsImV4cCI6MjA2NzM0NDIwM30.jLRIt4mqNa-6rnWudT_ciCvfPC0i0WlWFrCgC7NbhYM';
 
-// Global singleton instance
+// Global singleton instance with proper lifecycle management
 let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+let isInitializing = false;
 
 // Create a function to get the client with proper error handling
 function createSupabaseClient() {
@@ -17,23 +18,51 @@ function createSupabaseClient() {
   
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false // Disable for React Native
+      autoRefreshToken: false, // Disable to prevent GoTrueClient warnings
+      persistSession: false,   // Disable to prevent storage issues
+      detectSessionInUrl: false, // Disable for React Native
+      storageKey: 'rental-app-rn-auth' // Unique storage key for React Native
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'rental-app-rn'
+      }
     }
   });
 }
 
 export function getSupabaseClient() {
-  if (!supabaseClient) {
-    supabaseClient = createSupabaseClient();
+  // Return existing client if available
+  if (supabaseClient) {
+    return supabaseClient;
   }
   
-  return supabaseClient;
+  // Prevent multiple simultaneous initializations
+  if (isInitializing) {
+    throw new Error('Supabase client is already being initialized');
+  }
+  
+  // Create new client
+  try {
+    isInitializing = true;
+    supabaseClient = createSupabaseClient();
+    return supabaseClient;
+  } finally {
+    isInitializing = false;
+  }
 }
 
 // Export the client for React Native
 export const supabase = getSupabaseClient();
+
+// Cleanup function for testing or when needed
+export function resetSupabaseClient() {
+  if (supabaseClient) {
+    // Clean up any subscriptions or listeners if needed
+    supabaseClient = null;
+  }
+  isInitializing = false;
+}
 
 // Helper function to handle Supabase errors
 export function handleSupabaseError(error: any): string {

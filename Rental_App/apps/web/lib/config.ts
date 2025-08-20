@@ -1,14 +1,38 @@
-// Runtime configuration for the app
-// This file embeds configuration values directly to avoid environment variable issues in static export
+// Configuration management for the rental app
+import { env, validateEnv } from './env';
 
 export const config = {
+  // Supabase Configuration - now imported from env.ts
   supabase: {
-    url: 'https://gnisgfojzrrnidizrycj.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaXNnZm9qenJybmlkaXpyeWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NjgyMDMsImV4cCI6MjA2NzM0NDIwM30.jLRIt4mqNa-6rnWudT_ciCvfPC0i0WlWFrCgC7NbhYM'
+    url: env.supabase.url,
+    anonKey: env.supabase.anonKey,
   },
+  
+  // App Configuration
   app: {
-    url: typeof window !== 'undefined' 
-      ? window.location.origin + window.location.pathname.replace(/\/$/, '')
-      : 'https://honesthomesales.github.io/Rental_App'
-  }
-} as const;
+    url: env.app.url,
+    environment: env.app.environment,
+    isProduction: env.app.isProduction,
+    isDevelopment: env.app.isDevelopment,
+    basePath: env.app.basePath,
+  },
+  
+  // Feature Flags
+  features: env.features,
+  
+  // Build Configuration
+  build: env.build,
+};
+
+// Validate configuration on import
+if (typeof window !== 'undefined') {
+  validateEnv();
+}
+
+// Get Supabase configuration
+export function getSupabaseConfig() {
+  return config.supabase;
+}
+
+// Export environment utilities for convenience
+export { env, validateEnv, isProduction, isDevelopment, getBasePath } from './env';

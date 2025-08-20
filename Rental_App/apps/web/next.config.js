@@ -6,6 +6,14 @@ const nextConfig = {
   basePath: isProd ? '/Rental_App' : '',
   images: { unoptimized: true },
   trailingSlash: false,
+  
+  // Optimize for static export
+  swcMinify: true,
+  
+  // TypeScript configuration
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 };
 
 module.exports = nextConfig; 
