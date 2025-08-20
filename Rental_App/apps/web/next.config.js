@@ -7,6 +7,11 @@ const nextConfig = {
   // Optimize for static export
   swcMinify: true,
   
+  // Enable client-side routing for dynamic segments
+  experimental: {
+    dynamicParams: true,
+  },
+  
   // TypeScript configuration
   typescript: {
     ignoreBuildErrors: false,
