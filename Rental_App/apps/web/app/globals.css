@@ -27,6 +27,10 @@
     @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200;
   }
   
+  .btn-warning {
+    @apply btn bg-warning-600 text-white hover:bg-warning-700;
+  }
+  
   .btn-danger {
     @apply btn bg-danger-600 text-white hover:bg-danger-700;
   }

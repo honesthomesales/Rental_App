@@ -244,7 +244,7 @@ export default function TenantsPage() {
 
                       <div className="flex space-x-2">
                         <Link
-                          href={`/tenants/${tenant.id}`}
+                          href={`/tenants/${tenant.id}/edit`}
                           className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
                         >
                           <Edit className="w-4 h-4 mr-1" />
@@ -344,7 +344,7 @@ export default function TenantsPage() {
                           <td className="px-4 py-4 text-sm font-medium">
                             <div className="flex space-x-2">
                               <Link
-                                href={`/tenants/${tenant.id}`}
+                                href={`/tenants/${tenant.id}/edit`}
                                 className="text-blue-600 hover:text-blue-900 flex items-center"
                               >
                                 <Edit className="w-4 h-4 mr-1" />

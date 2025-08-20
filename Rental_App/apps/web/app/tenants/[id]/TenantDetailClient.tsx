@@ -77,7 +77,7 @@ export default function TenantDetailClient({ id }: { id: string }) {
             <h1 className="text-3xl font-bold text-gray-900">Tenant Details</h1>
           </div>
           <Link
-            href={`/tenants/edit-${tenant.id}`}
+            href={`/tenants/${tenant.id}/edit`}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
           >
             <Edit className="w-4 h-4 mr-2" />
