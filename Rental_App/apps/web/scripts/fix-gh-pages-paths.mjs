@@ -9,40 +9,39 @@ function walk(dir, cb) {
     const p = path.join(dir, name);
     const s = fs.statSync(p);
     if (s.isDirectory()) walk(p, cb);
-    else if (name.endsWith('.html') || name.endsWith('.js') || name.endsWith('.css')) cb(p);
+    else if (/\.(html|js|css)$/i.test(name)) cb(p);
   }
 }
 
 let changed = 0;
 
+function replaceAllVariants(txt, from, to) {
+  // handle with ", ', or no quotes inside CSS url()
+  const variants = [
+    from,
+    from.replace(/"/g, "'"),
+    from.replace(/"/g, ''),      // no quotes
+  ];
+  for (const v of variants) txt = txt.split(v).join(to);
+  return txt;
+}
+
 walk(OUT, (file) => {
   let txt = fs.readFileSync(file, 'utf8');
   const before = txt;
 
-  // 1) Fix any remaining double prefixes (most critical)
-  txt = txt.replaceAll('/Rental_App/Rental_App/', '/Rental_App/');
-  txt = txt.replaceAll('/Rental_App/Rental_App', '/Rental_App');
-  
-  // 2) Ensure all _next asset references use the correct single prefix
-  // Replace any absolute paths that might have been generated incorrectly
-  txt = txt.replaceAll('href="/Rental_App/_next/', 'href="/Rental_App/_next/');
-  txt = txt.replaceAll('src="/Rental_App/_next/', 'src="/Rental_App/_next/');
-  txt = txt.replaceAll('url("/Rental_App/_next/', 'url("/Rental_App/_next/');
-  txt = txt.replaceAll('"/Rental_App/_next/', '"/Rental_App/_next/');
-  
-  // 3) Fix any CSS imports or other asset references
-  txt = txt.replaceAll('@import "/Rental_App/', '@import "/Rental_App/');
-  txt = txt.replaceAll('@import url("/Rental_App/', '@import url("/Rental_App/');
-  
-  // 4) Ensure all internal links use relative paths (Next.js will add basePath)
-  txt = txt.replaceAll('href="/Rental_App/', 'href="/');
-  txt = txt.replaceAll('src="/Rental_App/', 'src="/');
-  txt = txt.replaceAll('url("/Rental_App/', 'url("/');
-  txt = txt.replaceAll('"/Rental_App/', '"/');
-  
-  // 5) Fix any remaining double prefixes in asset URLs
-  txt = txt.replaceAll('https://honesthomesales.github.io/Rental_App/Rental_App/', 'https://honesthomesales.github.io/Rental_App/');
-  txt = txt.replaceAll('https://honesthomesales.github.io/Rental_App/Rental_App', 'https://honesthomesales.github.io/Rental_App');
+  // 1) Collapse double base path
+  txt = txt.split('/Rental_App/Rental_App/').join('/Rental_App/');
+
+  // 2) Normalize _next asset links: ensure they are "/_next/..." in emitted files
+  //    so only ONE basePath gets applied at runtime.
+  txt = replaceAllVariants(txt, '"/Rental_App/_next/', '"/_next/');
+  txt = replaceAllVariants(txt, "href=\"/Rental_App/_next/", "href=\"/_next/");
+  txt = replaceAllVariants(txt, "src=\"/Rental_App/_next/", "src=\"/_next/");
+  // CSS url()
+  txt = replaceAllVariants(txt, 'url("/Rental_App/_next/', 'url("/_next/');
+  txt = replaceAllVariants(txt, "url('/Rental_App/_next/", "url('/_next/");
+  txt = replaceAllVariants(txt, 'url(/Rental_App/_next/', 'url(/_next/');
 
   if (txt !== before) {
     fs.writeFileSync(file, txt);

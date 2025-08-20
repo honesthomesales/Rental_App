@@ -128,7 +128,7 @@ export default function PaymentDetailClient({ id }: { id: string }) {
           </div>
           <div className="flex space-x-3">
             <Link
-              href={`/payments/edit/${transaction.id}`}
+              href={`/payments/${transaction.id}/edit`}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
             >
               <Edit className="w-4 h-4 mr-2" />

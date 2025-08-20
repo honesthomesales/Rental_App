@@ -1,18 +1,13 @@
 import { Suspense } from 'react'
 import PropertyEditClient from './PropertyEditClient'
 
-// This ensures the edit page is generated during static export
+// Ensure static export works for this dynamic segment
 export const dynamicParams = false;
 
 export async function generateStaticParams() {
-  // Generate multiple example IDs to ensure edit routes are available
-  return [
-    { id: 'example-id-1' },
-    { id: 'example-id-2' },
-    { id: 'example-id-3' },
-    { id: 'example-id-4' },
-    { id: 'example-id-5' }
-  ];
+  // Provide at least one concrete param so Next can statically export this route.
+  // Use 'example-id' unless the file already imports or expects a different param shape.
+  return [{ id: 'example-id' }];
 }
 
 export default function PropertyEditPage({ params }: { params: { id: string } }) {
