@@ -114,23 +114,55 @@ export default function LateTenantsPage() {
       
       console.log('Payments data:', paymentsData)
       
-      if (periodsResponse.success && periodsResponse.data) {
+      if (periodsResponse.success && periodsResponse.data && periodsResponse.data.length > 0) {
         console.log('Setting tenant periods:', periodsResponse.data)
         console.log('Number of periods found:', periodsResponse.data.length)
-        
-        if (periodsResponse.data.length === 0) {
-          toast.error('No rent periods found for this tenant. They may need rent periods generated.')
-          // Still show the modal with the summary
-          setShowPeriodsModal(true)
-          return
-        }
         
         setSelectedTenantPeriods(periodsResponse.data)
         setShowPeriodsModal(true)
         console.log('Modal should now be visible, showPeriodsModal:', true)
       } else {
-        console.error('Failed to load rent periods:', periodsResponse.error)
-        toast.error(`Failed to load rent periods: ${periodsResponse.error}`)
+        // No rent periods found - try to generate them automatically
+        console.log('No rent periods found, attempting to generate them...')
+        toast.success('Generating rent periods for this tenant...')
+        
+        try {
+          // Get tenant's lease information
+          const { data: leases } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('lease_start_date', { ascending: false })
+            .limit(1)
+          
+          if (leases && leases.length > 0) {
+            const lease = leases[0]
+            // Generate rent periods using the service
+            const generateResponse = await RentPeriodsService.createRentPeriods(tenant, lease)
+            
+            if (generateResponse.success && generateResponse.data) {
+              console.log('Successfully generated rent periods:', generateResponse.data)
+              setSelectedTenantPeriods(generateResponse.data)
+              setShowPeriodsModal(true)
+              toast.success('Rent periods generated successfully')
+            } else {
+              console.error('Failed to generate rent periods:', generateResponse.error)
+              toast.error('Failed to generate rent periods. Please run the generation script.')
+              // Still show the modal with basic info
+              setShowPeriodsModal(true)
+            }
+          } else {
+            console.log('No leases found for tenant')
+            toast.error('No lease information found for this tenant. Please add a lease first.')
+            // Still show the modal with basic info
+            setShowPeriodsModal(true)
+          }
+        } catch (error) {
+          console.error('Error generating rent periods:', error)
+          toast.error('Error generating rent periods. Please run the generation script.')
+          // Still show the modal with basic info
+          setShowPeriodsModal(true)
+        }
       }
     } catch (error) {
       console.error('Error loading rent periods:', error)
