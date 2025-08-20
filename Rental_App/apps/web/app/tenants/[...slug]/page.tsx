@@ -1,48 +1,24 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import TenantEditClient from '../[id]/edit/TenantEditClient'
 
+// Required for static export with catch-all routes
+export async function generateStaticParams() {
+  // Return an empty array to let Next.js handle this as a dynamic route
+  // In production, you could fetch actual tenant IDs from your database
+  return []
+}
+
 export default function TenantCatchAllPage({ params }: { params: { slug: string[] } }) {
-  const router = useRouter()
-  const [isValidRoute, setIsValidRoute] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [tenantId, setTenantId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (params.slug && params.slug.length >= 2) {
-      const [id, action] = params.slug
-      
-      // Check if this is an edit route
-      if (action === 'edit' && id && !id.startsWith('example-id')) {
-        setTenantId(id)
-        setIsValidRoute(true)
-      } else {
-        // Invalid route, redirect to tenants page
-        router.push('/tenants')
-      }
-    } else {
-      // Invalid route, redirect to tenants page
-      router.push('/tenants')
-    }
-    setLoading(false)
-  }, [params.slug, router])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading tenant editor...</p>
-        </div>
-      </div>
-    )
+  // Server-side validation
+  if (!params.slug || params.slug.length < 2) {
+    return null // Invalid route
   }
 
-  if (!isValidRoute || !tenantId) {
-    return null // Will redirect
+  const [id, action] = params.slug
+  
+  // Check if this is an edit route
+  if (action !== 'edit' || !id || id.startsWith('example-id')) {
+    return null // Invalid route
   }
 
-  return <TenantEditClient id={tenantId} />
+  return <TenantEditClient id={id} />
 }

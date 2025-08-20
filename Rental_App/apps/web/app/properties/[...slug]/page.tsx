@@ -1,48 +1,24 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import PropertyEditClient from '../[id]/edit/PropertyEditClient'
 
+// Required for static export with catch-all routes
+export async function generateStaticParams() {
+  // Return an empty array to let Next.js handle this as a dynamic route
+  // In production, you could fetch actual property IDs from your database
+  return []
+}
+
 export default function PropertyCatchAllPage({ params }: { params: { slug: string[] } }) {
-  const router = useRouter()
-  const [isValidRoute, setIsValidRoute] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [propertyId, setPropertyId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (params.slug && params.slug.length >= 2) {
-      const [id, action] = params.slug
-      
-      // Check if this is an edit route
-      if (action === 'edit' && id && !id.startsWith('example-id')) {
-        setPropertyId(id)
-        setIsValidRoute(true)
-      } else {
-        // Invalid route, redirect to properties page
-        router.push('/properties')
-      }
-    } else {
-      // Invalid route, redirect to properties page
-      router.push('/properties')
-    }
-    setLoading(false)
-  }, [params.slug, router])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading property editor...</p>
-        </div>
-      </div>
-    )
+  // Server-side validation
+  if (!params.slug || params.slug.length < 2) {
+    return null // Invalid route
   }
 
-  if (!isValidRoute || !propertyId) {
-    return null // Will redirect
+  const [id, action] = params.slug
+  
+  // Check if this is an edit route
+  if (action !== 'edit' || !id || id.startsWith('example-id')) {
+    return null // Invalid route
   }
 
-  return <PropertyEditClient id={propertyId} />
+  return <PropertyEditClient id={id} />
 }
