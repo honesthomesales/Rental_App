@@ -49,6 +49,11 @@ export function handleSupabaseError(error: any): string {
   return 'An unexpected error occurred';
 }
 
-export function createApiResponse<T>(success: boolean, data?: T, error?: string): { success: boolean; data?: T; error?: string } {
-  return { success, data, error };
+// Helper function to create API response - maintain original signature for compatibility
+export function createApiResponse<T>(data: T | null, error: string | null = null): { data: T | null; error: string | null; success: boolean } {
+  return {
+    data,
+    error,
+    success: !error
+  };
 } 
