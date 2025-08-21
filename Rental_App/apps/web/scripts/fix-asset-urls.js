@@ -6,9 +6,9 @@ const OUT = path.resolve(__dirname, '..', 'out');
 function fixHtml(file) {
   let html = fs.readFileSync(file, 'utf8');
   
-  html = html.replace(/(href|src)="(?<!\/)Rental_App\/_next\//g, '$1="/Rental_App/_next/');
-  html = html.replace(/(href|src)="(\.\/)?_next\//g, '$1="/Rental_App/_next/');
-  html = html.replace(/(href|src)="\/Rental_App\/Rental_App\/_next\//g, '$1="/Rental_App/_next/');
+  // CRITICAL FIX: Only fix the double prefix issue
+  // /Rental_App/Rental_App/_next/ -> /Rental_App/_next/
+  html = html.replace(/\/Rental_App\/Rental_App\/_next\//g, '/Rental_App/_next/');
   
   fs.writeFileSync(file, html);
 }
@@ -32,4 +32,4 @@ if (!fs.existsSync(OUT)) {
 }
 
 walk(OUT);
-console.log('HTML asset URLs sanitized.');
+console.log('✅ HTML asset URLs sanitized - double prefix fixed.');
