@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
-const isProd = process.env.NODE_ENV === 'production';
-
 const nextConfig = {
   output: 'export',
-  // CRITICAL: Use ONLY basePath, NOT assetPrefix to prevent double prefixing
-  basePath: isProd ? '/Rental_App' : '',
+  // CRITICAL: No basePath, no assetPrefix - let GitHub Pages handle paths naturally
   trailingSlash: true,
   images: { unoptimized: true },
   swcMinify: true,

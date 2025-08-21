@@ -6,9 +6,31 @@ const OUT = path.resolve(__dirname, '..', 'out');
 function fixHtml(file) {
   let html = fs.readFileSync(file, 'utf8');
   
-  // CRITICAL FIX: Only fix the double prefix issue
-  // /Rental_App/Rental_App/_next/ -> /Rental_App/_next/
+  // CRITICAL FIXES for GitHub Pages deployment:
+  
+  // 1) Fix relative _next paths to absolute GitHub Pages paths
+  html = html.replace(/href="\/_next\//g, 'href="/Rental_App/_next/');
+  html = html.replace(/src="\/_next\//g, 'src="/Rental_App/_next/');
+  
+  // 2) Fix any remaining relative paths
+  html = html.replace(/href="_next\//g, 'href="/Rental_App/_next/');
+  html = html.replace(/src="_next\//g, 'src="/Rental_App/_next/');
+  
+  // 3) Fix CSS url() references
+  html = html.replace(/url\(\/_next\//g, 'url(/Rental_App/_next/');
+  html = html.replace(/url\('\/_next\//g, "url('/Rental_App/_next/");
+  html = html.replace(/url\("\/_next\//g, 'url("/Rental_App/_next/');
+  
+  // 4) Fix any double prefix issues (safety check)
   html = html.replace(/\/Rental_App\/Rental_App\/_next\//g, '/Rental_App/_next/');
+  
+  // 5) Fix assetPrefix in JSON data
+  html = html.replace(/"assetPrefix":"\/_next"/g, '"assetPrefix":"/Rental_App/_next"');
+  html = html.replace(/"assetPrefix":"_next"/g, '"assetPrefix":"/Rental_App/_next"');
+  
+  // 6) Fix CSS references in script data (critical for styling)
+  html = html.replace(/"\/_next\/static\/css\//g, '"/Rental_App/_next/static/css/');
+  html = html.replace(/'\/_next\/static\/css\//g, "'/Rental_App/_next/static/css/");
   
   fs.writeFileSync(file, html);
 }
@@ -32,4 +54,4 @@ if (!fs.existsSync(OUT)) {
 }
 
 walk(OUT);
-console.log('✅ HTML asset URLs sanitized - double prefix fixed.');
+console.log('✅ HTML asset URLs sanitized for GitHub Pages deployment.');
