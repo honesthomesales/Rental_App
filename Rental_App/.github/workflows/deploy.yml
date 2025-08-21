@@ -47,15 +47,40 @@ jobs:
           npm cache clean --force
           echo "NPM cache cleared"
           
+      - name: Navigate to correct directory
+        run: |
+          echo "=== NAVIGATING TO CORRECT DIRECTORY ==="
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "Looking for package-lock.json..."
+          find . -name "package-lock.json" -type f
+          
       - name: Install root dependencies
         run: |
           echo "=== INSTALLING ROOT DEPENDENCIES ==="
-          npm ci
+          # Try to find and use the correct package-lock.json
+          if [ -f "package-lock.json" ]; then
+            echo "Found package-lock.json in current directory"
+            npm ci
+          elif [ -f "../package-lock.json" ]; then
+            echo "Found package-lock.json in parent directory"
+            cd .. && npm ci
+          else
+            echo "ERROR: package-lock.json not found anywhere!"
+            find . -name "package-lock.json" -type f
+            exit 1
+          fi
           echo "Root dependencies installed successfully"
 
       - name: Install workspace dependencies  
         run: |
           echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
+          # Make sure we're in the right directory for workspace install
+          if [ ! -f "package-lock.json" ]; then
+            echo "Moving to directory with package-lock.json..."
+            cd ..
+          fi
           npm install --workspaces
           echo "Workspace dependencies installed successfully"
 
@@ -70,12 +95,22 @@ jobs:
       - name: Build packages first
         run: |
           echo "=== BUILDING PACKAGES ==="
+          # Make sure we're in the right directory for building
+          if [ ! -f "package-lock.json" ]; then
+            echo "Moving to directory with package-lock.json..."
+            cd ..
+          fi
           npm run build:packages
           echo "Packages built successfully"
 
       - name: Build web app
         run: |
           echo "=== BUILDING WEB APP ==="
+          # Make sure we're in the right directory for building
+          if [ ! -f "package-lock.json" ]; then
+            echo "Moving to directory with package-lock.json..."
+            cd ..
+          fi
           cd apps/web
           npm run build
           echo "Web app built successfully"
