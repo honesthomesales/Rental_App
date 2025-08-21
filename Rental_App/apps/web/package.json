@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/fix-asset-urls.js",
+    "build:static": "next build && node scripts/fix-asset-urls.js",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next out"

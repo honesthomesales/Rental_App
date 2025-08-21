@@ -47,11 +47,17 @@ jobs:
             **/npm-shrinkwrap.json
             **/yarn.lock
 
+      - name: Ensure root lockfile exists (monorepo-safe)
+        run: |
+          if [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ] && [ ! -f yarn.lock ]; then
+            echo "No lock file found at repo root — generating package-lock.json"
+            npm install --package-lock-only --no-audit --no-fund
+          fi
+
       - name: Install dependencies (monorepo-safe)
         run: |
           echo "Node: $(node --version)"
           echo "NPM:  $(npm --version)"
-          # If a lockfile exists, use npm ci for reproducible installs; otherwise, fall back to npm install.
           if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
             npm ci
           else
