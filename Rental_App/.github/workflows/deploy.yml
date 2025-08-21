@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 permissions:
@@ -18,43 +18,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 1) Checkout code
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug repository structure
-        run: |
-          echo "=== REPOSITORY STRUCTURE DEBUG ==="
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "Git remote:"
-          git remote -v
-          echo "Git branch:"
-          git branch -a
-          echo "Package files found:"
-          find . -name "package*.json" -type f
-          echo "Node modules:"
-          ls -la node_modules 2>/dev/null || echo "No node_modules found"
-
-      - name: Setup Node.js
+      # 2) Setup Node (NO CACHE so we don't require a lockfile upfront)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: |
-            package-lock.json
-            **/package-lock.json
-            **/npm-shrinkwrap.json
-            **/yarn.lock
+          node-version: "18"
 
-      - name: Ensure root lockfile exists (monorepo-safe)
+      # 3) Create a root lockfile if missing so later steps won't choke
+      - name: Ensure root lockfile exists
+        shell: bash
         run: |
           if [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ] && [ ! -f yarn.lock ]; then
-            echo "No lock file found at repo root — generating package-lock.json"
+            echo "No lock file at repo root — generating package-lock.json"
             npm install --package-lock-only --no-audit --no-fund
           fi
+          echo "Lockfile status at repo root:"
+          ls -la | egrep "package-lock.json|npm-shrinkwrap.json|yarn.lock" || true
 
+      # 4) Install dependencies in a monorepo-safe way (works with or without lockfile)
       - name: Install dependencies (monorepo-safe)
+        shell: bash
         run: |
           echo "Node: $(node --version)"
           echo "NPM:  $(npm --version)"
@@ -64,42 +51,46 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Verify dependencies
+      # 5) Build packages first (skip if script doesn't exist)
+      - name: Build packages (if present)
+        shell: bash
         run: |
-          echo "=== VERIFYING DEPENDENCIES ==="
-          echo "Root node_modules:"
-          ls -la node_modules | head -10
-          echo "Web app node_modules:"
-          ls -la apps/web/node_modules 2>/dev/null | head -10 || echo "No web node_modules found"
-
-      - name: Build packages
-        run: |
-          npm run build:packages
-
-      - name: Build web (Next export)
-        working-directory: apps/web
-        run: |
-          npm run clean
-          npm run build
-
-      - name: Guard: forbid double-prefixed asset paths
-        run: |
-          if grep -R --include="*.html" -n 'href="Rental_App/_next' apps/web/out || grep -R --include="*.html" -n 'src="Rental_App/_next' apps/web/out; then
-            echo "ERROR: Relative Rental_App/_next paths detected."
-            exit 1
+          if npm run | grep -q "build:packages"; then
+            npm run build:packages
+          else
+            echo "No build:packages script at root; skipping."
           fi
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Prepare Pages artifact
+      # 6) Build the Next.js web app (static export goes to apps/web/out)
+      - name: Build web (Next export)
+        working-directory: apps/web
+        shell: bash
         run: |
+          npm run clean || true
+          npm run build
+
+      # 7) Prepare Pages artifact: add SPA fallback and publish ONLY the export
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          # SPA fallback so deep links work on GH Pages
           cp apps/web/out/index.html apps/web/out/404.html
+          # Publish ONLY the exported site
           rm -rf docs
           mkdir -p docs
           cp -r apps/web/out/* docs/
 
-      - name: Upload artifact
+      # 8) Optional guardrail: block bad relative asset paths that cause double /Rental_App
+      - name: Guard: forbid relative Rental_App/_next paths
+        shell: bash
+        run: |
+          if grep -R --include="*.html" -n 'href="Rental_App/_next' docs || grep -R --include="*.html" -n 'src="Rental_App/_next' docs; then
+            echo "ERROR: Relative Rental_App/_next paths detected. This would break on GH Pages."
+            exit 1
+          fi
+
+      # 9) Upload the docs/ as the artifact for GitHub Pages
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
@@ -111,6 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      # 10) Deploy the artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
