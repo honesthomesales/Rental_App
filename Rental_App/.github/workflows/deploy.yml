@@ -40,7 +40,14 @@ jobs:
           # SPA fallback for deep links
           cp apps/web/out/index.html apps/web/out/404.html
           
-          # Publish the exported site to docs/
+          # Guard: fail if any relative 'Rental_App/_next' slipped into HTML
+          if grep -R --include="*.html" -n 'href="Rental_App/_next' apps/web/out || \
+             grep -R --include="*.html" -n 'src="Rental_App/_next' apps/web/out; then
+            echo "ERROR: Found relative Rental_App/_next paths (would cause /Rental_App/Rental_App)."
+            exit 1
+          fi
+          
+          # Publish exported site to docs/ (no extra subfolder)
           rm -rf docs
           mkdir -p docs
           cp -r apps/web/out/* docs/

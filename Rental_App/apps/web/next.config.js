@@ -3,9 +3,8 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
   output: 'export',
-  // Serve under project pages path ONLY once
   basePath: isProd ? '/Rental_App' : '',
-  assetPrefix: isProd ? '/Rental_App' : '',
+  // IMPORTANT: do NOT set assetPrefix at all; basePath will handle _next paths.
   trailingSlash: true,
   images: { unoptimized: true },
   swcMinify: true,
