@@ -37,20 +37,7 @@ jobs:
 
       - name: SPA fallback and deploy preparation
         run: |
-          # SPA fallback for deep links
-          cp apps/web/out/index.html apps/web/out/404.html
-          
-          # Guard: fail if any relative 'Rental_App/_next' slipped into HTML
-          if grep -R --include="*.html" -n 'href="Rental_App/_next' apps/web/out || \
-             grep -R --include="*.html" -n 'src="Rental_App/_next' apps/web/out; then
-            echo "ERROR: Found relative Rental_App/_next paths (would cause /Rental_App/Rental_App)."
-            exit 1
-          fi
-          
-          # Publish exported site to docs/ (no extra subfolder)
-          rm -rf docs
-          mkdir -p docs
-          cp -r apps/web/out/* docs/
+          cp apps/web/out/index.html apps/web/out/404.html && if grep -R --include="*.html" -n 'href="Rental_App/_next' apps/web/out || grep -R --include="*.html" -n 'src="Rental_App/_next' apps/web/out || grep -R --include="*.html" -n 'href="/_next/' apps/web/out || grep -R --include="*.html" -n 'src="/_next/' apps/web/out; then echo "ERROR: Bad asset paths detected (would break on GH Pages)."; exit 1; fi && rm -rf docs && mkdir -p docs && cp -r apps/web/out/* docs/
 
       - name: Configure Pages
         uses: actions/configure-pages@v4
