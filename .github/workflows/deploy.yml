@@ -27,17 +27,37 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: Debug directory structure
+        run: |
+          echo "=== Current Directory ==="
+          pwd
+          echo "=== Directory Contents ==="
+          ls -la
+          echo "=== Package files ==="
+          find . -name "package*.json" -type f
+
       - name: Install dependencies
         run: |
-          pwd
-          ls -la
+          echo "=== Installing root dependencies ==="
           npm ci
+          echo "=== Installing workspace dependencies ==="
+          npm run install:workspaces
 
-      - name: Build packages
-        run: npm run build:packages
+      - name: Build packages first
+        run: |
+          echo "=== Building packages ==="
+          npm run build:packages
 
       - name: Build web app
-        run: cd apps/web && npm run build
+        run: |
+          echo "=== Building web app ==="
+          cd apps/web
+          npm run build
+
+      - name: Verify build output
+        run: |
+          echo "=== Checking build output ==="
+          ls -la apps/web/out
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
