@@ -32,6 +32,29 @@ jobs:
       - name: Ensure root lockfile exists
         shell: bash
         run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "Looking for package.json..."
+          find . -name "package.json" -type f
+          
+          # Navigate to the correct directory with package.json
+          if [ -f "package.json" ]; then
+            echo "Found package.json in current directory"
+          elif [ -f "../package.json" ]; then
+            echo "Found package.json in parent directory, moving up..."
+            cd ..
+          elif [ -f "Rental_App/package.json" ]; then
+            echo "Found package.json in Rental_App subdirectory, moving there..."
+            cd Rental_App
+          else
+            echo "ERROR: Cannot find package.json anywhere!"
+            exit 1
+          fi
+          
+          echo "Working directory: $(pwd)"
+          echo "Package.json exists: $(ls -la package.json)"
+          
           if [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ] && [ ! -f yarn.lock ]; then
             echo "No lock file at repo root — generating package-lock.json"
             npm install --package-lock-only --no-audit --no-fund
@@ -45,6 +68,18 @@ jobs:
         run: |
           echo "Node: $(node --version)"
           echo "NPM:  $(npm --version)"
+          echo "Working directory: $(pwd)"
+          
+          # Make sure we're in the directory with package.json
+          if [ ! -f "package.json" ]; then
+            if [ -f "../package.json" ]; then
+              cd ..
+            elif [ -f "Rental_App/package.json" ]; then
+              cd Rental_App
+            fi
+            echo "Moved to directory: $(pwd)"
+          fi
+          
           if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
             npm ci
           else
