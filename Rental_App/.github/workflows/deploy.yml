@@ -20,11 +20,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: rental-app
 
       - name: Debug repository structure
         run: |
           echo "=== REPOSITORY STRUCTURE DEBUG ==="
           echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "Moving to rental-app directory..."
+          cd rental-app
+          echo "New directory: $(pwd)"
           echo "Directory contents:"
           ls -la
           echo "Git remote:"
@@ -41,46 +48,18 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Clear npm cache
-        run: |
-          echo "=== CLEARING NPM CACHE ==="
-          npm cache clean --force
-          echo "NPM cache cleared"
-          
-      - name: Navigate to correct directory
-        run: |
-          echo "=== NAVIGATING TO CORRECT DIRECTORY ==="
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "Looking for package-lock.json..."
-          find . -name "package-lock.json" -type f
-          
       - name: Install root dependencies
         run: |
           echo "=== INSTALLING ROOT DEPENDENCIES ==="
-          # Try to find and use the correct package-lock.json
-          if [ -f "package-lock.json" ]; then
-            echo "Found package-lock.json in current directory"
-            npm ci
-          elif [ -f "../package-lock.json" ]; then
-            echo "Found package-lock.json in parent directory"
-            cd .. && npm ci
-          else
-            echo "ERROR: package-lock.json not found anywhere!"
-            find . -name "package-lock.json" -type f
-            exit 1
-          fi
+          cd rental-app
+          echo "Working in: $(pwd)"
+          npm ci
           echo "Root dependencies installed successfully"
 
       - name: Install workspace dependencies  
         run: |
           echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
-          # Make sure we're in the right directory for workspace install
-          if [ ! -f "package-lock.json" ]; then
-            echo "Moving to directory with package-lock.json..."
-            cd ..
-          fi
+          cd rental-app
           npm install --workspaces
           echo "Workspace dependencies installed successfully"
 
@@ -95,23 +74,14 @@ jobs:
       - name: Build packages first
         run: |
           echo "=== BUILDING PACKAGES ==="
-          # Make sure we're in the right directory for building
-          if [ ! -f "package-lock.json" ]; then
-            echo "Moving to directory with package-lock.json..."
-            cd ..
-          fi
+          cd rental-app
           npm run build:packages
           echo "Packages built successfully"
 
       - name: Build web app
         run: |
           echo "=== BUILDING WEB APP ==="
-          # Make sure we're in the right directory for building
-          if [ ! -f "package-lock.json" ]; then
-            echo "Moving to directory with package-lock.json..."
-            cd ..
-          fi
-          cd apps/web
+          cd rental-app/apps/web
           npm run build
           echo "Web app built successfully"
 
@@ -127,7 +97,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/out
+          path: rental-app/apps/web/out
 
   deploy:
     environment:
