@@ -20,18 +20,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          path: rental-app
 
       - name: Debug repository structure
         run: |
           echo "=== REPOSITORY STRUCTURE DEBUG ==="
           echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "Moving to rental-app directory..."
-          cd rental-app
-          echo "New directory: $(pwd)"
           echo "Directory contents:"
           ls -la
           echo "Git remote:"
@@ -51,7 +44,6 @@ jobs:
       - name: Install root dependencies
         run: |
           echo "=== INSTALLING ROOT DEPENDENCIES ==="
-          cd rental-app
           echo "Working in: $(pwd)"
           npm ci
           echo "Root dependencies installed successfully"
@@ -59,7 +51,6 @@ jobs:
       - name: Install workspace dependencies  
         run: |
           echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
-          cd rental-app
           npm install --workspaces
           echo "Workspace dependencies installed successfully"
 
@@ -74,14 +65,13 @@ jobs:
       - name: Build packages first
         run: |
           echo "=== BUILDING PACKAGES ==="
-          cd rental-app
           npm run build:packages
           echo "Packages built successfully"
 
       - name: Build web app
         run: |
           echo "=== BUILDING WEB APP ==="
-          cd rental-app/apps/web
+          cd apps/web
           npm run build
           echo "Web app built successfully"
 
@@ -97,7 +87,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: rental-app/apps/web/out
+          path: apps/web/out
 
   deploy:
     environment:
