@@ -40,18 +40,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
+      - name: Clear npm cache
+        run: |
+          echo "=== CLEARING NPM CACHE ==="
+          npm cache clean --force
+          echo "NPM cache cleared"
+          
       - name: Install root dependencies
         run: |
           echo "=== INSTALLING ROOT DEPENDENCIES ==="
           npm ci
           echo "Root dependencies installed successfully"
 
-      - name: Install workspace dependencies
+      - name: Install workspace dependencies  
         run: |
           echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
-          npm run install:workspaces
+          npm install --workspaces
           echo "Workspace dependencies installed successfully"
 
       - name: Verify dependencies
