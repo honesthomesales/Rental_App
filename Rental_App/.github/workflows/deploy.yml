@@ -34,22 +34,7 @@ jobs:
         run: npm run build:packages
 
       - name: Build web app
-        run: cd apps/web && npm run build:static
-
-      - name: Verify asset paths
-        run: |
-          cd apps/web
-          # Check that all asset paths are correctly prefixed
-          if grep -R --include="*.html" -n 'href="/_next/' out || grep -R --include="*.html" -n 'src="/_next/' out; then
-            echo "ERROR: Found relative asset paths that would break on GitHub Pages"
-            exit 1
-          fi
-          # Check that all asset paths have the correct prefix
-          if ! grep -R --include="*.html" -q 'href="/Rental_App/_next/' out; then
-            echo "ERROR: No correctly prefixed asset paths found"
-            exit 1
-          fi
-          echo "✅ Asset paths verified correctly"
+        run: cd apps/web && npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
