@@ -29,8 +29,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pwd
           ls -la
-          npm ci --workspace=apps/web
+          npm ci
 
       - name: Build packages
         run: npm run build:packages
