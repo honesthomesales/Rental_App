@@ -40,19 +40,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            **/yarn.lock
 
-      - name: Install root dependencies
+      - name: Install dependencies (monorepo-safe)
         run: |
-          echo "=== INSTALLING ROOT DEPENDENCIES ==="
-          echo "Working in: $(pwd)"
-          npm ci
-          echo "Root dependencies installed successfully"
-
-      - name: Install workspace dependencies  
-        run: |
-          echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
-          npm install --workspaces
-          echo "Workspace dependencies installed successfully"
+          echo "Node: $(node --version)"
+          echo "NPM:  $(npm --version)"
+          # If a lockfile exists, use npm ci for reproducible installs; otherwise, fall back to npm install.
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
 
       - name: Verify dependencies
         run: |
@@ -62,32 +66,37 @@ jobs:
           echo "Web app node_modules:"
           ls -la apps/web/node_modules 2>/dev/null | head -10 || echo "No web node_modules found"
 
-      - name: Build packages first
+      - name: Build packages
         run: |
-          echo "=== BUILDING PACKAGES ==="
           npm run build:packages
-          echo "Packages built successfully"
 
-      - name: Build web app
+      - name: Build web (Next export)
+        working-directory: apps/web
         run: |
-          echo "=== BUILDING WEB APP ==="
-          cd apps/web
+          npm run clean
           npm run build
-          echo "Web app built successfully"
 
-      - name: Verify build output
+      - name: Guard: forbid double-prefixed asset paths
         run: |
-          echo "=== VERIFYING BUILD OUTPUT ==="
-          ls -la apps/web/out
-          echo "Build output verified successfully"
+          if grep -R --include="*.html" -n 'href="Rental_App/_next' apps/web/out || grep -R --include="*.html" -n 'src="Rental_App/_next' apps/web/out; then
+            echo "ERROR: Relative Rental_App/_next paths detected."
+            exit 1
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Prepare Pages artifact
+        run: |
+          cp apps/web/out/index.html apps/web/out/404.html
+          rm -rf docs
+          mkdir -p docs
+          cp -r apps/web/out/* docs/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/out
+          path: docs
 
   deploy:
     environment:
