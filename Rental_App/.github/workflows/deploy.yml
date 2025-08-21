@@ -35,18 +35,12 @@ jobs:
         working-directory: apps/web
         run: npm run build:static
 
-      - name: Create docs directory
-        run: mkdir -p docs
-
-      - name: Copy build output to docs
-        run: cp -rv apps/web/out/* docs/
-
-      - name: SPA fallback for deep links
+      - name: SPA fallback and deploy preparation
         run: |
-          # SPA fallback so deep links work on GH Pages
+          # SPA fallback for deep links
           cp apps/web/out/index.html apps/web/out/404.html
           
-          # Publish to docs/ for GH Pages
+          # Publish the exported site to docs/
           rm -rf docs
           mkdir -p docs
           cp -r apps/web/out/* docs/
