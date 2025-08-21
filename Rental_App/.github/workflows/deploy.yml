@@ -1,6 +1,5 @@
 name: Deploy to GitHub Pages
 
-# Force deployment trigger
 on:
   push:
     branches: [ master ]
