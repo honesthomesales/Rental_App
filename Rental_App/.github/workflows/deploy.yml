@@ -1,0 +1,101 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Debug repository structure
+        run: |
+          echo "=== REPOSITORY STRUCTURE DEBUG ==="
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "Git remote:"
+          git remote -v
+          echo "Git branch:"
+          git branch -a
+          echo "Package files found:"
+          find . -name "package*.json" -type f
+          echo "Node modules:"
+          ls -la node_modules 2>/dev/null || echo "No node_modules found"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: |
+          echo "=== INSTALLING ROOT DEPENDENCIES ==="
+          npm ci
+          echo "Root dependencies installed successfully"
+
+      - name: Install workspace dependencies
+        run: |
+          echo "=== INSTALLING WORKSPACE DEPENDENCIES ==="
+          npm run install:workspaces
+          echo "Workspace dependencies installed successfully"
+
+      - name: Verify dependencies
+        run: |
+          echo "=== VERIFYING DEPENDENCIES ==="
+          echo "Root node_modules:"
+          ls -la node_modules | head -10
+          echo "Web app node_modules:"
+          ls -la apps/web/node_modules 2>/dev/null | head -10 || echo "No web node_modules found"
+
+      - name: Build packages first
+        run: |
+          echo "=== BUILDING PACKAGES ==="
+          npm run build:packages
+          echo "Packages built successfully"
+
+      - name: Build web app
+        run: |
+          echo "=== BUILDING WEB APP ==="
+          cd apps/web
+          npm run build
+          echo "Web app built successfully"
+
+      - name: Verify build output
+        run: |
+          echo "=== VERIFYING BUILD OUTPUT ==="
+          ls -la apps/web/out
+          echo "Build output verified successfully"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
