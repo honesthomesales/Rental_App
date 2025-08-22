@@ -25,31 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: 'npm'
 
-      - name: Fix directory and install
-        run: |
-          echo "Current: $(pwd)"
-          ls -la
-          
-          # Navigate to correct directory
-          if [ -f "package.json" ]; then
-            echo "Found package.json here"
-          elif [ -f "../package.json" ]; then
-            echo "Moving up to parent"
-            cd ..
-          elif [ -f "Rental_App/package.json" ]; then
-            echo "Moving to Rental_App subdirectory"
-            cd Rental_App
-          else
-            echo "ERROR: No package.json found!"
-            exit 1
-          fi
-          
-          echo "Working directory: $(pwd)"
-          echo "Package.json: $(ls -la package.json)"
-          
-          # Install dependencies
-          npm install
+      - name: Install dependencies
+        run: npm install
 
       - name: Build web app
         working-directory: apps/web
