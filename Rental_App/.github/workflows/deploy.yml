@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -31,8 +31,8 @@ jobs:
         run: npm install --verbose
 
       - name: Build web app
-        working-directory: apps/web
-        run: npm run build
+        run: npm run build:web
+        working-directory: ./
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
