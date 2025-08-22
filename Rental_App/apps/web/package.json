@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:no-lint": "next build --no-lint",
+    "build:web": "next build",
     "build:static": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next out"
+    "clean": "if exist .next rmdir /s /q .next 2>nul & if exist out rmdir /s /q out 2>nul"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { TenantsService } from '@rental-app/api/src/services/tenants'
-import { PropertiesService } from '@rental-app/api/src/services/properties'
+import { TenantsService, PropertiesService } from '@rental-app/api'
 import { calculateTotalLatePayments, isTenantLate } from '../../lib/utils'
 import LatePaymentDetailsModal from '../../components/LatePaymentDetailsModal'
 

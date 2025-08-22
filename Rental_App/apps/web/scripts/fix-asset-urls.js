@@ -7,9 +7,9 @@ function fixHtml(file) {
   let html = fs.readFileSync(file, 'utf8');
   
   // Fix asset URLs for GitHub Pages deployment
-  html = html.replace(/(href|src)="(?<!\/)Rental_App\/_next\//g, '$1="/Rental_App/_next/');
-  html = html.replace(/(href|src)="(\.\/)?_next\//g, '$1="/Rental_App/_next/');
-  html = html.replace(/(href|src)="\/Rental_App\/Rental_App\/_next\//g, '$1="/Rental_App/_next/');
+  html = html.replace(/(href|src)="(?<!\/)My_Rental-_App\/_next\//g, '$1="/My_Rental-_App/_next/');
+  html = html.replace(/(href|src)="(\.\/)?_next\//g, '$1="/My_Rental-_App/_next/');
+  html = html.replace(/(href|src)="\/My_Rental-_App\/My_Rental-_App\/_next\//g, '$1="/My_Rental-_App/_next/');
   
   fs.writeFileSync(file, html);
 }

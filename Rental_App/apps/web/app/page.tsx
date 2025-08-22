@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Plus, Search, DollarSign, Home, Users, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { PropertiesService } from '@rental-app/api'
+import { PropertiesService, Property as ApiProperty } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
 import { extractRentCadence, normalizeRentToMonthly } from '../lib/utils'
+import { PropertyForm } from '../components/PropertyForm'
+import { TenantForm } from '../components/TenantForm'
 
 interface Property {
   id: string
@@ -61,6 +63,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
+  const [tenants, setTenants] = useState<any[]>([])
   const [stats, setStats] = useState<DashboardStats>({
     total_properties: 0,
     total_tenants: 0,
@@ -81,6 +84,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
+  
+  // Edit modal states
+  const [editingProperty, setEditingProperty] = useState<ApiProperty | undefined>(undefined)
+  const [editingTenant, setEditingTenant] = useState<any | null>(null)
+  const [showPropertyForm, setShowPropertyForm] = useState(false)
+  const [showTenantForm, setShowTenantForm] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -270,6 +279,40 @@ export default function Dashboard() {
   const handleViewLatePayments = useCallback(() => {
     router.push('/late-payments')
   }, [router])
+
+  const handlePropertyEdit = (property: Property) => {
+    setEditingProperty(property as any)
+    setShowPropertyForm(true)
+  }
+
+  const handleTenantEdit = (tenant: any) => {
+    setEditingTenant(tenant)
+    setShowTenantForm(true)
+  }
+
+  const handlePropertyFormSuccess = (property: ApiProperty) => {
+    setShowPropertyForm(false)
+    setEditingProperty(undefined)
+    loadDashboardData() // Reload data
+    toast.success('Property updated successfully')
+  }
+
+  const handleTenantFormSuccess = (tenant: any) => {
+    setShowTenantForm(false)
+    setEditingTenant(null)
+    loadDashboardData() // Reload data
+    toast.success('Tenant updated successfully')
+  }
+
+  const handlePropertyFormCancel = () => {
+    setShowPropertyForm(false)
+    setEditingProperty(undefined)
+  }
+
+  const handleTenantFormCancel = () => {
+    setShowTenantForm(false)
+    setEditingTenant(null)
+  }
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
@@ -470,14 +513,15 @@ export default function Dashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Monthly Rent
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProperties.map((property) => (
-                    <tr key={property.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={property.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onDoubleClick={() => handlePropertyEdit(property)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{property.name}</div>
                         <div className="text-sm text-gray-500">{property.city}, {property.state}</div>
@@ -502,19 +546,82 @@ export default function Dashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handlePropertyClick(property.id)}
-                          className="text-primary-600 hover:text-primary-900 mr-4"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => router.push(`/properties/${property.id}/edit`)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Edit
-                        </button>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Tenants Section */}
+        <div className="card mt-8">
+          <div className="card-header">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="card-title">Tenants</h2>
+                <p className="card-description">Manage your tenants</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={() => handleViewAllTenants()}
+                  className="btn btn-secondary"
+                >
+                  View All Tenants
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="card-content">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tenant
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Property
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Lease Start
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monthly Rent
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tenants.map((tenant) => (
+                    <tr 
+                      key={tenant.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onDoubleClick={() => handleTenantEdit(tenant)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
+                        <div className="text-sm text-gray-500">{tenant.phone}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {tenant.property_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {tenant.lease_start_date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {tenant.monthly_rent ? `${tenant.monthly_rent.toLocaleString()} (${extractRentCadence(tenant.notes || undefined)})` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          tenant.status === 'current' ? 'bg-green-100 text-green-800' :
+                          tenant.status === 'late' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {tenant.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -524,6 +631,24 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Property Edit Modal */}
+      {showPropertyForm && (
+        <PropertyForm
+          property={editingProperty}
+          onSuccess={handlePropertyFormSuccess}
+          onCancel={handlePropertyFormCancel}
+        />
+      )}
+
+      {/* Tenant Edit Modal */}
+      {showTenantForm && (
+        <TenantForm
+          tenant={editingTenant}
+          onSuccess={handleTenantFormSuccess}
+          onCancel={handleTenantFormCancel}
+        />
+      )}
     </div>
   )
 }

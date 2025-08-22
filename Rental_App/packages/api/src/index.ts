@@ -1,17 +1,30 @@
-// Export types
-export * from './types';
-export * from './database.types';
-export * from './types/ui';
+// Export all services
+export * from './services/properties';
+export * from './services/tenants';
+export * from './services/payments';
+export * from './services/leases';
+export * from './services/transactions';
+export * from './services/rentPeriods';
+export * from './services/other';
 
-// Export client
-export { supabase, handleSupabaseError, createApiResponse } from './client';
-export { supabase as supabaseRN, handleSupabaseError as handleSupabaseErrorRN, createApiResponse as createApiResponseRN } from './client-rn';
+// Export types (excluding those already exported by services)
+export type { 
+  Property,
+  Tenant, 
+  Lease,
+  Transaction,
+  RentPeriod,
+  OtherEntry,
+  ApiResponse,
+  PaginatedResponse,
+  CreatePropertyData,
+  UpdatePropertyData,
+  CreateTenantData,
+  UpdateTenantData,
+  CreateTransactionData,
+  UpdateTransactionData,
+  LateTenant
+} from './types';
 
-// Export services
-export { PropertiesService } from './services/properties';
-export { TenantsService } from './services/tenants';
-export { LeasesService } from './services/leases';
-export { TransactionsService } from './services/transactions';
-export { PaymentsService } from './services/payments';
-export { RentPeriodsService } from './services/rentPeriods';
-export { OtherService, OtherEntry } from './services/other'; 
+// Export utilities
+export * from './utils'; 

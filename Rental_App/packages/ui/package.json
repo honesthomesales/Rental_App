@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "if exist dist rmdir /s /q dist 2>nul"
   },
   "dependencies": {
     "react": "^18.2.0",

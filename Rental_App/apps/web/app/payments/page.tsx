@@ -4,10 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { PaymentsService } from '@rental-app/api/src/services/payments'
-import { PropertiesService } from '@rental-app/api/src/services/properties'
-import { TenantsService } from '@rental-app/api/src/services/tenants'
-import { RentPeriodsService } from '@rental-app/api/src/services/rentPeriods'
+import { PaymentsService, PropertiesService, TenantsService, RentPeriodsService } from '@rental-app/api'
 
 interface Payment {
   id: string

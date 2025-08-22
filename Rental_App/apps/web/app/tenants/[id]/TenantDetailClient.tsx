@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { TenantsService, type TenantUI, type Tenant } from '@rental-app/api'
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Building } from 'lucide-react'
 import Link from 'next/link'
+import { ArrowLeft, User, Phone, Mail, Calendar, Edit } from 'lucide-react'
+import { TenantsService } from '@rental-app/api'
+import { TenantForm } from '../../../components/TenantForm'
 import toast from 'react-hot-toast'
 
-export default function TenantDetailClient({ id }: { id: string }) {
+interface TenantDetailClientProps {
+  id: string
+}
+
+export function TenantDetailClient({ id }: TenantDetailClientProps) {
   const router = useRouter()
-  const [tenant, setTenant] = useState<TenantUI<Tenant> | null>(null)
+  const [tenant, setTenant] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
-    if (id) {
-      loadTenant(id)
-    }
+    loadTenant()
   }, [id])
 
-  const loadTenant = async (id: string) => {
+  const loadTenant = async () => {
     try {
       setLoading(true)
       const response = await TenantsService.getById(id)
@@ -26,15 +30,23 @@ export default function TenantDetailClient({ id }: { id: string }) {
       if (response.success && response.data) {
         setTenant(response.data)
       } else {
-        toast.error('Tenant not found')
-        router.push('/tenants')
+        toast.error('Failed to load tenant')
       }
     } catch (error) {
       toast.error('Error loading tenant')
-      router.push('/tenants')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEditSuccess = (updatedTenant: any) => {
+    setShowEditForm(false)
+    setTenant(updatedTenant)
+    toast.success('Tenant updated successfully')
+  }
+
+  const handleEditCancel = () => {
+    setShowEditForm(false)
   }
 
   if (loading) {
@@ -76,12 +88,13 @@ export default function TenantDetailClient({ id }: { id: string }) {
             </Link>
             <h1 className="text-3xl font-bold text-gray-900">Tenant Details</h1>
           </div>
-          <Link
-            href={`/tenants/${tenant.id}/edit`}
+          <button
+            onClick={() => setShowEditForm(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
+            <Edit className="w-4 h-4 mr-2" />
             Edit Tenant
-          </Link>
+          </button>
         </div>
 
         {/* Tenant Details */}
@@ -134,6 +147,15 @@ export default function TenantDetailClient({ id }: { id: string }) {
             </div>
           </div>
         </div>
+
+        {/* Edit Tenant Modal */}
+        {showEditForm && (
+          <TenantForm
+            tenant={tenant}
+            onSuccess={handleEditSuccess}
+            onCancel={handleEditCancel}
+          />
+        )}
       </div>
     </div>
   )

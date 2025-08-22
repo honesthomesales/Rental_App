@@ -46,7 +46,6 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
       
       // First, link the tenant to the property
       const tenantResponse = await TenantsService.update(tenantId, {
-        id: tenantId,
         property_id: propertyId
       })
       
@@ -56,8 +55,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
         if (propertyResponse.success && propertyResponse.data) {
           const property = propertyResponse.data
           if (property.status === 'empty') {
-            await PropertiesService.update({
-              id: propertyId,
+            await PropertiesService.update(propertyId, {
               status: 'rented',
               notes: `${property.notes || ''}\n\n[${new Date().toLocaleDateString()}] Property status changed to 'rented' - tenant linked.`
             })
@@ -83,7 +81,6 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
       
       // First, unlink the tenant from the property
       const tenantResponse = await TenantsService.update(tenantId, {
-        id: tenantId,
         property_id: undefined
       })
       
@@ -96,8 +93,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
           const propertyResponse = await PropertiesService.getById(propertyId)
           if (propertyResponse.success && propertyResponse.data) {
             const property = propertyResponse.data
-            await PropertiesService.update({
-              id: propertyId,
+            await PropertiesService.update(propertyId, {
               status: 'empty',
               notes: `${property.notes || ''}\n\n[${new Date().toLocaleDateString()}] Property status changed to 'empty' - all tenants unlinked.`
             })

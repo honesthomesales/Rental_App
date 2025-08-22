@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { PropertiesService, type PropertyUI, type Property } from '@rental-app/api'
-import { ArrowLeft, Home, MapPin, DollarSign, Calendar, User, Building } from 'lucide-react'
 import Link from 'next/link'
+import { ArrowLeft, Home, MapPin, DollarSign, Building, Edit } from 'lucide-react'
+import { PropertiesService } from '@rental-app/api'
+import { PropertyForm } from '../../../components/PropertyForm'
 import toast from 'react-hot-toast'
 
-export default function PropertyDetailClient({ id }: { id: string }) {
+interface PropertyDetailClientProps {
+  id: string
+}
+
+export function PropertyDetailClient({ id }: PropertyDetailClientProps) {
   const router = useRouter()
-  const [property, setProperty] = useState<PropertyUI<Property> | null>(null)
+  const [property, setProperty] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
-    if (id) {
-      loadProperty(id)
-    }
+    loadProperty()
   }, [id])
 
-  const loadProperty = async (id: string) => {
+  const loadProperty = async () => {
     try {
       setLoading(true)
       const response = await PropertiesService.getById(id)
@@ -26,15 +30,23 @@ export default function PropertyDetailClient({ id }: { id: string }) {
       if (response.success && response.data) {
         setProperty(response.data)
       } else {
-        toast.error('Property not found')
-        router.push('/')
+        toast.error('Failed to load property')
       }
     } catch (error) {
       toast.error('Error loading property')
-      router.push('/')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEditSuccess = (updatedProperty: any) => {
+    setShowEditForm(false)
+    setProperty(updatedProperty)
+    toast.success('Property updated successfully')
+  }
+
+  const handleEditCancel = () => {
+    setShowEditForm(false)
   }
 
   if (loading) {
@@ -68,7 +80,7 @@ export default function PropertyDetailClient({ id }: { id: string }) {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <Link
-              href="/Rental_App/"
+              href="/"
               className="inline-flex items-center px-4 py-2 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -76,12 +88,13 @@ export default function PropertyDetailClient({ id }: { id: string }) {
             </Link>
             <h1 className="text-3xl font-bold text-gray-900">Property Details</h1>
           </div>
-          <Link
-            href={`/properties/${property.id}/edit`}
+          <button
+            onClick={() => setShowEditForm(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
+            <Edit className="w-4 h-4 mr-2" />
             Edit Property
-          </Link>
+          </button>
         </div>
 
         {/* Property Details */}
@@ -132,6 +145,15 @@ export default function PropertyDetailClient({ id }: { id: string }) {
             </div>
           </div>
         </div>
+
+        {/* Edit Property Modal */}
+        {showEditForm && (
+          <PropertyForm
+            property={property}
+            onSuccess={handleEditSuccess}
+            onCancel={handleEditCancel}
+          />
+        )}
       </div>
     </div>
   )

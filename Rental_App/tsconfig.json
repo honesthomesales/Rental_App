@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "es6"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/web/*"],
+      "@/components/*": ["./apps/web/components/*"],
+      "@/lib/*": ["./apps/web/lib/*"],
+      "@/types/*": ["./apps/web/types/*"],
+      "@rental-app/api": ["./packages/api"],
+      "@rental-app/api/*": ["./packages/api/*"],
+      "@rental-app/ui": ["./packages/ui"],
+      "@rental-app/ui/*": ["./packages/ui/*"]
+    }
+  },
+  "include": [
+    "apps/web/**/*.ts",
+    "apps/web/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx"
+  ],
+  "exclude": ["node_modules", ".next", "out"]
+}

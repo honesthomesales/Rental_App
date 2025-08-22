@@ -22,7 +22,7 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   
   // Sorting state
-  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address'>('name')
+  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address' | 'type'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
@@ -73,6 +73,10 @@ export default function PropertiesPage() {
           aValue = a.address?.toLowerCase() || ''
           bValue = b.address?.toLowerCase() || ''
           break
+        case 'type':
+          aValue = a.property_type?.toLowerCase() || ''
+          bValue = b.property_type?.toLowerCase() || ''
+          break
         default:
           return 0
       }
@@ -84,7 +88,7 @@ export default function PropertiesPage() {
   }, [properties, sortField, sortDirection])
 
   // Handle sort column click
-  const handleSort = (field: 'name' | 'status' | 'rent' | 'address') => {
+  const handleSort = (field: 'name' | 'status' | 'rent' | 'address' | 'type') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -131,8 +135,7 @@ export default function PropertiesPage() {
       }
       
       // Update property status to empty
-      await PropertiesService.update({
-        id: property.id,
+      await PropertiesService.update(property.id, {
         status: 'empty'
       })
 
@@ -359,11 +362,14 @@ export default function PropertiesPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
 
             <div className="overflow-x-auto w-full">
-              <table className="w-full min-w-[1400px]">
+              <table className="w-full min-w-[1402px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                      Actions
+                    </th>
                     <th 
-                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] cursor-pointer hover:bg-gray-100 select-none"
+                      className="!min-w-[288px] !max-w-[288px] !w-[288px] px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
                       onClick={() => handleSort('name')}
                     >
                       <div className="flex items-center">
@@ -374,6 +380,13 @@ export default function PropertiesPage() {
                           </span>
                         )}
                       </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                      {/* TODO: To show actual tenant names, update PropertiesService.getAll() to include:
+                          - Join with RENT_tenants table on property_id
+                          - Include tenant first_name, last_name in the query
+                          - Update Property interface to include tenant information */}
+                      Tenant
                     </th>
                     <th 
                       className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] cursor-pointer hover:bg-gray-100 select-none"
@@ -388,8 +401,18 @@ export default function PropertiesPage() {
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                      Type & Details
+                    <th 
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('type')}
+                    >
+                      <div className="flex items-center">
+                        Type & Details
+                        {sortField === 'type' && (
+                          <span className="ml-1 text-blue-600">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th 
                       className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] cursor-pointer hover:bg-gray-100 select-none"
@@ -420,9 +443,6 @@ export default function PropertiesPage() {
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                       Active Leases
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -438,12 +458,78 @@ export default function PropertiesPage() {
                   }).map((property) => (
                     <tr key={property.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => router.push(`/properties/${property.id}?edit=true`)}
+                            className="bg-gray-100 text-gray-700 p-1.5 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
+                            title="Edit Property"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenTenantModal(property)}
+                            className="bg-blue-100 text-blue-700 p-1.5 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                            title="Link Tenant"
+                          >
+                            <LinkIcon className="w-3 h-3" />
+                          </button>
+                          {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
+                            <button
+                              onClick={() => handleMarkVacant(property)}
+                              className="bg-orange-100 text-orange-700 p-1.5 rounded text-xs hover:bg-orange-200 flex items-center transition-colors"
+                              title="Mark Vacant"
+                            >
+                              <Home className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(property.id)}
+                            className="bg-red-100 text-red-700 p-1.5 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                            title="Delete Property"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="!min-w-[288px] !max-w-[288px] !w-[288px] px-6 py-4">
+                        <div className="min-w-0 whitespace-nowrap w-full">
+                          <div className="text-sm font-medium text-gray-900 truncate w-full">
                             {property.name}
                           </div>
-                          <div className="text-sm text-gray-500 truncate">
+                          <div className="text-sm text-gray-500 truncate w-full">
                             {property.address}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {property.tenants && property.tenants.length > 0
+                              ? `${property.tenants[0].first_name} ${property.tenants[0].last_name}`
+                              : property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0
+                              ? 'Tenant Assigned'
+                              : property.status === 'empty'
+                              ? 'Available'
+                              : property.status === 'owner_finance'
+                              ? 'Owner Finance'
+                              : property.status === 'lease_purchase'
+                              ? 'Lease Purchase'
+                              : 'N/A'
+                            }
+                          </div>
+                          <div className="text-sm text-gray-500 truncate">
+                            {property.tenants && property.tenants.length > 0
+                              ? `${property.tenants.length} tenant${property.tenants.length > 1 ? 's' : ''}`
+                              : property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0
+                              ? `${property.active_lease_count} lease${property.active_lease_count > 1 ? 's' : ''}`
+                              : property.status === 'empty'
+                              ? 'Ready to rent'
+                              : property.status === 'owner_finance'
+                              ? 'Owner financing'
+                              : property.status === 'lease_purchase'
+                              ? 'Lease to own'
+                              : 'Status unknown'
+                            }
                           </div>
                         </div>
                       </td>
@@ -506,42 +592,6 @@ export default function PropertiesPage() {
                             return <div className="text-sm text-gray-500">No active leases</div>
                           }
                         })()}
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => router.push(`/properties/${property.id}?edit=true`)}
-                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleOpenTenantModal(property)}
-                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
-                          >
-                            <LinkIcon className="w-3 h-3 mr-1" />
-                            Link
-                          </button>
-
-                          
-                          {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
-                            <button
-                              onClick={() => handleMarkVacant(property)}
-                              className="bg-orange-100 text-orange-200 flex items-center transition-colors"
-                              title="Mark property as vacant and end lease"
-                            >
-                              <Home className="w-3 h-3 mr-1" />
-                              Vacant
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(property.id)}
-                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}

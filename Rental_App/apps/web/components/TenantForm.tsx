@@ -95,8 +95,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
       
       if (tenant) {
         // Update existing tenant
-        const updateData: UpdateTenantData = {
-          id: tenant.id,
+        const updateData = {
           ...data
         }
         const response = await TenantsService.update(tenant.id, updateData)

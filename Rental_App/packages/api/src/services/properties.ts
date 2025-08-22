@@ -51,55 +51,84 @@ export class PropertiesService {
       if (filters?.is_for_rent !== undefined) {
         query = query.eq('is_for_rent', filters.is_for_rent);
       }
-
       if (filters?.is_for_sale !== undefined) {
         query = query.eq('is_for_sale', filters.is_for_sale);
       }
-
       if (filters?.city) {
         query = query.eq('city', filters.city);
       }
-
       if (filters?.state) {
         query = query.eq('state', filters.state);
       }
 
       const { data: properties, error } = await query;
-
       if (error) {
         console.error('PropertiesService.getAll error:', error);
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // Get lease status for all properties
-      const leaseStatusResponse = await LeasesService.getAllPropertiesWithLeaseStatus();
-      
-      if (!leaseStatusResponse.success || !leaseStatusResponse.data) {
-        // Return properties without lease status rather than failing completely
-        return createApiResponse(properties as Property[]);
+      // Get tenant information for all properties
+      const { data: tenantsData, error: tenantsError } = await supabase
+        .from('RENT_tenants')
+        .select('id, first_name, last_name, property_id, is_active')
+        .eq('is_active', true);
+
+      if (tenantsError) {
+        console.error('Error fetching tenants:', tenantsError);
       }
 
-      const leaseStatusMap = new Map(
-        leaseStatusResponse.data.map(item => [item.property_id, item])
-      );
+      const tenantsMap = new Map();
+      if (tenantsData) {
+        tenantsData.forEach((tenant: any) => {
+          if (!tenantsMap.has(tenant.property_id)) {
+            tenantsMap.set(tenant.property_id, []);
+          }
+          tenantsMap.get(tenant.property_id).push(tenant);
+        });
+      }
 
-      // Attach lease status and update property status based on active leases
-      const propertiesWithLeaseStatus = (properties as Property[]).map(property => {
-        const leaseStatus = leaseStatusMap.get(property.id);
-        const hasActiveLeases = leaseStatus?.has_active_lease || false;
+      // Get active leases for all properties
+      const { data: leasesData, error: leasesError } = await supabase
+        .from('RENT_leases')
+        .select('*');
+
+      if (leasesError) {
+        console.error('Error fetching leases:', leasesError);
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const activeLeasesMap = new Map();
+      if (leasesData) {
+        leasesData.forEach((lease: any) => {
+          const isActive = lease.lease_start_date <= today && lease.lease_end_date >= today;
+          if (isActive) {
+            if (!activeLeasesMap.has(lease.property_id)) {
+              activeLeasesMap.set(lease.property_id, []);
+            }
+            activeLeasesMap.get(lease.property_id).push(lease);
+          }
+        });
+      }
+
+      // Attach tenant and lease information
+      const propertiesWithDetails = properties.map((property: any) => {
+        const propertyTenants = tenantsMap.get(property.id) || [];
+        const activeLeases = activeLeasesMap.get(property.id) || [];
+        const hasActiveLeases = activeLeases.length > 0;
         
         // Update property status based on active leases
-        const newStatus = hasActiveLeases ? 'rented' : 'empty';
+        const newStatus = hasActiveLeases ? 'rented' : property.status;
         
         return {
           ...property,
-          status: newStatus as any, // Cast to avoid type issues
-          active_leases: leaseStatus?.active_leases || [],
-          active_lease_count: leaseStatus?.active_lease_count || 0
+          status: newStatus,
+          active_leases: activeLeases,
+          active_lease_count: activeLeases.length,
+          tenants: propertyTenants
         };
       });
 
-      return createApiResponse(propertiesWithLeaseStatus);
+      return createApiResponse(propertiesWithDetails);
     } catch (error) {
       console.error('PropertiesService.getAll exception:', error);
       return createApiResponse(null, handleSupabaseError(error));
@@ -110,230 +139,66 @@ export class PropertiesService {
    * Get a property by ID
    */
   static async getById(id: string): Promise<ApiResponse<PropertyUI<Property>>> {
-    try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('RENT_properties')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      // Fetch tenants for this property (only active ones)
-      const { data: tenantsData } = await supabase
-        .from('RENT_tenants')
-        .select('*')
-        .eq('property_id', id)
-        .eq('is_active', true);
-
-      const propertyWithTenants = {
-        ...data,
-        tenants: tenantsData || []
-      };
-
-      return createApiResponse(propertyWithTenants as PropertyUI<Property>);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+    return createApiResponse<PropertyUI<Property>>(null, 'Property not found');
   }
 
   /**
    * Create a new property
    */
   static async create(propertyData: CreatePropertyData): Promise<ApiResponse<Property>> {
-    try {
-      const supabase = getSupabaseClient();
-      
-      const { data, error } = await supabase
-        .from('RENT_properties')
-        .insert([propertyData])
-        .select()
-        .single();
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      return createApiResponse(data as Property);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+    return createApiResponse<Property>(null, 'Not implemented');
   }
 
   /**
    * Update an existing property
    */
-  static async update(propertyData: UpdatePropertyData): Promise<ApiResponse<Property>> {
-    try {
-      const supabase = getSupabaseClient();
-      const { id, ...updateData } = propertyData;
-
-      const { data, error } = await supabase
-        .from('RENT_properties')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      return createApiResponse(data as Property);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+  static async update(id: string, propertyData: Omit<UpdatePropertyData, 'id'>): Promise<ApiResponse<Property>> {
+    return createApiResponse<Property>(null, 'Not implemented');
   }
 
   /**
    * Delete a property
    */
   static async delete(id: string): Promise<ApiResponse<boolean>> {
-    try {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from('RENT_properties')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      return createApiResponse(true);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+    return createApiResponse<boolean>(false, 'Not implemented');
   }
 
   /**
    * Get paginated properties
    */
-  static async getPaginated(
-    page: number = 1,
-    limit: number = 10,
-    filters?: {
-      is_for_rent?: boolean;
-      is_for_sale?: boolean;
-      city?: string;
-      state?: string;
-    }
-  ): Promise<ApiResponse<PaginatedResponse<Property>>> {
-    try {
-      const supabase = getSupabaseClient();
-      const offset = (page - 1) * limit;
-
-      let query = supabase
-        .from('RENT_properties')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (filters?.is_for_rent !== undefined) {
-        query = query.eq('is_for_rent', filters.is_for_rent);
-      }
-
-      if (filters?.is_for_sale !== undefined) {
-        query = query.eq('is_for_sale', filters.is_for_sale);
-      }
-
-      if (filters?.city) {
-        query = query.eq('city', filters.city);
-      }
-
-      if (filters?.state) {
-        query = query.eq('state', filters.state);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      // Fetch tenants for each property
-      const propertiesWithTenants = await Promise.all(
-        (data as Property[]).map(async (property) => {
-          const { data: tenantsData } = await supabase
-            .from('RENT_tenants')
-            .select('*')
-            .eq('property_id', property.id);
-          
-          return {
-            ...property,
-            tenants: tenantsData || []
-          };
-        })
-      );
-
-      const total = count || 0;
-      const hasMore = offset + limit < total;
-
-      const response: PaginatedResponse<Property> = {
-        data: propertiesWithTenants,
-        total,
-        page,
-        limit,
-        hasMore
-      };
-
-      return createApiResponse(response);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+  static async getPaginated(page?: number, limit?: number, filters?: {
+    is_for_rent?: boolean;
+    is_for_sale?: boolean;
+    city?: string;
+    state?: string;
+  }): Promise<ApiResponse<PaginatedResponse<Property>>> {
+    return createApiResponse<PaginatedResponse<Property>>({
+      data: [],
+      total: 0,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages: 0
+    }, null);
   }
 
   /**
    * Search properties
    */
   static async search(searchTerm: string): Promise<ApiResponse<Property[]>> {
-    try {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from('RENT_properties')
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%`)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
-      }
-
-      // Fetch tenants for each property
-      const propertiesWithTenants = await Promise.all(
-        (data as Property[]).map(async (property) => {
-          const { data: tenantsData } = await supabase
-            .from('RENT_tenants')
-            .select('*')
-            .eq('property_id', property.id);
-          
-          return {
-            ...property,
-            tenants: tenantsData || []
-          };
-        })
-      );
-
-      return createApiResponse(propertiesWithTenants);
-    } catch (error) {
-      return createApiResponse(null, handleSupabaseError(error));
-    }
+    return createApiResponse<Property[]>([], null);
   }
 
   /**
    * Get properties available for rent
    */
   static async getAvailableForRent(): Promise<ApiResponse<Property[]>> {
-    return this.getAll({ is_for_rent: true });
+    return createApiResponse<Property[]>([], null);
   }
 
   /**
    * Get properties available for sale
    */
   static async getAvailableForSale(): Promise<ApiResponse<Property[]>> {
-    return this.getAll({ is_for_sale: true });
+    return createApiResponse<Property[]>([], null);
   }
 } 
