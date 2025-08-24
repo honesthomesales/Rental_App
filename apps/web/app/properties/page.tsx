@@ -362,9 +362,12 @@ export default function PropertiesPage() {
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="overflow-x-auto w-full">
-              <table className="w-full min-w-[1600px]">
+              <table className="w-full min-w-[1400px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                      Actions
+                    </th>
                     <th 
                       className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] cursor-pointer hover:bg-gray-100 select-none"
                       onClick={() => handleSort('name')}
@@ -444,9 +447,6 @@ export default function PropertiesPage() {
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                       Active Leases
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -466,6 +466,42 @@ export default function PropertiesPage() {
                       onDoubleClick={() => router.push(`/properties/edit/?id=${property.id}`)}
                       title="Double-click to edit property"
                     >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
+                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
+                            title={`Edit ${property.name}`}
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit {property.name}
+                          </button>
+                          <button
+                            onClick={() => handleOpenTenantModal(property)}
+                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                          >
+                            <LinkIcon className="w-3 h-3 mr-1" />
+                            Link
+                          </button>
+
+                          {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
+                            <button
+                              onClick={() => handleMarkVacant(property)}
+                              className="bg-orange-100 text-orange-200 flex items-center transition-colors"
+                              title="Mark property as vacant and end lease"
+                            >
+                              <Home className="w-3 h-3 mr-1" />
+                              Vacant
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(property.id)}
+                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-gray-900 truncate">
@@ -544,42 +580,6 @@ export default function PropertiesPage() {
                             return <div className="text-sm text-gray-500">No active leases</div>
                           }
                         })()}
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
-                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
-                            title={`Edit ${property.name}`}
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit {property.name}
-                          </button>
-                          <button
-                            onClick={() => handleOpenTenantModal(property)}
-                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
-                          >
-                            <LinkIcon className="w-3 h-3 mr-1" />
-                            Link
-                          </button>
-
-                          {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
-                            <button
-                              onClick={() => handleMarkVacant(property)}
-                              className="bg-orange-100 text-orange-200 flex items-center transition-colors"
-                              title="Mark property as vacant and end lease"
-                            >
-                              <Home className="w-3 h-3 mr-1" />
-                              Vacant
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(property.id)}
-                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}
