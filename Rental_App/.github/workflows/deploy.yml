@@ -15,36 +15,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Debug Info
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "Git branch: $(git branch --show-current)"
-          echo "Git remote: $(git remote -v)"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Install dependencies
         run: |
-          # Install root dependencies first
           npm install
-          # Build API package
           cd packages/api
           npm install
           npm run build
-          # Install web dependencies
           cd ../../apps/web
           npm install
 
@@ -59,11 +49,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
-      - name: Fix Asset URLs for GitHub Pages
-        run: |
-          cd apps/web
-          GITHUB_PAGES=true node scripts/fix-asset-urls.js
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
@@ -73,5 +58,5 @@ jobs:
           path: apps/web/out
 
       - name: Deploy to GitHub Pages
-        id: deploy-pages
+        id: deployment
         uses: actions/deploy-pages@v4
