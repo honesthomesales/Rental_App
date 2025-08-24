@@ -1,4 +1,4 @@
-# Trigger GitHub Actions workflow 2
+# GitHub Actions workflow for deploying Rental App to GitHub Pages
 
 name: Deploy to GitHub Pages
 
@@ -41,7 +41,7 @@ jobs:
           cd ../../apps/web
           npm install
 
-      - name: Build
+      - name: Build web app
         run: |
           cd apps/web
           npm run build:no-lint
