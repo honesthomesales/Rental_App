@@ -47,9 +47,15 @@ jobs:
           npm run build:no-lint
         env:
           NODE_ENV: production
+          GITHUB_PAGES: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+
+      - name: Fix Asset URLs for GitHub Pages
+        run: |
+          cd apps/web
+          GITHUB_PAGES=true node scripts/fix-asset-urls.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
