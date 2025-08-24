@@ -16,9 +16,6 @@ concurrency:
 
 jobs:
   deploy:
-    defaults:
-      run:
-        working-directory: Rental_App
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
