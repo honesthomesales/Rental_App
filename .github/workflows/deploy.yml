@@ -5,14 +5,14 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      pages: write
-      contents: read
 
     steps:
       - name: Checkout
@@ -49,4 +49,5 @@ jobs:
           path: apps/web/out
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
