@@ -268,7 +268,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Move In Fee
+                Security Deposit
               </label>
               <input
                 {...register('security_deposit', { valueAsNumber: true })}

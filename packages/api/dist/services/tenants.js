@@ -46,6 +46,7 @@ class TenantsService {
                     .order('lease_start_date', { ascending: false });
                 return {
                     ...tenant,
+                    move_in_fee: tenant.security_deposit, // Map for frontend compatibility
                     properties: property,
                     leases: leasesData || []
                 };
@@ -88,6 +89,7 @@ class TenantsService {
                 .order('lease_start_date', { ascending: false });
             const tenantWithRelations = {
                 ...tenant,
+                move_in_fee: tenant.security_deposit, // Map for frontend compatibility
                 properties: property,
                 leases: leasesData || []
             };
@@ -103,9 +105,17 @@ class TenantsService {
     static async create(tenantData) {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
+            // Handle the transition from security_deposit to move_in_fee
+            const insertData = {
+                ...tenantData,
+                // Map move_in_fee to security_deposit for database compatibility
+                security_deposit: tenantData.move_in_fee || tenantData.security_deposit
+            };
+            // Remove the move_in_fee field as it doesn't exist in DB yet
+            delete insertData.move_in_fee;
             const { data, error } = await supabase
                 .from('RENT_tenants')
-                .insert([tenantData])
+                .insert([insertData])
                 .select('*')
                 .single();
             if (error) {
@@ -120,7 +130,7 @@ class TenantsService {
                     lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     rent: tenantData.monthly_rent || 0,
                     rent_cadence: tenantData.rent_cadence,
-                    move_in_fee: 0,
+                    move_in_fee: tenantData.move_in_fee || 0,
                     late_fee_amount: 50,
                     status: 'active'
                 };
@@ -144,8 +154,10 @@ class TenantsService {
                 .select('*')
                 .eq('tenant_id', data.id)
                 .order('lease_start_date', { ascending: false });
+            // Map the response to include move_in_fee for frontend compatibility
             const tenantWithRelations = {
                 ...data,
+                move_in_fee: data.security_deposit, // Map back for frontend
                 properties: property,
                 leases: leasesData || []
             };
@@ -161,9 +173,17 @@ class TenantsService {
     static async update(id, tenantData) {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
+            // Handle the transition from move_in_fee to security_deposit
+            const updateData = {
+                ...tenantData,
+                // Map move_in_fee to security_deposit for database compatibility
+                security_deposit: tenantData.move_in_fee || tenantData.security_deposit
+            };
+            // Remove the move_in_fee field as it doesn't exist in DB yet
+            delete updateData.move_in_fee;
             const { data, error } = await supabase
                 .from('RENT_tenants')
-                .update(tenantData)
+                .update(updateData)
                 .eq('id', id)
                 .select('*')
                 .single();
@@ -200,7 +220,7 @@ class TenantsService {
                         lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                         rent: tenantData.monthly_rent || 0,
                         rent_cadence: tenantData.rent_cadence,
-                        move_in_fee: 0,
+                        move_in_fee: tenantData.move_in_fee || 0,
                         late_fee_amount: 50,
                         status: 'active'
                     };
@@ -227,6 +247,7 @@ class TenantsService {
                 .order('lease_start_date', { ascending: false });
             const tenantWithRelations = {
                 ...data,
+                move_in_fee: data.security_deposit, // Map back for frontend
                 properties: property,
                 leases: leasesData || []
             };

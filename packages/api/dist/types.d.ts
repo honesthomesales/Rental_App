@@ -53,7 +53,7 @@ export interface Tenant {
     lease_start_date?: string;
     lease_end_date?: string;
     monthly_rent?: number;
-    security_deposit?: number;
+    move_in_fee?: number;
     lease_pdf_url?: string;
     payment_history: PaymentHistoryItem[];
     late_fees_owed: number;
@@ -234,7 +234,7 @@ export interface CreateTenantData {
     lease_start_date?: string;
     lease_end_date?: string;
     monthly_rent?: number;
-    security_deposit?: number;
+    move_in_fee?: number;
     rent_cadence?: string;
     notes?: string;
 }
