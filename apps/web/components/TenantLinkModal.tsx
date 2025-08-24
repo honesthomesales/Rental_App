@@ -188,11 +188,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         )}
                       </button>
                     </div>
-                    {tenant.monthly_rent && (
-                      <p className="text-sm text-green-600 font-medium">
-                        ${tenant.monthly_rent.toLocaleString()}/month
-                      </p>
-                    )}
+                    {/* Removed monthly_rent display since field no longer exists */}
                   </div>
                 ))}
               </div>
@@ -242,11 +238,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         )}
                       </button>
                     </div>
-                    {tenant.monthly_rent && (
-                      <p className="text-sm text-green-600 font-medium">
-                        ${tenant.monthly_rent.toLocaleString()}/month
-                      </p>
-                    )}
+                    {/* Removed monthly_rent display since field no longer exists */}
                   </div>
                 ))}
               </div>
