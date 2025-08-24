@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: node-version: 18
+        with:
+          node-version: 18
       - run: |
           npm install
           cd packages/api
@@ -42,6 +43,7 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
-        with: path: apps/web/out
+        with:
+          path: apps/web/out
       - id: deployment
         uses: actions/deploy-pages@v4
