@@ -10,7 +10,7 @@ import { X, Save, User, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const tenantSchema = z.object({
-  property_id: z.string().min(1, 'Property is required'),
+  property_id: z.string().optional(),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
@@ -20,7 +20,7 @@ const tenantSchema = z.object({
   lease_start_date: z.string().optional(),
   lease_end_date: z.string().optional(),
   monthly_rent: z.number().min(0, 'Rent must be positive').optional(),
-  security_deposit: z.number().min(0, 'Security deposit must be positive').optional(),
+  security_deposit: z.number().min(0, 'Move in fee must be positive').optional(),
   rent_cadence: z.string().optional(),
   notes: z.string().optional(),
 })
@@ -104,19 +104,28 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         }
       } else {
         // Create new tenant
+        console.log('Creating new tenant with data:', data)
+        
         const createData: CreateTenantData = {
           ...data
         }
+        
+        console.log('CreateTenantData:', createData)
+        
         const response = await TenantsService.create(createData)
+        
+        console.log('TenantsService.create response:', response)
         
         if (response.success && response.data) {
           onSuccess(response.data)
         } else {
-          toast.error('Failed to create tenant')
+          console.error('Failed to create tenant:', response.error)
+          toast.error(`Failed to create tenant: ${response.error || 'Unknown error'}`)
         }
       }
     } catch (error) {
-      toast.error('Error saving tenant')
+      console.error('Error in onSubmit:', error)
+      toast.error(`Error saving tenant: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
@@ -205,7 +214,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign to Property
+                Assign to Property (Optional)
               </label>
               <select {...register('property_id')} className="input">
                 <option value="">Select a property (optional)</option>
@@ -259,7 +268,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Security Deposit
+                Move In Fee
               </label>
               <input
                 {...register('security_deposit', { valueAsNumber: true })}
