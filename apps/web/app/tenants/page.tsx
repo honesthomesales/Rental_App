@@ -6,12 +6,15 @@ import type { Tenant } from '@rental-app/api'
 import { Plus, Search, Edit, Trash2, Users, Phone, Mail, Calendar, DollarSign } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  const router = useRouter()
 
   useEffect(() => {
     loadTenants()
@@ -23,11 +26,14 @@ export default function TenantsPage() {
       const response = await TenantsService.getAll()
       
       if (response.success && response.data) {
+        console.log('✅ Tenants loaded:', response.data)
         setTenants(response.data)
       } else {
+        console.error('❌ Failed to load tenants:', response.error)
         toast.error('Failed to load tenants')
       }
     } catch (error) {
+      console.error('💥 Error loading tenants:', error)
       toast.error('Error loading tenants')
     } finally {
       setLoading(false)
@@ -197,7 +203,12 @@ export default function TenantsPage() {
             {viewMode === 'grid' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTenants.map((tenant) => (
-                  <div key={tenant.id} className="card hover:shadow-lg transition-shadow">
+                  <div 
+                    key={tenant.id} 
+                    className="card hover:shadow-lg transition-shadow cursor-pointer"
+                    onDoubleClick={() => router.push(`/tenants/edit/?id=${tenant.id}`)}
+                    title="Double-click to edit tenant"
+                  >
                     <div className="card-content">
                       <div className="flex justify-between items-start mb-4">
                         <div>
@@ -244,11 +255,12 @@ export default function TenantsPage() {
 
                       <div className="flex space-x-2">
                         <Link
-                                                          href={`/tenants/edit/?id=${tenant.id}`}
+                          href={`/tenants/edit/?id=${tenant.id}`}
                           className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
+                          title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                         >
                           <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                          Edit {tenant.first_name}
                         </Link>
                         <button
                           onClick={() => handleDelete(tenant.id)}
@@ -292,7 +304,12 @@ export default function TenantsPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredTenants.map((tenant) => (
-                        <tr key={tenant.id} className="hover:bg-gray-50">
+                        <tr 
+                          key={tenant.id} 
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onDoubleClick={() => router.push(`/tenants/edit/?id=${tenant.id}`)}
+                          title="Double-click to edit tenant"
+                        >
                           <td className="px-4 py-4">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
@@ -346,9 +363,10 @@ export default function TenantsPage() {
                               <Link
                                 href={`/tenants/edit/?id=${tenant.id}`}
                                 className="text-blue-600 hover:text-blue-900 flex items-center"
+                                title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                               >
                                 <Edit className="w-4 h-4 mr-1" />
-                                Edit
+                                Edit {tenant.first_name}
                               </Link>
                               <button
                                 onClick={() => handleDelete(tenant.id)}

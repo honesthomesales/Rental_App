@@ -22,7 +22,7 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   
   // Sorting state
-  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address' | 'premium'>('name')
+  const [sortField, setSortField] = useState<'name' | 'status' | 'rent' | 'address' | 'premium' | 'type'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function PropertiesPage() {
       const response = await PropertiesService.getAll()
       
       if (response.success && response.data) {
+        console.log('✅ Properties loaded:', response.data)
         setProperties(response.data)
       } else {
         console.error('❌ Failed to load properties:', response.error)
@@ -77,6 +78,10 @@ export default function PropertiesPage() {
           aValue = a.insurance_premium || 0
           bValue = b.insurance_premium || 0
           break
+        case 'type':
+          aValue = a.property_type?.toLowerCase() || ''
+          bValue = b.property_type?.toLowerCase() || ''
+          break
         default:
           return 0
       }
@@ -88,7 +93,7 @@ export default function PropertiesPage() {
   }, [properties, sortField, sortDirection])
 
   // Handle sort column click
-  const handleSort = (field: 'name' | 'status' | 'rent' | 'address' | 'premium') => {
+  const handleSort = (field: 'name' | 'status' | 'rent' | 'address' | 'premium' | 'type') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -386,8 +391,15 @@ export default function PropertiesPage() {
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                      Type & Details
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] cursor-pointer hover:bg-gray-100 select-none" onClick={() => handleSort('type')}>
+                      <div className="flex items-center">
+                        Type & Details
+                        {sortField === 'type' && (
+                          <span className="ml-1 text-blue-600">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th 
                       className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] cursor-pointer hover:bg-gray-100 select-none"
@@ -448,7 +460,12 @@ export default function PropertiesPage() {
                     }
                     return true
                   }).map((property) => (
-                    <tr key={property.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={property.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onDoubleClick={() => router.push(`/properties/edit/?id=${property.id}`)}
+                      title="Double-click to edit property"
+                    >
                       <td className="px-6 py-4">
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-gray-900 truncate">
@@ -531,11 +548,12 @@ export default function PropertiesPage() {
                       <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-2">
                           <button
-                                                          onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
+                            onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
                             className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
+                            title={`Edit ${property.name}`}
                           >
                             <Edit className="w-3 h-3 mr-1" />
-                            Edit
+                            Edit {property.name}
                           </button>
                           <button
                             onClick={() => handleOpenTenantModal(property)}
