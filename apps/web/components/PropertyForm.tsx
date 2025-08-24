@@ -524,9 +524,9 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
               </label>
               <select {...register('rent_cadence')} className="input">
                 <option value="">Select payment cadence</option>
-                <option value="monthly">Monthly</option>
-                <option value="bi-weekly">Bi-Weekly</option>
                 <option value="weekly">Weekly</option>
+                <option value="bi-weekly">Bi-weekly</option>
+                <option value="monthly">Monthly</option>
               </select>
               <p className="text-sm text-gray-500 mt-1">
                 This will be stored in the property notes and used for payment tracking

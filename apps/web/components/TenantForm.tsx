@@ -8,21 +8,18 @@ import { TenantsService, PropertiesService } from '@rental-app/api'
 import type { Tenant, CreateTenantData, UpdateTenantData, Property } from '@rental-app/api'
 import { X, Save, User, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { RENT_CADENCE_OPTIONS } from '@/lib/rentCadence'
 
 const tenantSchema = z.object({
   property_id: z.string().optional(),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
-  lease_start_date: z.string().optional(),
-  lease_end_date: z.string().optional(),
-  monthly_rent: z.number().min(0, 'Rent must be positive').optional(),
-  security_deposit: z.number().min(0, 'Move in fee must be positive').optional(),
-  rent_cadence: z.string().optional(),
-  notes: z.string().optional(),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  lease_start_date: z.string().optional().or(z.literal('')),
+  lease_end_date: z.string().optional().or(z.literal('')),
+  rent_cadence: z.string().optional().or(z.literal('')),
+  notes: z.string().optional().or(z.literal(''))
 })
 
 type TenantFormData = z.infer<typeof tenantSchema>
@@ -66,13 +63,8 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         last_name: tenant.last_name,
         email: tenant.email || undefined,
         phone: tenant.phone || undefined,
-        emergency_contact_name: tenant.emergency_contact_name || undefined,
-        emergency_contact_phone: tenant.emergency_contact_phone || undefined,
         lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
         lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
-        monthly_rent: activeLease?.rent || tenant.monthly_rent || undefined,
-        security_deposit: tenant.security_deposit || undefined,
-        rent_cadence: activeLease?.rent_cadence || undefined,
         notes: tenant.notes || undefined,
       })
     }
@@ -90,30 +82,17 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
   }
 
   const onSubmit = async (data: TenantFormData) => {
+    console.log('🔍 FORM SUBMISSION - Data before Zod validation:', data);
+    
     try {
       setLoading(true)
       
-      // Log the raw form data
-      console.log('Form data (raw):', data);
-      
-      // Clean the data - ensure numbers are actually numbers
-      const cleanData = {
-        ...data,
-        monthly_rent: data.monthly_rent ? Number(data.monthly_rent) : undefined,
-        security_deposit: data.security_deposit ? Number(data.security_deposit) : undefined,
-        // Convert empty strings to undefined
-        email: data.email || undefined,
-        phone: data.phone || undefined,
-        emergency_contact_name: data.emergency_contact_name || undefined,
-        emergency_contact_phone: data.emergency_contact_phone || undefined,
-        notes: data.notes || undefined
-      };
-      
-      console.log('Form data (cleaned):', cleanData);
+      // No need to clean data since we removed the problematic fields
+      console.log('Form data (ready for API):', data);
       
       if (tenant) {
         // Update existing tenant
-        const response = await TenantsService.update(tenant.id, cleanData)
+        const response = await TenantsService.update(tenant.id, data)
         
         if (response.success && response.data) {
           onSuccess(response.data)
@@ -122,10 +101,10 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         }
       } else {
         // Create new tenant
-        console.log('Creating new tenant with cleaned data:', cleanData)
+        console.log('Creating new tenant with data:', data)
         
         const createData: CreateTenantData = {
-          ...cleanData
+          ...data
         }
         
         console.log('CreateTenantData:', createData)
@@ -164,7 +143,18 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+        <form onSubmit={handleSubmit((data) => {
+          console.log('🔍 FORM SUBMISSION - Data before Zod validation:', data);
+          onSubmit(data);
+        }, (errors) => {
+          console.log('🔍 FORM VALIDATION ERRORS:', errors);
+          console.log('🔍 Form errors object:', errors);
+          
+          // Log all field errors in detail
+          Object.keys(errors).forEach(field => {
+            console.log(`🔍 ${field} error:`, errors[field as keyof typeof errors]);
+          });
+        })} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="md:col-span-2">
@@ -220,9 +210,13 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               </label>
               <input
                 {...register('phone')}
+                type="tel"
                 className="input"
                 placeholder="Enter phone number"
               />
+              {errors.phone && (
+                <p className="text-sm text-red-600 mt-1">{errors.phone.message}</p>
+              )}
             </div>
 
             {/* Property Assignment */}
@@ -272,68 +266,23 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Rent
-              </label>
-              <input
-                {...register('monthly_rent', { valueAsNumber: true })}
-                type="number"
-                step="0.01"
-                className="input"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Security Deposit
-              </label>
-              <input
-                {...register('security_deposit', { valueAsNumber: true })}
-                type="number"
-                step="0.01"
-                className="input"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="rent_cadence" className="block text-sm font-medium text-gray-700 mb-2">
                 Rent Cadence
               </label>
-              <select {...register('rent_cadence')} className="input">
+              <select 
+                {...register('rent_cadence')}
+                className="input"
+              >
                 <option value="">Select rent cadence</option>
-                <option value="weekly">Weekly</option>
-                <option value="bi-weekly">Bi-weekly</option>
-                <option value="monthly">Monthly</option>
+                {RENT_CADENCE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
-            </div>
-
-            {/* Emergency Contact */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-6">Emergency Contact</h3>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Emergency Contact Name
-              </label>
-              <input
-                {...register('emergency_contact_name')}
-                className="input"
-                placeholder="Enter emergency contact name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Emergency Contact Phone
-              </label>
-              <input
-                {...register('emergency_contact_phone')}
-                className="input"
-                placeholder="Enter emergency contact phone"
-              />
+              {errors.rent_cadence && (
+                <p className="text-sm text-red-600 mt-1">{errors.rent_cadence.message}</p>
+              )}
             </div>
 
             {/* Notes */}

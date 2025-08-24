@@ -127,9 +127,23 @@ export class TenantsService {
       // Log the data being sent
       console.log('TenantsService.create - Input data:', tenantData);
       
+      // Only send the columns that actually exist in the RENT_tenants table
+      const insertData = {
+        property_id: tenantData.property_id,
+        first_name: tenantData.first_name,
+        last_name: tenantData.last_name,
+        email: tenantData.email,
+        phone: tenantData.phone,
+        lease_start_date: tenantData.lease_start_date,
+        lease_end_date: tenantData.lease_end_date,
+        notes: tenantData.notes
+      };
+      
+      console.log('TenantsService.create - Insert data (filtered):', insertData);
+      
       const { data, error } = await supabase
         .from('RENT_tenants')
-        .insert([tenantData])
+        .insert([insertData])
         .select('*')
         .single();
 
@@ -139,7 +153,6 @@ export class TenantsService {
       }
 
       console.log('TenantsService.create - Success, created tenant:', data);
-
       // Return simple response without additional data for now
       return createApiResponse(data as Tenant);
     } catch (error) {
