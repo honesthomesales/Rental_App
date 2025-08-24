@@ -123,6 +123,10 @@ export class TenantsService {
   static async create(tenantData: CreateTenantData): Promise<ApiResponse<Tenant>> {
     try {
       const supabase = getSupabaseClient();
+      
+      // Log the data being sent
+      console.log('TenantsService.create - Input data:', tenantData);
+      
       const { data, error } = await supabase
         .from('RENT_tenants')
         .insert([tenantData])
@@ -130,54 +134,16 @@ export class TenantsService {
         .single();
 
       if (error) {
+        console.error('TenantsService.create - Supabase error:', error);
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // Create lease if rent_cadence is provided
-      if (tenantData.rent_cadence && data.property_id) {
-        const leaseData = {
-          tenant_id: data.id,
-          property_id: data.property_id,
-          lease_start_date: tenantData.lease_start_date || new Date().toISOString(),
-          lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          rent: tenantData.monthly_rent || 0,
-          rent_cadence: tenantData.rent_cadence,
-          move_in_fee: 0,
-          late_fee_amount: 50,
-          status: 'active'
-        };
+      console.log('TenantsService.create - Success, created tenant:', data);
 
-        await supabase
-          .from('RENT_leases')
-          .insert([leaseData]);
-      }
-
-      // Fetch property data separately
-      let property: any = null;
-      if (data.property_id) {
-        const { data: propData } = await supabase
-          .from('RENT_properties')
-          .select('id, name, address, notes, monthly_rent')
-          .eq('id', data.property_id)
-          .single();
-        property = propData;
-      }
-
-      // Fetch leases
-      const { data: leasesData } = await supabase
-        .from('RENT_leases')
-        .select('*')
-        .eq('tenant_id', data.id)
-        .order('lease_start_date', { ascending: false });
-
-      const tenantWithRelations = {
-        ...data,
-        properties: property,
-        leases: leasesData || []
-      };
-
-      return createApiResponse(tenantWithRelations as Tenant);
+      // Return simple response without additional data for now
+      return createApiResponse(data as Tenant);
     } catch (error) {
+      console.error('TenantsService.create - Unexpected error:', error);
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
