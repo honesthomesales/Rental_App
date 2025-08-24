@@ -93,9 +93,27 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
     try {
       setLoading(true)
       
+      // Log the raw form data
+      console.log('Form data (raw):', data);
+      
+      // Clean the data - ensure numbers are actually numbers
+      const cleanData = {
+        ...data,
+        monthly_rent: data.monthly_rent ? Number(data.monthly_rent) : undefined,
+        security_deposit: data.security_deposit ? Number(data.security_deposit) : undefined,
+        // Convert empty strings to undefined
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        emergency_contact_name: data.emergency_contact_name || undefined,
+        emergency_contact_phone: data.emergency_contact_phone || undefined,
+        notes: data.notes || undefined
+      };
+      
+      console.log('Form data (cleaned):', cleanData);
+      
       if (tenant) {
         // Update existing tenant
-        const response = await TenantsService.update(tenant.id, data)
+        const response = await TenantsService.update(tenant.id, cleanData)
         
         if (response.success && response.data) {
           onSuccess(response.data)
@@ -104,10 +122,10 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         }
       } else {
         // Create new tenant
-        console.log('Creating new tenant with data:', data)
+        console.log('Creating new tenant with cleaned data:', cleanData)
         
         const createData: CreateTenantData = {
-          ...data
+          ...cleanData
         }
         
         console.log('CreateTenantData:', createData)
@@ -333,6 +351,37 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
           </div>
 
           <div className="flex justify-end space-x-3 mt-8">
+            {/* Debug button - remove after testing */}
+            {!tenant && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    console.log('Testing minimal tenant creation...');
+                    const testData = {
+                      first_name: 'Test',
+                      last_name: 'User',
+                      email: 'test@example.com'
+                    };
+                    console.log('Test data:', testData);
+                    const response = await TenantsService.create(testData);
+                    console.log('Test response:', response);
+                    if (response.success) {
+                      toast.success('Test tenant created successfully!');
+                    } else {
+                      toast.error(`Test failed: ${response.error}`);
+                    }
+                  } catch (error) {
+                    console.error('Test error:', error);
+                    toast.error(`Test error: ${error}`);
+                  }
+                }}
+                className="btn btn-secondary mr-auto"
+              >
+                🧪 Test Minimal Tenant
+              </button>
+            )}
+            
             <button
               type="button"
               onClick={onCancel}
