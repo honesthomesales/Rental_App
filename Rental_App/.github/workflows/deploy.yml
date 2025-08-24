@@ -2,21 +2,18 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ master ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write    # required for OIDC authentication
+      pages: write       # to deploy to GitHub Pages
+      contents: read     # to read repo contents
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,15 +21,27 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: 'npm'
+          node-version: 18
 
       - name: Install dependencies
-        run: npm install --verbose
+        run: |
+          npm install
+          cd packages/api
+          npm install
+          npm run build
+          cd ../../apps/web
+          npm install
 
-      - name: Build web app
-        run: npm run build:web
-        working-directory: ./
+      - name: Build
+        run: |
+          cd apps/web
+          npm run build:no-lint
+        env:
+          NODE_ENV: production
+          GITHUB_PAGES: true
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -42,13 +51,5 @@ jobs:
         with:
           path: apps/web/out
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
