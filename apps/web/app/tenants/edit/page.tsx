@@ -13,34 +13,59 @@ function TenantEditContent() {
   const id = sp.get('id');
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      loadTenant();
+    // Early validation - if no ID, set error immediately
+    if (!id) {
+      setError('Missing tenant ID');
+      return;
     }
+    
+    loadTenant(id);
   }, [id]);
 
-  const loadTenant = async () => {
+  const loadTenant = async (tenantId: string) => {
     try {
       setLoading(true);
-      const response = await TenantsService.getById(id);
+      setError(null);
+      
+      const response = await TenantsService.getById(tenantId);
       
       if (response.success && response.data) {
         setTenant(response.data);
       } else {
-        toast.error(response.error || 'Failed to load tenant');
-        router.push('/tenants');
+        const errorMessage = response.error || 'Failed to load tenant';
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error loading tenant:', error);
-      toast.error('Error loading tenant');
-      router.push('/tenants');
+      const errorMessage = 'An unexpected error occurred while loading the tenant';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!id) return <div>Missing tenant id.</div>;
+  // Early return for missing ID
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Tenant ID</h1>
+          <p className="text-gray-600 mb-6">No tenant ID was provided in the URL.</p>
+          <button
+            onClick={() => router.push('/tenants')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Tenants
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   if (loading) {
     return (
@@ -50,8 +75,21 @@ function TenantEditContent() {
     );
   }
 
-  if (!tenant) {
-    return <div>Tenant not found.</div>;
+  if (error || !tenant) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Tenant</h1>
+          <p className="text-gray-600 mb-6">{error || 'Tenant not found'}</p>
+          <button
+            onClick={() => router.push('/tenants')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Tenants
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const handleSuccess = (updatedTenant: Tenant) => {

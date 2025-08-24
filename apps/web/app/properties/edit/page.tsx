@@ -13,34 +13,59 @@ function PropertyEditContent() {
   const id = sp.get('id');
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      loadProperty();
+    // Early validation - if no ID, redirect immediately
+    if (!id) {
+      setError('Missing property ID');
+      return;
     }
+    
+    loadProperty(id);
   }, [id]);
 
-  const loadProperty = async () => {
+  const loadProperty = async (propertyId: string) => {
     try {
       setLoading(true);
-      const response = await PropertiesService.getById(id);
+      setError(null);
+      
+      const response = await PropertiesService.getById(propertyId);
       
       if (response.success && response.data) {
         setProperty(response.data);
       } else {
-        toast.error(response.error || 'Failed to load property');
-        router.push('/properties');
+        const errorMessage = response.error || 'Failed to load property';
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error loading property:', error);
-      toast.error('Error loading property');
-      router.push('/properties');
+      const errorMessage = 'An unexpected error occurred while loading the property';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!id) return <div>Missing property id.</div>;
+  // Early return for missing ID
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Property ID</h1>
+          <p className="text-gray-600 mb-6">No property ID was provided in the URL.</p>
+          <button
+            onClick={() => router.push('/properties')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Properties
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   if (loading) {
     return (
@@ -50,8 +75,21 @@ function PropertyEditContent() {
     );
   }
 
-  if (!property) {
-    return <div>Property not found.</div>;
+  if (error || !property) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Property</h1>
+          <p className="text-gray-600 mb-6">{error || 'Property not found'}</p>
+          <button
+            onClick={() => router.push('/properties')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Properties
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const handleSuccess = (updatedProperty: Property) => {
