@@ -5,14 +5,14 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write    # required for OIDC authentication
-      pages: write       # to deploy to GitHub Pages
-      contents: read     # to read repo contents
 
     steps:
       - name: Checkout
@@ -53,3 +53,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+        id: deployment
