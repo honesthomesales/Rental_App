@@ -5,7 +5,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-  pull_request:  # TEMP: Needed to trigger the workflow at least once
+  pull_request: # TEMP: Needed to trigger the workflow at least once
   workflow_dispatch:
 
 permissions:
@@ -37,14 +37,17 @@ jobs:
           npm install
           cd packages/api
           npm install
+          cd ../../
+
+      - name: Build API package
+        run: |
+          cd packages/api
           npm run build
-          cd ../../apps/web
-          npm install
 
       - name: Build web app
         run: |
           cd apps/web
-          npm run build:no-lint
+          npm run build:static
         env:
           NODE_ENV: production
           GITHUB_PAGES: true
