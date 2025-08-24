@@ -26,5 +26,11 @@ export type {
   LateTenant
 } from './types';
 
+// Export UI types
+export * from './types/ui';
+
+// Export client
+export * from './client';
+
 // Export utilities
 export * from './utils'; 

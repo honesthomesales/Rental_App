@@ -2,15 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { TenantsService, PropertiesService } from '@rental-app/api'
+import { TenantsService, PropertiesService, type LateTenant } from '@rental-app/api'
 import { calculateTotalLatePayments, isTenantLate } from '../../lib/utils'
 import LatePaymentDetailsModal from '../../components/LatePaymentDetailsModal'
 
-interface LateTenant {
-  id: string
-  first_name: string
-  last_name: string
-  property_id: string
+// Extended interface for the local data structure
+interface ExtendedLateTenant extends LateTenant {
   property_name: string
   property_address: string
   rent: number
@@ -23,9 +20,9 @@ interface LateTenant {
 
 export default function LatePaymentsPage() {
   const router = useRouter()
-  const [lateTenants, setLateTenants] = useState<LateTenant[]>([])
+  const [lateTenants, setLateTenants] = useState<ExtendedLateTenant[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedTenant, setSelectedTenant] = useState<LateTenant | null>(null)
+  const [selectedTenant, setSelectedTenant] = useState<ExtendedLateTenant | null>(null)
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
@@ -49,7 +46,7 @@ export default function LatePaymentsPage() {
         return
       }
 
-      const lateTenantsList: LateTenant[] = []
+      const lateTenantsList: ExtendedLateTenant[] = []
 
       // Process each tenant to find late payments (same logic as dashboard)
       tenantsData.forEach((tenant: any) => {
@@ -83,7 +80,9 @@ export default function LatePaymentsPage() {
               late_periods: latePaymentInfo.latePeriods,
               lease_start_date: lease.lease_start_date,
               rent_cadence: lease.rent_cadence || 'monthly',
-              late_payment_info: latePaymentInfo
+              late_payment_info: latePaymentInfo,
+              days_late: Math.max(...latePaymentInfo.payPeriods.map(p => p.daysLate), 0),
+              amount_overdue: latePaymentInfo.totalDue || 0
             })
           }
         } catch (error) {
@@ -130,7 +129,7 @@ export default function LatePaymentsPage() {
     }
   }
 
-  const handleDetailsClick = (tenant: LateTenant) => {
+  const handleDetailsClick = (tenant: ExtendedLateTenant) => {
     setSelectedTenant(tenant)
     setShowModal(true)
   }

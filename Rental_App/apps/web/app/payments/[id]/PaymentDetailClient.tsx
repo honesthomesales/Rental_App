@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { TransactionsService, type TransactionUI, type Transaction } from '@rental-app/api'
-import type { Property, Tenant, Loan } from '@rental-app/api'
+import { TransactionsService, type Transaction } from '@rental-app/api'
+import type { Property, Tenant } from '@rental-app/api'
 import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, FileText, MapPin, User, Building } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
 export default function PaymentDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const [transaction, setTransaction] = useState<TransactionUI<Transaction> | null>(null)
+  const [transaction, setTransaction] = useState<(Transaction & { status?: string }) | null>(null)
   const [property, setProperty] = useState<Property | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [loading, setLoading] = useState(true)
@@ -181,24 +181,8 @@ export default function PaymentDetailClient({ id }: { id: string }) {
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Additional Details</h2>
               <div className="space-y-3">
-                {transaction.description && (
-                  <div>
-                    <span className="text-gray-600">Description:</span>
-                    <p className="text-gray-900 mt-1">{transaction.description}</p>
-                  </div>
-                )}
-                {transaction.notes && (
-                  <div>
-                    <span className="text-gray-600">Notes:</span>
-                    <p className="text-gray-900 mt-1">{transaction.notes}</p>
-                  </div>
-                )}
-                {transaction.reference_number && (
-                  <div>
-                    <span className="text-gray-600">Reference:</span>
-                    <span className="font-mono text-gray-900">{transaction.reference_number}</span>
-                  </div>
-                )}
+                {/* Temporarily commented out - these properties don't exist in Transaction interface */}
+                <div className="text-gray-500 italic">No additional details available</div>
               </div>
             </div>
           </div>

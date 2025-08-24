@@ -7,7 +7,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { PropertiesService, Property as ApiProperty } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
-import { extractRentCadence, normalizeRentToMonthly } from '../lib/utils'
+import { extractRentCadence, normalizeRentToMonthly, calculateTotalLatePayments, isTenantLate } from '../lib/utils'
 import { PropertyForm } from '../components/PropertyForm'
 import { TenantForm } from '../components/TenantForm'
 
@@ -28,15 +28,7 @@ interface Property {
   purchase_date: string | null
   current_value: number | null
   monthly_rent: number | null
-  is_for_rent: boolean
-  is_for_sale: boolean
-  insurance_policy_number: string | null
-  insurance_provider: string | null
-  insurance_expiry_date: string | null
   insurance_premium: number | null
-  owner_name: string | null
-  owner_phone: string | null
-  owner_email: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -138,14 +130,8 @@ export default function Dashboard() {
           purchase_date: property.purchase_date ?? null,
           current_value: property.current_value ?? null,
           monthly_rent: property.monthly_rent ?? null,
-          insurance_policy_number: property.insurance_policy_number ?? null,
-          insurance_provider: property.insurance_provider ?? null,
-          insurance_expiry_date: property.insurance_expiry_date ?? null,
           insurance_premium: property.insurance_premium ?? null,
-          owner_name: property.owner_name ?? null,
-          owner_phone: property.owner_phone ?? null,
-          owner_email: property.owner_email ?? null,
-          notes: property.notes ?? null
+          notes: property.notes ?? null,
         }))
         setProperties(convertedProperties)
         
@@ -200,7 +186,7 @@ export default function Dashboard() {
           }
           
           // Use the new late payment calculation system
-          return TenantsService.isTenantLate(tenant, property)
+          return isTenantLate(tenant, property)
         } catch (error) {
           console.error('Error checking tenant late status:', error)
           return false
@@ -212,7 +198,7 @@ export default function Dashboard() {
         try {
           const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           if (property && tenant.leases && tenant.leases.length > 0) {
-            const latePaymentInfo = TenantsService.calculateTotalLatePayments(tenant, property)
+            const latePaymentInfo = calculateTotalLatePayments(tenant, property)
             return sum + latePaymentInfo.totalDue
           }
         } catch (error) {

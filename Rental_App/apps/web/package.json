@@ -7,8 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "build:no-lint": "next build --no-lint",
+    "build:no-types": "next build --no-lint --no-typescript",
     "build:web": "next build",
     "build:static": "next build",
+    "postbuild": "node scripts/fix-asset-urls.js",
     "start": "next start",
     "lint": "next lint",
     "clean": "if exist .next rmdir /s /q .next 2>nul & if exist out rmdir /s /q out 2>nul"

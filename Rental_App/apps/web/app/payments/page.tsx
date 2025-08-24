@@ -17,7 +17,7 @@ interface Payment {
   created_at: string
 }
 
-import type { Property, Tenant, Lease, PaymentHistoryItem } from '@rental-app/api'
+import type { Property, Tenant, Lease } from '@rental-app/api'
 
 // Local interface that extends the base Property type with additional properties added by the service
 interface PropertyWithTenants extends Property {
@@ -74,9 +74,12 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
     if (!property?.tenants?.[0]?.id) return
     
     try {
-      const response = await RentPeriodsService.getTenantRentPeriods(property.tenants[0].id)
-      if (response.success && response.data) {
-        setRentPeriods(response.data)
+      // Since getTenantRentPeriods doesn't exist, use getAllRentPeriods for now
+      const response = await RentPeriodsService.getAllRentPeriods()
+      if (response && response.length > 0) {
+        // Filter periods for this tenant
+        const tenantPeriods = response.filter((period: any) => period.tenant_id === property.tenants[0].id)
+        setRentPeriods(tenantPeriods)
       }
     } catch (error) {
       console.error('Error loading rent periods:', error)

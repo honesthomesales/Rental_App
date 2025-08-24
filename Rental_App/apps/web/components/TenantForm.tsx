@@ -108,7 +108,19 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
       } else {
         // Create new tenant
         const createData: CreateTenantData = {
-          ...data
+          first_name: data.first_name!,
+          last_name: data.last_name!,
+          property_id: data.property_id!,
+          email: data.email,
+          phone: data.phone,
+          monthly_rent: data.monthly_rent,
+          security_deposit: data.security_deposit,
+          lease_start_date: data.lease_start_date,
+          lease_end_date: data.lease_end_date,
+          emergency_contact_name: data.emergency_contact_name,
+          emergency_contact_phone: data.emergency_contact_phone,
+          notes: data.notes,
+          rent_cadence: data.rent_cadence
         }
         const response = await TenantsService.create(createData)
         

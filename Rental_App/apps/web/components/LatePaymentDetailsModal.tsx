@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { type LateTenant } from '@rental-app/api'
 
-interface LateTenant {
-  id: string
-  first_name: string
-  last_name: string
-  property_id: string
+// Extended interface for the local data structure
+interface ExtendedLateTenant extends LateTenant {
   property_name: string
   property_address: string
   rent: number
@@ -30,7 +28,7 @@ interface PaymentPeriod {
 }
 
 interface LatePaymentDetailsModalProps {
-  tenant: LateTenant
+  tenant: ExtendedLateTenant
   onClose: () => void
   onSave: (updatedData: any) => void
 }

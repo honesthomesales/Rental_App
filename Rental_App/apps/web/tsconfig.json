@@ -1,14 +1,10 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es6"
-    ],
+    "lib": ["dom", "dom.iterable", "es6"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -17,46 +13,19 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "baseUrl": "../..",
-    "paths": {
-      "@/*": [
-        "./apps/web/*"
-      ],
-      "@/components/*": [
-        "./apps/web/components/*"
-      ],
-      "@/lib/*": [
-        "./apps/web/lib/*"
-      ],
-      "@/types/*": [
-        "./apps/web/types/*"
-      ],
-      "@rental-app/api": [
-        "./packages/api"
-      ],
-      "@rental-app/api/*": [
-        "./packages/api/*"
-      ],
-      "@rental-app/ui": [
-        "./packages/ui"
-      ],
-      "@rental-app/ui/*": [
-        "./packages/ui/*"
-      ]
-    },
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

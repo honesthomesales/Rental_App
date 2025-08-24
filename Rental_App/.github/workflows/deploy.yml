@@ -5,8 +5,20 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,13 +31,25 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd apps/web
+          # Install root dependencies first
+          npm install
+          # Build API package
+          cd packages/api
+          npm install
+          npm run build
+          # Install web dependencies
+          cd ../../apps/web
           npm install
 
       - name: Build
         run: |
           cd apps/web
           npm run build:no-lint
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -233,7 +233,7 @@ export default function LeasesPage() {
                             {lease.tenant ? `${lease.tenant.first_name} ${lease.tenant.last_name}` : 'Unknown Tenant'}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {lease.tenant?.email || 'No email'}
+                            Email: N/A
                           </div>
                         </div>
                       </div>

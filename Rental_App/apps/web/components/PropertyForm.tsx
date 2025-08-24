@@ -36,6 +36,8 @@ const propertySchema = z.object({
   owner_email: z.string().email().optional().or(z.literal('')),
   notes: z.string().optional(),
   rent_cadence: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 })
 
 type PropertyFormData = z.infer<typeof propertySchema>
@@ -108,7 +110,35 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
         }
       } else {
         // Create new property
-        const createData: CreatePropertyData = data
+        const createData: CreatePropertyData = {
+          name: data.name,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip_code,
+          property_type: data.property_type,
+          status: data.status,
+          monthly_rent: data.monthly_rent,
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          square_feet: data.square_feet,
+          year_built: data.year_built,
+          purchase_price: data.purchase_price,
+          purchase_date: data.purchase_date,
+          current_value: data.current_value,
+          is_for_sale: data.is_for_sale,
+          is_for_rent: data.is_for_rent,
+          insurance_policy_number: data.insurance_policy_number,
+          insurance_provider: data.insurance_provider,
+          insurance_expiry_date: data.insurance_expiry_date,
+          insurance_premium: data.insurance_premium,
+          owner_name: data.owner_name,
+          owner_phone: data.owner_phone,
+          owner_email: data.owner_email,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          notes: data.notes
+        }
         const response = await PropertiesService.create(createData)
         
         if (response.success && response.data) {
