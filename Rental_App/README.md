@@ -1,3 +1,5 @@
+# Trigger GitHub Pages deploy workflow manually
+
 # My Rental App
 
 A Next.js web application for managing rental properties, tenants, and payments.
