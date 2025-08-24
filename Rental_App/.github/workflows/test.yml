@@ -1,4 +1,4 @@
-name: Test Workflow
+name: Test - GitHub Actions Working
 
 on:
   push:
@@ -9,5 +9,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test
-        run: echo "Workflow is working!"
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test - Confirm Actions Working
+        run: |
+          echo "✅ GitHub Actions is working!"
+          echo "✅ Repository: ${{ github.repository }}"
+          echo "✅ Branch: ${{ github.ref }}"
+          echo "✅ Commit: ${{ github.sha }}"
