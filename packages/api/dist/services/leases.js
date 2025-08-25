@@ -192,10 +192,12 @@ class LeasesService {
             // Group active leases by property
             const propertyLeaseMap = new Map();
             (activeLeases || []).forEach(lease => {
-                if (!propertyLeaseMap.has(lease.property_id)) {
-                    propertyLeaseMap.set(lease.property_id, []);
+                if (lease.property_id) { // Only process leases with valid property_id
+                    if (!propertyLeaseMap.has(lease.property_id)) {
+                        propertyLeaseMap.set(lease.property_id, []);
+                    }
+                    propertyLeaseMap.get(lease.property_id).push(lease);
                 }
-                propertyLeaseMap.get(lease.property_id).push(lease);
             });
             // Get all properties
             const { data: properties, error: propertiesError } = await supabase

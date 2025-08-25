@@ -140,6 +140,7 @@ class PropertiesService {
      */
     static async update(id, propertyData) {
         try {
+            console.log('🔍 PropertiesService.update - Updating property:', id, 'with data:', propertyData);
             const supabase = (0, client_1.getSupabaseClient)();
             const { data, error } = await supabase
                 .from('RENT_properties')
@@ -147,12 +148,16 @@ class PropertiesService {
                 .eq('id', id)
                 .select()
                 .single();
+            console.log('🔍 PropertiesService.update - Supabase response:', { data, error });
             if (error) {
+                console.error('❌ PropertiesService.update - Supabase error:', error);
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
+            console.log('✅ PropertiesService.update - Successfully updated property:', data);
             return (0, client_1.createApiResponse)(data);
         }
         catch (error) {
+            console.error('💥 PropertiesService.update - Unexpected error:', error);
             return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
         }
     }

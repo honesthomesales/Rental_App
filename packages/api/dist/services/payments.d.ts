@@ -30,7 +30,21 @@ export declare class PaymentsService {
      * Get all payments
      */
     static getAll(): Promise<{
-        data: never[] | null;
+        data: {
+            amount: number;
+            created_at: string | null;
+            date_paid: string | null;
+            id: string;
+            lease_id: string | null;
+            notes: string | null;
+            payment_date: string;
+            payment_method: string | null;
+            payment_type: string;
+            property_id: string | null;
+            status: string | null;
+            tenant_id: string | null;
+            updated_at: string | null;
+        }[] | null;
         error: string | null;
         success: boolean;
     }>;

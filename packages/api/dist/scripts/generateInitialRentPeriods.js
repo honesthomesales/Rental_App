@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateInitialRentPeriods = generateInitialRentPeriods;
 const client_1 = require("../client");
-const rentPeriods_1 = require("../services/rentPeriods");
 /**
  * Script to generate initial rent periods for all existing tenants
  * This should be run once to populate the RENT_rent_periods table
@@ -68,16 +67,15 @@ async function generateInitialRentPeriods() {
                 }
                 console.log(`  📅 Lease: ${activeLease.lease_start_date} to ${activeLease.lease_end_date || 'ongoing'}`);
                 console.log(`  💰 Rent: $${activeLease.rent} ${activeLease.rent_cadence}`);
-                // Generate rent periods
-                const periodsResponse = await rentPeriods_1.RentPeriodsService.createRentPeriods(tenant, activeLease);
-                if (periodsResponse.success && periodsResponse.data) {
-                    console.log(`  ✅ Generated ${periodsResponse.data.length} rent periods`);
-                    successCount++;
-                }
-                else {
-                    console.error(`  ❌ Failed to generate periods for ${tenant.first_name} ${tenant.last_name}:`, periodsResponse.error);
-                    errorCount++;
-                }
+                // TODO: Implement rent period creation when RentPeriodsService is available
+                // const periodsResponse = await RentPeriodsService.createRentPeriods(tenant, activeLease);
+                // if (periodsResponse.success && periodsResponse.data) {
+                //   console.log(`  ✅ Generated ${periodsResponse.data.length} rent periods`);
+                //   successCount++;
+                // } else {
+                //   console.error(`  ❌ Failed to generate periods for ${tenant.first_name} ${tenant.last_name}:`, periodsResponse.error);
+                //   errorCount++;
+                // }
             }
             catch (error) {
                 console.error(`  ❌ Unexpected error processing ${tenant.first_name} ${tenant.last_name}:`, error);
