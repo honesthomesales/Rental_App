@@ -35,7 +35,7 @@ export function RentPaymentForm({ tenant, onSuccess, onCancel }: RentPaymentForm
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      amount: tenant.monthly_rent || 0,
+      amount: tenant.leases?.[0]?.rent || 0, // Use lease rent instead of tenant monthly_rent
       payment_date: new Date().toISOString().split('T')[0],
       description: 'Rent payment',
     }
@@ -91,7 +91,7 @@ export function RentPaymentForm({ tenant, onSuccess, onCancel }: RentPaymentForm
               </p>
             )}
             <p className="text-sm text-gray-600">
-              Monthly Rent: ${tenant.monthly_rent?.toLocaleString() || '0'}
+              Monthly Rent: ${tenant.leases?.[0]?.rent?.toLocaleString() || '0'}
             </p>
           </div>
 

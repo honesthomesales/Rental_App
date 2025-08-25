@@ -134,7 +134,7 @@ export class PropertiesService {
         tenants: tenantsData || []
       };
 
-      return createApiResponse(propertyWithTenants as PropertyUI<Property>);
+      return createApiResponse(propertyWithTenants as unknown as PropertyUI<Property>);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -168,6 +168,8 @@ export class PropertiesService {
    */
   static async update(id: string, propertyData: Omit<UpdatePropertyData, 'id'>): Promise<ApiResponse<Property>> {
     try {
+      console.log('🔍 PropertiesService.update - Updating property:', id, 'with data:', propertyData)
+      
       const supabase = getSupabaseClient();
 
       const { data, error } = await supabase
@@ -177,12 +179,17 @@ export class PropertiesService {
         .select()
         .single();
 
+      console.log('🔍 PropertiesService.update - Supabase response:', { data, error })
+
       if (error) {
+        console.error('❌ PropertiesService.update - Supabase error:', error)
         return createApiResponse(null, handleSupabaseError(error));
       }
 
+      console.log('✅ PropertiesService.update - Successfully updated property:', data)
       return createApiResponse(data as Property);
     } catch (error) {
+      console.error('💥 PropertiesService.update - Unexpected error:', error)
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
@@ -272,7 +279,7 @@ export class PropertiesService {
       const hasMore = offset + limit < total;
 
       const response: PaginatedResponse<Property> = {
-        data: propertiesWithTenants,
+        data: propertiesWithTenants as Property[],
         total,
         page,
         limit,
@@ -316,7 +323,7 @@ export class PropertiesService {
         })
       );
 
-      return createApiResponse(propertiesWithTenants);
+      return createApiResponse(propertiesWithTenants as Property[]);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }

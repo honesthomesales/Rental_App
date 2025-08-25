@@ -2,9 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { LeasesService, TenantsService, PropertiesService } from '@rental-app/api'
-import type { Lease, Tenant, Property } from '@rental-app/api'
+import type { Lease } from '@rental-app/api'
 import { Plus, Search, Edit, Trash2, Calendar, DollarSign, Home, User } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+// Define local types to match what we actually receive from the API
+interface Tenant {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  property_id?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface Property {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  property_type?: string;
+  status?: string;
+  monthly_rent?: number;
+  is_for_rent?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface LeaseWithDetails extends Lease {
   tenant?: Tenant;
@@ -50,7 +78,7 @@ export default function LeasesPage() {
           })
         )
         
-        setLeases(leasesWithDetails)
+        setLeases(leasesWithDetails as LeaseWithDetails[])
         console.log('📋 Leases with details:', leasesWithDetails.length)
       } else {
         console.error('❌ Failed to load leases:', response.error)

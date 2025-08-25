@@ -365,7 +365,7 @@ export default function PropertiesPage() {
               <table className="w-full min-w-[1400px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                       Actions
                     </th>
                     <th 
@@ -466,39 +466,38 @@ export default function PropertiesPage() {
                       onDoubleClick={() => router.push(`/properties/edit/?id=${property.id}`)}
                       title="Double-click to edit property"
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end space-x-2">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center space-x-1">
                           <button
                             onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
-                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
+                            className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                             title={`Edit ${property.name}`}
                           >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit {property.name}
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleOpenTenantModal(property)}
-                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                            title="Link tenant"
                           >
-                            <LinkIcon className="w-3 h-3 mr-1" />
-                            Link
+                            <LinkIcon className="w-4 h-4" />
                           </button>
 
                           {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
                             <button
                               onClick={() => handleMarkVacant(property)}
-                              className="bg-orange-100 text-orange-200 flex items-center transition-colors"
+                              className="p-1.5 text-orange-600 hover:text-orange-800 hover:bg-orange-100 rounded transition-colors"
                               title="Mark property as vacant and end lease"
                             >
-                              <Home className="w-3 h-3 mr-1" />
-                              Vacant
+                              <Home className="w-4 h-4" />
                             </button>
                           )}
                           <button
                             onClick={() => handleDelete(property.id)}
-                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+                            title="Delete property"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -536,16 +535,31 @@ export default function PropertiesPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        {property.monthly_rent ? (
-                          <div className="text-sm font-medium text-green-600">
-                            {(() => {
-                              const rentCadence = extractRentCadence(property.notes || undefined)
-                              return formatRentWithCadence(property.monthly_rent || 0, rentCadence)
-                            })()}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-500">N/A</div>
-                        )}
+                        {(() => {
+                          // Priority 1: Active lease rent (most accurate - tenant is actually paying this)
+                          if (property.active_leases && property.active_leases.length > 0) {
+                            const activeLease = property.active_leases[0]
+                            return (
+                              <div className="text-sm font-medium text-green-600">
+                                ${activeLease.rent.toLocaleString()}/{activeLease.rent_cadence || 'monthly'}
+                                <div className="text-xs text-gray-500">(Lease)</div>
+                              </div>
+                            )
+                          }
+                          // Priority 2: Property base monthly rent (fallback when no tenant)
+                          else if (property.monthly_rent) {
+                            return (
+                              <div className="text-sm font-medium text-blue-600">
+                                ${property.monthly_rent.toLocaleString()}/month
+                                <div className="text-xs text-gray-500">(Base)</div>
+                              </div>
+                            )
+                          }
+                          // No rent information available
+                          else {
+                            return <div className="text-sm text-gray-500">N/A</div>
+                          }
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         {property.insurance_premium ? (

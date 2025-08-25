@@ -35,7 +35,6 @@ const propertySchema = z.object({
   owner_phone: z.string().optional(),
   owner_email: z.string().email().optional().or(z.literal('')),
   notes: z.string().optional(),
-  rent_cadence: z.string().optional(),
 })
 
 type PropertyFormData = z.infer<typeof propertySchema>
@@ -93,14 +92,21 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
     try {
       setLoading(true)
       
+      console.log('🔍 PropertyForm onSubmit - Form data:', data)
+      console.log('🔍 PropertyForm onSubmit - Property ID:', property?.id)
+      
       if (property) {
         // Update existing property
+        console.log('🔍 PropertyForm onSubmit - Calling PropertiesService.update with:', { id: property.id, data })
         const response = await PropertiesService.update(property.id, data)
+        
+        console.log('🔍 PropertyForm onSubmit - Update response:', response)
         
         if (response.success && response.data) {
           toast.success('Property updated successfully')
           onSuccess?.(response.data)
         } else {
+          console.error('❌ PropertyForm onSubmit - Update failed:', response.error)
           toast.error(response.error || 'Failed to update property')
         }
       } else {
@@ -515,22 +521,6 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
                 className="input resize-none"
                 placeholder="Additional notes about the property..."
               />
-            </div>
-
-            {/* Payment Cadence */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Cadence
-              </label>
-              <select {...register('rent_cadence')} className="input">
-                <option value="">Select payment cadence</option>
-                <option value="weekly">Weekly</option>
-                <option value="bi-weekly">Bi-weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-              <p className="text-sm text-gray-500 mt-1">
-                This will be stored in the property notes and used for payment tracking
-              </p>
             </div>
           </div>
 

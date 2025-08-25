@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TenantsService, PropertiesService } from '@rental-app/api'
+import { TenantsService, PropertiesService, LeasesService } from '@rental-app/api'
 import type { Tenant, Property } from '@rental-app/api'
 import { X, Users, Home, Link, Unlink } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -18,6 +18,9 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
   const [loading, setLoading] = useState(true)
   const [linking, setLinking] = useState<string | null>(null)
   const [unlinking, setUnlinking] = useState<string | null>(null)
+  const [showLinkForm, setShowLinkForm] = useState(false)
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
+  const [rentCadence, setRentCadence] = useState('monthly') // Add rent cadence state
 
   useEffect(() => {
     loadTenants()
@@ -50,6 +53,31 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
       })
       
       if (tenantResponse.success) {
+        // Get the tenant data to create a lease
+        const tenant = tenants.find(t => t.id === tenantId)
+        
+        if (tenant) {
+          // Create a lease record for this tenant-property relationship
+          try {
+            const leaseData = {
+              tenant_id: tenantId,
+              property_id: propertyId,
+              lease_start_date: tenant.lease_start_date || new Date().toISOString().split('T')[0],
+              lease_end_date: tenant.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              rent: tenant.monthly_rent || 0, // Use tenant's monthly_rent for the lease
+              rent_cadence: rentCadence, // Use selected rent cadence from dropdown
+              move_in_fee: 0,
+              late_fee_amount: 50,
+              status: 'active'
+            }
+            
+            await LeasesService.create(leaseData)
+          } catch (leaseError) {
+            console.warn('Failed to create lease record:', leaseError)
+            // Continue with property status update even if lease creation fails
+          }
+        }
+        
         // Then, update the property status to 'rented' if it's currently 'empty'
         const propertyResponse = await PropertiesService.getById(propertyId)
         if (propertyResponse.success && propertyResponse.data) {
@@ -81,7 +109,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
       
       // First, unlink the tenant from the property
       const tenantResponse = await TenantsService.update(tenantId, {
-        property_id: undefined
+        property_id: null  // Changed from undefined to null
       })
       
       if (tenantResponse.success) {
@@ -172,6 +200,11 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         {tenant.phone && (
                           <p className="text-sm text-gray-600">{tenant.phone}</p>
                         )}
+                        {tenant.monthly_rent && (
+                          <p className="text-sm text-green-600 font-medium">
+                            ${tenant.monthly_rent}/month
+                          </p>
+                        )}
                       </div>
                       <button
                         onClick={() => handleUnlinkTenant(tenant.id)}
@@ -222,23 +255,38 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         {tenant.phone && (
                           <p className="text-sm text-gray-600">{tenant.phone}</p>
                         )}
-                      </div>
-                      <button
-                        onClick={() => handleLinkTenant(tenant.id)}
-                        disabled={linking === tenant.id}
-                        className="btn btn-sm btn-primary"
-                      >
-                        {linking === tenant.id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <>
-                            <Link className="w-4 h-4 mr-1" />
-                            Link
-                          </>
+                        {tenant.monthly_rent && (
+                          <p className="text-sm text-green-600 font-medium">
+                            ${tenant.monthly_rent}/month
+                          </p>
                         )}
-                      </button>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <select
+                          value={rentCadence}
+                          onChange={(e) => setRentCadence(e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="monthly">Monthly</option>
+                          <option value="bi-weekly">Bi-weekly</option>
+                          <option value="weekly">Weekly</option>
+                        </select>
+                        <button
+                          onClick={() => handleLinkTenant(tenant.id)}
+                          disabled={linking === tenant.id}
+                          className="btn btn-sm btn-primary"
+                        >
+                          {linking === tenant.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <Link className="w-4 h-4 mr-1" />
+                              Link
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    {/* Removed monthly_rent display since field no longer exists */}
                   </div>
                 ))}
               </div>

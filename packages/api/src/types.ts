@@ -249,7 +249,6 @@ export interface CreateTenantData {
   lease_end_date?: string;
   monthly_rent?: number;
   security_deposit?: number;
-  rent_cadence?: string;
   notes?: string;
 }
 
@@ -259,6 +258,24 @@ export interface UpdateTenantData extends Partial<CreateTenantData> {
   late_fees_owed?: number;
   late_status?: LateStatus;
   is_active?: boolean;
+}
+
+export interface CreateLeaseData {
+  tenant_id: string;
+  property_id: string;
+  lease_start_date: string;
+  lease_end_date: string;
+  rent: number;
+  rent_cadence: string;
+  move_in_fee?: number;
+  late_fee_amount?: number;
+  lease_pdf?: string;
+  status?: string;
+  notes?: string;
+}
+
+export interface UpdateLeaseData extends Partial<CreateLeaseData> {
+  id: string;
 }
 
 export interface CreateTransactionData {

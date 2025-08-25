@@ -2,10 +2,35 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
 import { TenantsService } from '@rental-app/api';
-import type { Tenant } from '@rental-app/api';
 import { TenantForm } from '@/components/TenantForm';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+
+// Define local Tenant type to match what we actually receive
+interface Tenant {
+  id: string;
+  property_id?: string | null;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  lease_start_date?: string;
+  lease_end_date?: string;
+  monthly_rent?: number;
+  notes?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  properties?: any;
+  leases?: Array<{
+    id: string;
+    rent: number;
+    rent_cadence: string;
+    lease_start_date: string;
+    lease_end_date: string;
+    status: string;
+  }>;
+}
 
 function TenantEditContent() {
   const sp = useSearchParams();
@@ -33,7 +58,7 @@ function TenantEditContent() {
       const response = await TenantsService.getById(tenantId);
       
       if (response.success && response.data) {
-        setTenant(response.data);
+        setTenant(response.data as Tenant);
       } else {
         const errorMessage = response.error || 'Failed to load tenant';
         setError(errorMessage);

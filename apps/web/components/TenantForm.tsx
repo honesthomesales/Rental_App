@@ -5,20 +5,60 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { TenantsService, PropertiesService } from '@rental-app/api'
-import type { Tenant, CreateTenantData, UpdateTenantData, Property } from '@rental-app/api'
+import type { Property } from '@rental-app/api'
 import { X, Save, User, Home } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { RENT_CADENCE_OPTIONS } from '@/lib/rentCadence'
 
+// Define local types to match what we actually receive from the API
+interface Tenant {
+  id: string;
+  property_id?: string | null;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  lease_start_date?: string;
+  lease_end_date?: string;
+  monthly_rent?: number;
+  notes?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  properties?: Property;
+  leases?: Array<{
+    id: string;
+    rent: number;
+    rent_cadence: string;
+    lease_start_date: string;
+    lease_end_date: string;
+    status: string;
+  }>;
+}
+
+interface CreateTenantData {
+  property_id?: string | null;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  monthly_rent?: number;
+  lease_start_date?: string;
+  lease_end_date?: string;
+  notes?: string;
+}
+
+interface UpdateTenantData extends CreateTenantData {}
+
 const tenantSchema = z.object({
-  property_id: z.string().optional(),
+  property_id: z.string().nullable().optional(),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email format').optional().or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
-  lease_start_date: z.string().optional().or(z.literal('')),
-  lease_end_date: z.string().optional().or(z.literal('')),
-  rent_cadence: z.string().optional().or(z.literal('')),
+  monthly_rent: z.string().optional().or(z.literal('')), // Tenant's monthly rent amount
+  lease_start_date: z.string().optional().or(z.literal('')), // Tenant's preferred dates
+  lease_end_date: z.string().optional().or(z.literal('')), // Tenant's preferred dates
   notes: z.string().optional().or(z.literal(''))
 })
 
@@ -26,7 +66,7 @@ type TenantFormData = z.infer<typeof tenantSchema>
 
 interface TenantFormProps {
   tenant?: Tenant
-  onSuccess: (tenant: Tenant) => void
+  onSuccess: (tenant: any) => void // Use any to avoid type conflicts
   onCancel: () => void
 }
 
@@ -63,6 +103,8 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         last_name: tenant.last_name,
         email: tenant.email || undefined,
         phone: tenant.phone || undefined,
+        // Use lease rent if available, otherwise fall back to tenant monthly_rent
+        monthly_rent: activeLease?.rent?.toString() || tenant.monthly_rent?.toString() || undefined,
         lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
         lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
         notes: tenant.notes || undefined,
@@ -83,16 +125,25 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
 
   const onSubmit = async (data: TenantFormData) => {
     console.log('🔍 FORM SUBMISSION - Data before Zod validation:', data);
+    console.log('🔍 All form fields:', Object.keys(data));
+    console.log('🔍 Form values:', Object.entries(data));
     
     try {
       setLoading(true)
       
-      // No need to clean data since we removed the problematic fields
-      console.log('Form data (ready for API):', data);
+      // Convert monthly_rent from string to number for API
+      const formData: CreateTenantData = {
+        ...data,
+        monthly_rent: data.monthly_rent ? parseFloat(data.monthly_rent) : undefined
+      }
+      
+      console.log('Form data (ready for API):', formData);
+      console.log('🔍 API fields being sent:', Object.keys(formData));
+      console.log('🔍 API values being sent:', Object.entries(formData));
       
       if (tenant) {
         // Update existing tenant
-        const response = await TenantsService.update(tenant.id, data)
+        const response = await TenantsService.update(tenant.id, formData)
         
         if (response.success && response.data) {
           onSuccess(response.data)
@@ -101,28 +152,20 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
         }
       } else {
         // Create new tenant
-        console.log('Creating new tenant with data:', data)
-        
-        const createData: CreateTenantData = {
-          ...data
-        }
-        
+        console.log('Creating new tenant with data:', formData)
+        const createData: CreateTenantData = { ...formData }
         console.log('CreateTenantData:', createData)
-        
         const response = await TenantsService.create(createData)
-        
-        console.log('TenantsService.create response:', response)
         
         if (response.success && response.data) {
           onSuccess(response.data)
         } else {
-          console.error('Failed to create tenant:', response.error)
-          toast.error(`Failed to create tenant: ${response.error || 'Unknown error'}`)
+          toast.error('Failed to create tenant')
         }
       }
     } catch (error) {
-      console.error('Error in onSubmit:', error)
-      toast.error(`Error saving tenant: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Error:', error)
+      toast.error('An error occurred')
     } finally {
       setLoading(false)
     }
@@ -219,6 +262,21 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               )}
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Monthly Rent
+              </label>
+              <input
+                {...register('monthly_rent')}
+                type="text"
+                className="input"
+                placeholder="Enter monthly rent amount"
+              />
+              {errors.monthly_rent && (
+                <p className="text-sm text-red-600 mt-1">{errors.monthly_rent.message}</p>
+              )}
+            </div>
+
             {/* Property Assignment */}
             <div className="md:col-span-2">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-6">Property Assignment</h3>
@@ -228,7 +286,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Assign to Property (Optional)
               </label>
-              <select {...register('property_id')} className="input">
+              <select {...register('property_id')} className="input" defaultValue={tenant?.property_id || ''}>
                 <option value="">Select a property (optional)</option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
@@ -263,26 +321,6 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
                 type="date"
                 className="input"
               />
-            </div>
-
-            <div>
-              <label htmlFor="rent_cadence" className="block text-sm font-medium text-gray-700 mb-2">
-                Rent Cadence
-              </label>
-              <select 
-                {...register('rent_cadence')}
-                className="input"
-              >
-                <option value="">Select rent cadence</option>
-                {RENT_CADENCE_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {errors.rent_cadence && (
-                <p className="text-sm text-red-600 mt-1">{errors.rent_cadence.message}</p>
-              )}
             </div>
 
             {/* Notes */}

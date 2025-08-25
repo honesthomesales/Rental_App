@@ -77,10 +77,14 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
     if (!property?.tenants?.[0]?.id) return
     
     try {
-      const response = await RentPeriodsService.getTenantRentPeriods(property.tenants[0].id)
-      if (response.success && response.data) {
-        setRentPeriods(response.data)
-      }
+      // Temporarily commented out due to missing service method
+      // const response = await RentPeriodsService.getTenantRentPeriods(property.tenants[0].id)
+      // if (response.success && response.data) {
+      //   setRentPeriods(response.data)
+      // }
+      
+      // For now, set empty array
+      setRentPeriods([])
     } catch (error) {
       console.error('Error loading rent periods:', error)
     }

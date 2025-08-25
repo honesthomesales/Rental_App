@@ -218,10 +218,12 @@ export class LeasesService {
       // Group active leases by property
       const propertyLeaseMap = new Map<string, Lease[]>();
       (activeLeases || []).forEach(lease => {
-        if (!propertyLeaseMap.has(lease.property_id)) {
-          propertyLeaseMap.set(lease.property_id, []);
+        if (lease.property_id) { // Only process leases with valid property_id
+          if (!propertyLeaseMap.has(lease.property_id)) {
+            propertyLeaseMap.set(lease.property_id, []);
+          }
+          propertyLeaseMap.get(lease.property_id)!.push(lease as any);
         }
-        propertyLeaseMap.get(lease.property_id)!.push(lease);
       });
 
       // Get all properties

@@ -241,11 +241,15 @@ export default function TenantsPage() {
                             <span className="font-medium">Property:</span> {tenant.properties.name}
                           </div>
                         )}
-                        {tenant.leases && tenant.leases.length > 0 && (
+                        {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent ? (
                           <div className="text-sm text-gray-600">
                             <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
                           </div>
-                        )}
+                        ) : tenant.monthly_rent ? (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Rent:</span> ${tenant.monthly_rent.toLocaleString()}/month
+                          </div>
+                        ) : null}
                         {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
                           <div className="text-sm text-gray-600">
                             <span className="font-medium">Lease Start:</span> {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
@@ -347,10 +351,10 @@ export default function TenantsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">
-                            {tenant.leases && tenant.leases.length > 0 
-                              ? `$${tenant.leases[0].rent.toLocaleString()}/month` 
+                            {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent
+                              ? `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence || 'month'}` 
                               : tenant.monthly_rent 
-                                ? `$${tenant.monthly_rent.toLocaleString()}/month` 
+                                ? `$${tenant.monthly_rent.toLocaleString()}/month`
                                 : 'Not set'}
                           </td>
                           <td className="px-4 py-4">

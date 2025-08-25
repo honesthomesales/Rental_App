@@ -79,7 +79,7 @@ export default function LatePaymentsPage() {
               property_id: tenant.property_id,
               property_name: property.name,
               property_address: property.address,
-              rent: property.monthly_rent || 0,
+              rent: lease.rent || 0, // Use lease rent instead of property monthly_rent
               total_owed: latePaymentInfo.totalDue,
               late_periods: latePaymentInfo.latePeriods,
               lease_start_date: lease.lease_start_date,
