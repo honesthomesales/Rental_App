@@ -26,3 +26,9 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+
+# Next.js build cache
+.next/
+out/
+dist/
+build/
