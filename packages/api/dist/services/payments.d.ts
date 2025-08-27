@@ -30,7 +30,7 @@ export declare class PaymentsService {
      * Get all payments
      */
     static getAll(): Promise<{
-        data: never[] | null;
+        data: any[] | null;
         error: string | null;
         success: boolean;
     }>;

@@ -280,4 +280,5 @@ export interface LateTenant extends Tenant {
     total_late_fees?: number;
     total_outstanding?: number;
     late_periods?: number;
+    leases?: Lease[];
 }

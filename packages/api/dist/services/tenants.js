@@ -105,9 +105,21 @@ class TenantsService {
             const supabase = (0, client_1.getSupabaseClient)();
             // Log the data being sent
             console.log('TenantsService.create - Input data:', tenantData);
+            // Only send the columns that actually exist in the RENT_tenants table
+            const insertData = {
+                property_id: tenantData.property_id,
+                first_name: tenantData.first_name,
+                last_name: tenantData.last_name,
+                email: tenantData.email,
+                phone: tenantData.phone,
+                lease_start_date: tenantData.lease_start_date,
+                lease_end_date: tenantData.lease_end_date,
+                notes: tenantData.notes
+            };
+            console.log('TenantsService.create - Insert data (filtered):', insertData);
             const { data, error } = await supabase
                 .from('RENT_tenants')
-                .insert([tenantData])
+                .insert([insertData])
                 .select('*')
                 .single();
             if (error) {
@@ -129,63 +141,66 @@ class TenantsService {
     static async update(id, tenantData) {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
-            const { data, error } = await supabase
+            if (!supabase) {
+                return (0, client_1.createApiResponse)(null, 'Supabase client not available');
+            }
+            // First, verify the tenant exists
+            const { data: existingTenant, error: checkError } = await supabase
                 .from('RENT_tenants')
-                .update(tenantData)
+                .select('id')
                 .eq('id', id)
-                .select('*')
                 .single();
-            if (error) {
-                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            if (checkError || !existingTenant) {
+                console.error('Tenant not found:', { id, checkError });
+                return (0, client_1.createApiResponse)(null, 'Tenant not found');
             }
-            // Update lease if rent_cadence is provided
-            if (tenantData.rent_cadence && data.property_id) {
-                // Check if lease exists
-                const { data: existingLease } = await supabase
-                    .from('RENT_leases')
-                    .select('id, lease_start_date, lease_end_date')
-                    .eq('tenant_id', data.id)
-                    .eq('status', 'active')
-                    .single();
-                if (existingLease) {
-                    // Update existing lease
-                    await supabase
-                        .from('RENT_leases')
-                        .update({
-                        rent_cadence: tenantData.rent_cadence,
-                        rent: tenantData.monthly_rent || 0,
-                        lease_start_date: tenantData.lease_start_date || existingLease.lease_start_date,
-                        lease_end_date: tenantData.lease_end_date || existingLease.lease_end_date
-                    })
-                        .eq('id', existingLease.id);
-                }
-                else {
-                    // Create new lease
-                    const leaseData = {
-                        tenant_id: data.id,
-                        property_id: data.property_id,
-                        lease_start_date: tenantData.lease_start_date || new Date().toISOString(),
-                        lease_end_date: tenantData.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                        rent: tenantData.monthly_rent || 0,
-                        rent_cadence: tenantData.rent_cadence,
-                        move_in_fee: 0,
-                        late_fee_amount: 50,
-                        status: 'active'
-                    };
-                    await supabase
-                        .from('RENT_leases')
-                        .insert([leaseData]);
-                }
+            // Build update data - only include fields that are explicitly provided
+            const updateData = {};
+            if (tenantData.first_name !== undefined)
+                updateData.first_name = tenantData.first_name;
+            if (tenantData.last_name !== undefined)
+                updateData.last_name = tenantData.last_name;
+            if (tenantData.email !== undefined)
+                updateData.email = tenantData.email;
+            if (tenantData.phone !== undefined)
+                updateData.phone = tenantData.phone;
+            if (tenantData.emergency_contact_name !== undefined)
+                updateData.emergency_contact_name = tenantData.emergency_contact_name;
+            if (tenantData.emergency_contact_phone !== undefined)
+                updateData.emergency_contact_phone = tenantData.emergency_contact_phone;
+            if (tenantData.notes !== undefined)
+                updateData.notes = tenantData.notes;
+            // Always include property_id when it's explicitly provided (including null for unlinking)
+            if (tenantData.property_id !== undefined) {
+                updateData.property_id = tenantData.property_id;
             }
-            // Fetch property data separately
-            let property = null;
-            if (data.property_id) {
-                const { data: propData } = await supabase
-                    .from('RENT_properties')
-                    .select('id, name, address, notes, monthly_rent')
-                    .eq('id', data.property_id)
-                    .single();
-                property = propData;
+            // Debug: log what we're trying to update
+            console.log('Updating tenant with data:', { id, updateData });
+            // Perform the update operation WITHOUT select
+            const { error: updateError } = await supabase
+                .from('RENT_tenants')
+                .update(updateData)
+                .eq('id', id);
+            if (updateError) {
+                console.error('Supabase update error:', updateError);
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(updateError));
+            }
+            // Test: Verify the update response format and log for debugging
+            console.log(`✅ Update operation completed successfully for tenant ${id}`);
+            // Now fetch the updated tenant data separately - use maybeSingle to handle array responses safely
+            const { data, error: fetchError } = await supabase
+                .from('RENT_tenants')
+                .select('*')
+                .eq('id', id)
+                .maybeSingle();
+            if (fetchError) {
+                console.error('Supabase fetch error after update:', fetchError);
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(fetchError));
+            }
+            // Handle the case where no rows were returned (RLS might be hiding the row)
+            if (!data) {
+                console.warn(`Unlink updated 0 rows for tenant ${id}; verify RLS policy allows UPDATE on RENT_tenants for current auth.`);
+                return (0, client_1.createApiResponse)(null, 'Tenant update failed - no rows affected. This may be due to RLS policies.');
             }
             // Fetch leases
             const { data: leasesData } = await supabase
@@ -195,7 +210,7 @@ class TenantsService {
                 .order('lease_start_date', { ascending: false });
             const tenantWithRelations = {
                 ...data,
-                properties: property,
+                properties: null,
                 leases: leasesData || []
             };
             return (0, client_1.createApiResponse)(tenantWithRelations);
@@ -1076,6 +1091,69 @@ class TenantsService {
                 }
             }
             return (0, client_1.createApiResponse)({ created, errors });
+        }
+        catch (error) {
+            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+        }
+    }
+    /**
+     * Unlink a tenant from their property
+     */
+    static async unlinkTenantFromProperty(tenantId) {
+        try {
+            const supabase = (0, client_1.getSupabaseClient)();
+            // First, get the current tenant data
+            const { data: currentTenant, error: getError } = await supabase
+                .from('RENT_tenants')
+                .select('*')
+                .eq('id', tenantId)
+                .single();
+            if (getError) {
+                console.error('unlinkTenantFromProperty get error:', getError);
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(getError));
+            }
+            if (!currentTenant) {
+                return (0, client_1.createApiResponse)(null, 'Tenant not found');
+            }
+            // Update the tenant to remove the property_id (set to null)
+            const { data, error } = await supabase
+                .from('RENT_tenants')
+                .update({ property_id: null })
+                .eq('id', tenantId)
+                .select()
+                .single();
+            if (error) {
+                console.error('unlinkTenantFromProperty update error:', error);
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            }
+            return (0, client_1.createApiResponse)(data);
+        }
+        catch (error) {
+            console.error('unlinkTenantFromProperty exception:', error);
+            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+        }
+    }
+    /**
+     * Clear the tenants cache
+     */
+    static clearCache() {
+        // Cache not implemented in this version
+    }
+    /**
+     * Get rent periods for a specific tenant
+     */
+    static async getTenantRentPeriods(tenantId) {
+        try {
+            const supabase = (0, client_1.getSupabaseClient)();
+            const { data: periods, error } = await supabase
+                .from('RENT_rent_periods')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('period_due_date', { ascending: false });
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            }
+            return (0, client_1.createApiResponse)(periods || []);
         }
         catch (error) {
             return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));

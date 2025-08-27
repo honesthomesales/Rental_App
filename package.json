@@ -40,6 +40,7 @@
     "@react-native-community/cli-platform-android": "^20.0.0",
     "@react-native/gradle-plugin": "^0.81.0",
     "critters": "^0.0.23",
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "react-gauge-chart": "^0.5.1"
   }
 }

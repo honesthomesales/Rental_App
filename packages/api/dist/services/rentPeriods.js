@@ -1,206 +1,167 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RentPeriodsService = void 0;
+const supabase_js_1 = require("@supabase/supabase-js");
 const client_1 = require("../client");
 class RentPeriodsService {
-    /**
-     * Create rent periods for a tenant based on their lease
-     */
-    static async createRentPeriods(tenant, lease) {
-        try {
-            const supabase = (0, client_1.getSupabaseClient)();
-            if (!lease.lease_start_date || !lease.rent || !lease.rent_cadence) {
-                return (0, client_1.createApiResponse)(null, 'Missing lease information');
-            }
-            const periods = [];
-            const startDate = new Date(lease.lease_start_date);
-            const today = new Date();
-            let currentDate = new Date(startDate);
-            // Create periods from lease start to today
-            while (currentDate <= today) {
-                const dueDate = new Date(currentDate);
-                const isLate = dueDate < today;
-                const daysLate = isLate ? Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-                const shouldApplyLateFee = daysLate > 5;
-                let lateFee = 0;
-                if (shouldApplyLateFee) {
-                    switch (lease.rent_cadence.toLowerCase().trim()) {
-                        case 'weekly':
-                            lateFee = 10;
-                            break;
-                        case 'bi-weekly':
-                        case 'biweekly':
-                        case 'bi_weekly':
-                            lateFee = 20;
-                            break;
-                        case 'monthly':
-                        default:
-                            lateFee = 50;
-                            break;
-                    }
-                }
-                periods.push({
-                    tenant_id: tenant.id,
-                    property_id: tenant.property_id || '',
-                    lease_id: lease.id,
-                    period_due_date: dueDate.toISOString().split('T')[0],
-                    rent_amount: lease.rent,
-                    rent_cadence: lease.rent_cadence,
-                    status: 'unpaid',
-                    amount_paid: 0,
-                    late_fee_applied: lateFee,
-                    late_fee_waived: false,
-                    due_date_override: undefined,
-                    notes: undefined
-                });
-                // Move to next period based on cadence
-                switch (lease.rent_cadence.toLowerCase().trim()) {
-                    case 'weekly':
-                        currentDate.setDate(currentDate.getDate() + 7);
-                        break;
-                    case 'bi-weekly':
-                    case 'biweekly':
-                    case 'bi_weekly':
-                        currentDate.setDate(currentDate.getDate() + 14);
-                        break;
-                    case 'monthly':
-                    default:
-                        currentDate.setMonth(currentDate.getMonth() + 1);
-                        break;
-                }
-            }
-            // Insert all periods
-            const { data, error } = await supabase
-                .from('RENT_rent_periods')
-                .insert(periods)
-                .select('*');
-            if (error) {
-                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
-            }
-            return (0, client_1.createApiResponse)(data);
+    static getSupabaseClientSafe() {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseAnonKey) {
+            throw new Error('Missing Supabase environment variables');
         }
-        catch (error) {
-            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
-        }
+        return (0, supabase_js_1.createClient)(supabaseUrl, supabaseAnonKey);
     }
     /**
-     * Get all rent periods for a tenant
+     * Get rent periods for a specific tenant
      */
     static async getTenantRentPeriods(tenantId) {
         try {
-            const supabase = (0, client_1.getSupabaseClient)();
-            const { data, error } = await supabase
+            const supabase = this.getSupabaseClientSafe();
+            const { data: periods, error } = await supabase
                 .from('RENT_rent_periods')
                 .select('*')
                 .eq('tenant_id', tenantId)
-                .order('period_due_date', { ascending: true });
+                .order('period_due_date', { ascending: false });
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            return (0, client_1.createApiResponse)(data);
+            return (0, client_1.createApiResponse)(periods || []);
         }
         catch (error) {
             return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
         }
     }
     /**
-     * Update a rent period (for overrides)
+     * Get rent periods for a specific property
      */
-    static async updateRentPeriod(periodId, updates) {
+    static async getPropertyRentPeriods(propertyId) {
         try {
-            const supabase = (0, client_1.getSupabaseClient)();
-            const { data, error } = await supabase
+            const supabase = this.getSupabaseClientSafe();
+            const { data: periods, error } = await supabase
                 .from('RENT_rent_periods')
-                .update(updates)
-                .eq('id', periodId)
+                .select('*')
+                .eq('property_id', propertyId)
+                .order('period_due_date', { ascending: false });
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            }
+            return (0, client_1.createApiResponse)(periods || []);
+        }
+        catch (error) {
+            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+        }
+    }
+    /**
+     * Get all rent periods with late fees
+     */
+    static async getLateRentPeriods() {
+        try {
+            const supabase = this.getSupabaseClientSafe();
+            const { data: periods, error } = await supabase
+                .from('RENT_rent_periods')
+                .select('*')
+                .gt('late_fee_applied', 0)
+                .eq('late_fee_waived', false)
+                .order('period_due_date', { ascending: false });
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            }
+            return (0, client_1.createApiResponse)(periods || []);
+        }
+        catch (error) {
+            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+        }
+    }
+    /**
+     * Update a rent period
+     */
+    static async update(id, updateData) {
+        try {
+            const supabase = this.getSupabaseClientSafe();
+            const { data: period, error } = await supabase
+                .from('RENT_rent_periods')
+                .update({
+                ...updateData,
+                updated_at: new Date().toISOString()
+            })
+                .eq('id', id)
                 .select('*')
                 .single();
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            return (0, client_1.createApiResponse)(data);
+            return (0, client_1.createApiResponse)(period);
         }
         catch (error) {
             return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
         }
     }
     /**
-     * Calculate total owed for a tenant based on rent periods
+     * Bulk update multiple rent periods
      */
-    static async calculateTenantOwedAmount(tenantId) {
+    static async bulkUpdate(periodIds, updateData) {
         try {
-            const periodsResponse = await this.getTenantRentPeriods(tenantId);
-            if (!periodsResponse.success || !periodsResponse.data) {
-                return (0, client_1.createApiResponse)(null, periodsResponse.error);
+            const supabase = this.getSupabaseClientSafe();
+            const { data: periods, error } = await supabase
+                .from('RENT_rent_periods')
+                .update({
+                ...updateData,
+                updated_at: new Date().toISOString()
+            })
+                .in('id', periodIds)
+                .select('*');
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            const periods = periodsResponse.data;
-            let totalOwed = 0;
-            let totalLateFees = 0;
-            let missedPeriods = 0;
-            for (const period of periods) {
-                if (period.status !== 'paid') {
-                    const periodOwed = period.rent_amount - period.amount_paid;
-                    totalOwed += periodOwed;
-                    if (period.late_fee_applied > 0 && !period.late_fee_waived) {
-                        totalLateFees += period.late_fee_applied;
-                    }
-                    if (periodOwed > 0) {
-                        missedPeriods++;
-                    }
-                }
-            }
-            return (0, client_1.createApiResponse)({
-                totalOwed,
-                totalLateFees,
-                missedPeriods,
-                periods
-            });
+            return (0, client_1.createApiResponse)(periods || []);
         }
         catch (error) {
             return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
         }
     }
     /**
-     * Allocate a payment to specific rent periods
+     * Waive late fees for multiple periods (set late_fee_waived to true)
      */
-    static async allocatePayment(paymentId, allocations) {
+    static async waiveLateFees(periodIds) {
+        return this.bulkUpdate(periodIds, { late_fee_waived: true });
+    }
+    /**
+     * Create a new rent period
+     */
+    static async create(periodData) {
         try {
-            const supabase = (0, client_1.getSupabaseClient)();
-            // Create payment allocations
-            const allocationData = allocations.map(allocation => ({
-                payment_id: paymentId,
-                rent_period_id: allocation.rent_period_id,
-                amount_allocated: allocation.amount
-            }));
-            const { error: allocationError } = await supabase
-                .from('RENT_payment_allocations')
-                .insert(allocationData);
-            if (allocationError) {
-                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(allocationError));
+            const supabase = this.getSupabaseClientSafe();
+            const { data: period, error } = await supabase
+                .from('RENT_rent_periods')
+                .insert({
+                ...periodData,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+                .select('*')
+                .single();
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            // Update rent periods with amounts paid
-            for (const allocation of allocations) {
-                // First get the current period to calculate new values
-                const { data: currentPeriod, error: getError } = await supabase
-                    .from('RENT_rent_periods')
-                    .select('amount_paid, rent_amount')
-                    .eq('id', allocation.rent_period_id)
-                    .single();
-                if (getError) {
-                    return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(getError));
-                }
-                const newAmountPaid = (currentPeriod.amount_paid || 0) + allocation.amount;
-                const newStatus = newAmountPaid >= currentPeriod.rent_amount ? 'paid' : 'partial';
-                const { error: updateError } = await supabase
-                    .from('RENT_rent_periods')
-                    .update({
-                    amount_paid: newAmountPaid,
-                    status: newStatus
-                })
-                    .eq('id', allocation.rent_period_id);
-                if (updateError) {
-                    return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(updateError));
-                }
+            return (0, client_1.createApiResponse)(period);
+        }
+        catch (error) {
+            return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+        }
+    }
+    /**
+     * Delete a rent period
+     */
+    static async delete(id) {
+        try {
+            const supabase = this.getSupabaseClientSafe();
+            const { error } = await supabase
+                .from('RENT_rent_periods')
+                .delete()
+                .eq('id', id);
+            if (error) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
             return (0, client_1.createApiResponse)(true);
         }

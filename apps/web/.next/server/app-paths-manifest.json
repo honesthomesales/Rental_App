@@ -1,1 +1,7 @@
-{}
+{
+  "/rent-periods/page": "app/rent-periods/page.js",
+  "/page": "app/page.js",
+  "/late-tenants/page": "app/late-tenants/page.js",
+  "/payments/page": "app/payments/page.js",
+  "/profit/page": "app/profit/page.js"
+}

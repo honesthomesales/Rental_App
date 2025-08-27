@@ -1,0 +1,5 @@
+[33mf39ea39[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/late-tenants-from-live[m[33m)[m fix: Move Actions column to first position (left) for better visibility
+[33m17c6433[m fix: tenants page default to list view and fix unlink/link functionality - Change tenants page to default to list view instead of grid - Remove monthly_rent references from TenantLinkModal to fix unlink/link errors
+[33m389bf1b[m fix: tenant creation and standardize rent cadence - Fix 400 Bad Request errors by removing non-existent fields - Add phone field back (but not emergency contact) - Remove monthly_rent and security_deposit (don't exist in live DB) - Standardize rent cadence dropdown with consistent values - Create utility functions for rent cadence consistency
+[33m09643d9[m Add debugging tools: test button and detailed logging for tenant creation troubleshooting
+[33m3275a61[m Simplify tenant creation service to isolate 400 error, add logging for debugging

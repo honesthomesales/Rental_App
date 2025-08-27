@@ -260,11 +260,12 @@ export default function TenantsPage() {
                           title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                         >
                           <Edit className="w-4 h-4 mr-1" />
-                          Edit {tenant.first_name}
+                          Edit
                         </Link>
                         <button
                           onClick={() => handleDelete(tenant.id)}
                           className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center"
+                          title="Delete tenant"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -366,14 +367,14 @@ export default function TenantsPage() {
                                 title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                               >
                                 <Edit className="w-4 h-4 mr-1" />
-                                Edit {tenant.first_name}
+                                Edit
                               </Link>
                               <button
                                 onClick={() => handleDelete(tenant.id)}
                                 className="text-red-600 hover:text-red-900 flex items-center"
+                                title="Delete tenant"
                               >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Delete
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -389,4 +390,4 @@ export default function TenantsPage() {
       </div>
     </div>
   )
-} 
+}

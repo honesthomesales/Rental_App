@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OtherService = exports.RentPeriodsService = exports.PaymentsService = exports.TransactionsService = exports.LeasesService = exports.TenantsService = exports.PropertiesService = exports.createApiResponseRN = exports.handleSupabaseErrorRN = exports.supabaseRN = exports.createApiResponse = exports.handleSupabaseError = exports.supabase = void 0;
+exports.getCollectionsSummary = exports.getCollectedTotal = exports.allocatePayment = exports.OtherService = exports.RentPeriodsService = exports.PaymentsService = exports.TransactionsService = exports.LeasesService = exports.TenantsService = exports.PropertiesService = exports.createApiResponseRN = exports.handleSupabaseErrorRN = exports.supabaseRN = exports.createApiResponse = exports.handleSupabaseError = exports.supabase = void 0;
 // Export types
 __exportStar(require("./types"), exports);
 __exportStar(require("./database.types"), exports);
@@ -43,3 +43,10 @@ var rentPeriods_1 = require("./services/rentPeriods");
 Object.defineProperty(exports, "RentPeriodsService", { enumerable: true, get: function () { return rentPeriods_1.RentPeriodsService; } });
 var other_1 = require("./services/other");
 Object.defineProperty(exports, "OtherService", { enumerable: true, get: function () { return other_1.OtherService; } });
+// Export payment allocation and collections
+var allocatePayment_1 = require("./lib/allocatePayment");
+Object.defineProperty(exports, "allocatePayment", { enumerable: true, get: function () { return allocatePayment_1.allocatePayment; } });
+var collections_1 = require("./lib/collections");
+Object.defineProperty(exports, "getCollectedTotal", { enumerable: true, get: function () { return collections_1.getCollectedTotal; } });
+Object.defineProperty(exports, "getCollectionsSummary", { enumerable: true, get: function () { return collections_1.getCollectionsSummary; } });
+__exportStar(require("./lib/cadence"), exports);

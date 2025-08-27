@@ -78,35 +78,23 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
   const handleUnlinkTenant = async (tenantId: string) => {
     try {
       setUnlinking(tenantId)
+      console.log('🔍 TenantLinkModal: Starting unlink for tenant:', tenantId, 'at:', new Date().toISOString())
       
-      // First, unlink the tenant from the property
-      const tenantResponse = await TenantsService.update(tenantId, {
-        property_id: undefined
+      // Use the update method to set property_id to null
+      const response = await TenantsService.update(tenantId, {
+        property_id: null
       })
+      console.log('🔍 TenantLinkModal: Unlink response:', response)
       
-      if (tenantResponse.success) {
-        // Check if this was the last tenant for this property
-        const remainingTenants = tenants.filter(t => t.property_id === propertyId && t.id !== tenantId)
-        
-        // If no more tenants, set property status to 'empty'
-        if (remainingTenants.length === 0) {
-          const propertyResponse = await PropertiesService.getById(propertyId)
-          if (propertyResponse.success && propertyResponse.data) {
-            const property = propertyResponse.data
-            await PropertiesService.update(propertyId, {
-              status: 'empty',
-              notes: `${property.notes || ''}\n\n[${new Date().toLocaleDateString()}] Property status changed to 'empty' - all tenants unlinked.`
-            })
-          }
-        }
-        
+      if (response.success) {
         toast.success('Tenant unlinked from property successfully!')
         onSuccess()
         loadTenants() // Reload to update the list
       } else {
-        toast.error(tenantResponse.error || 'Failed to unlink tenant')
+        toast.error(response.error || 'Failed to unlink tenant')
       }
     } catch (error) {
+      console.error('🔍 TenantLinkModal: Unlink error:', error)
       toast.error('Error unlinking tenant')
     } finally {
       setUnlinking(null)

@@ -1181,15 +1181,15 @@ export default function PaymentsPage() {
 
             {/* Grid View */}
             {viewMode === 'grid' && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-50 z-20">
                         Property
                       </th>
                       {weeklyDates.map((date, index) => (
-                        <th key={index} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200">
+                        <th key={index} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[120px]">
                           <div className="flex flex-col">
                             <span className="font-semibold">
                               {date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -1212,7 +1212,7 @@ export default function PaymentsPage() {
                         onMouseEnter={() => setHoveredProperty(property.id)}
                         onMouseLeave={() => setHoveredProperty(null)}
                       >
-                        <td className="px-4 py-3 border-r border-gray-200">
+                        <td className="px-4 py-3 border-r border-gray-200 sticky left-0 bg-white z-10">
                           <div className="flex items-center space-x-3">
                             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                             <div>
@@ -1277,11 +1277,11 @@ export default function PaymentsPage() {
 
             {/* List View */}
             {viewMode === 'list' && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-50 z-20">
                         Property
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
@@ -1309,7 +1309,7 @@ export default function PaymentsPage() {
                       if (allPayments.length === 0) {
                         return (
                           <tr key={property.id} className="border-b border-gray-200">
-                            <td className="px-4 py-3 border-r border-gray-200">
+                            <td className="px-4 py-3 border-r border-gray-200 sticky left-0 bg-white z-10">
                               <div className="flex items-center space-x-3">
                                 <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
                                 <div>
@@ -1331,7 +1331,7 @@ export default function PaymentsPage() {
                       
                       return allPayments.map((payment, index) => (
                         <tr key={`${property.id}-${payment?.id || index}`} className="border-b border-gray-200">
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-gray-200 sticky left-0 bg-white z-10">
                             <div className="flex items-center space-x-3">
                               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                               <div>

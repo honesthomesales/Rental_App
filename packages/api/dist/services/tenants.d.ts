@@ -20,7 +20,7 @@ export declare class TenantsService {
     /**
      * Update an existing tenant
      */
-    static update(id: string, tenantData: Omit<UpdateTenantData, 'id'>): Promise<ApiResponse<Tenant>>;
+    static update(id: string, tenantData: UpdateTenantData): Promise<ApiResponse<Tenant>>;
     /**
      * Delete a tenant
      */
@@ -193,4 +193,16 @@ export declare class TenantsService {
         created: Tenant[];
         errors: string[];
     }>>;
+    /**
+     * Unlink a tenant from their property
+     */
+    static unlinkTenantFromProperty(tenantId: string): Promise<ApiResponse<Tenant>>;
+    /**
+     * Clear the tenants cache
+     */
+    static clearCache(): void;
+    /**
+     * Get rent periods for a specific tenant
+     */
+    static getTenantRentPeriods(tenantId: string): Promise<ApiResponse<any[]>>;
 }

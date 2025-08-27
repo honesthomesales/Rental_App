@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { PropertiesService, TenantsService, LeasesService } from '@rental-app/api'
 import type { Property } from '@rental-app/api'
-import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon, Map, List, Calendar, Shield } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Users, Home, MapPin, Link as LinkIcon, Map, List, Calendar, Shield, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TenantLinkModal } from '@/components/TenantLinkModal'
 import PropertiesMap from '@/components/PropertiesMap'
@@ -213,7 +213,7 @@ export default function PropertiesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Properties</h1>
+              <h1 className="text-3xl font-bold text-gray-900">PROPERTIES</h1>
               <p className="text-gray-600">Manage your rental properties</p>
             </div>
             <div className="flex items-center space-x-4">
@@ -467,36 +467,18 @@ export default function PropertiesPage() {
                       title="Double-click to edit property"
                     >
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => router.push(`/properties/edit/?id=${property.id}`)}
-                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded text-xs hover:bg-gray-200 flex items-center transition-colors"
-                            title={`Edit ${property.name}`}
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit {property.name}
-                          </button>
+                        <div className="flex items-center justify-end space-x-1">
                           <button
                             onClick={() => handleOpenTenantModal(property)}
-                            className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                            className="bg-blue-100 text-blue-700 p-1.5 rounded text-xs hover:bg-blue-200 flex items-center transition-colors"
+                            title="Link/Unlink Tenants"
                           >
-                            <LinkIcon className="w-3 h-3 mr-1" />
-                            Link
+                            <LinkIcon className="w-3 h-3" />
                           </button>
-
-                          {property.status === 'rented' && property.active_lease_count && property.active_lease_count > 0 && (
-                            <button
-                              onClick={() => handleMarkVacant(property)}
-                              className="bg-orange-100 text-orange-200 flex items-center transition-colors"
-                              title="Mark property as vacant and end lease"
-                            >
-                              <Home className="w-3 h-3 mr-1" />
-                              Vacant
-                            </button>
-                          )}
                           <button
                             onClick={() => handleDelete(property.id)}
-                            className="bg-red-100 text-red-700 px-3 py-2 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                            className="bg-red-100 text-red-700 p-1.5 rounded text-xs hover:bg-red-200 flex items-center transition-colors"
+                            title="Delete Property"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>

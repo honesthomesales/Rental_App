@@ -14,4 +14,9 @@ export { LeasesService } from './services/leases';
 export { TransactionsService } from './services/transactions';
 export { PaymentsService } from './services/payments';
 export { RentPeriodsService } from './services/rentPeriods';
-export { OtherService, OtherEntry } from './services/other'; 
+export { OtherService, OtherEntry } from './services/other';
+
+// Export payment allocation and collections
+export { allocatePayment } from './lib/allocatePayment';
+export { getCollectedTotal, getCollectionsSummary } from './lib/collections';
+export * from './lib/cadence'; 

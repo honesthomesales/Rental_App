@@ -1,0 +1,1152 @@
+[
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "policy_number",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "provider_name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "policy_type",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "coverage_amount",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 12,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "premium_amount",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "start_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "end_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "renewal_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "status",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'active'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_insurance_policies",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "tenant_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "lease_start_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "lease_end_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "rent",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "rent_cadence",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'monthly'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "move_in_fee",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "late_fee_amount",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "lease_pdf_url",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "status",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'active'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_leases",
+    "column_name": "rent_due_day",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "1",
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "tenant_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "title",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "priority",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'medium'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "status",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'open'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "reported_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "completed_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "estimated_cost",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "actual_cost",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "repairman",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_maintenance_requests",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "tenant_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "lease_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "payment_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "amount",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "payment_type",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 50,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "payment_method",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 50,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "status",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'completed'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_payments",
+    "column_name": "date_paid",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "address",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "city",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "state",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 2,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "zip_code",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 10,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "bedrooms",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "bathrooms",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 3,
+    "numeric_scale": 1
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "square_feet",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "year_built",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "purchase_price",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 12,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "purchase_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "current_value",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 12,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "monthly_rent",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "is_for_sale",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "is_for_rent",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "true",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "insurance_policy_number",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "insurance_provider",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "insurance_premium",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "owner_name",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "property_type",
+    "data_type": "USER-DEFINED",
+    "is_nullable": "YES",
+    "column_default": "'house'::property_type",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "Sell_Price",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 64,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "Interest_Rate",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "property_tax",
+    "data_type": "real",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 24,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "status",
+    "data_type": "USER-DEFINED",
+    "is_nullable": "YES",
+    "column_default": "'empty'::property_status",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "purchase_payment",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 32,
+    "numeric_scale": 0
+  },
+  {
+    "table_name": "RENT_properties",
+    "column_name": "Map_ID",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "tenant_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "lease_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "period_due_date",
+    "data_type": "date",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "rent_amount",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "rent_cadence",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "status",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": "'unpaid'::character varying",
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "amount_paid",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": "0",
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "late_fee_applied",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": "0",
+    "character_maximum_length": null,
+    "numeric_precision": 10,
+    "numeric_scale": 2
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "late_fee_waived",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "due_date_override",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_rent_periods",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "property_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "first_name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "last_name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "column_default": null,
+    "character_maximum_length": 100,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "email",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 255,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "phone",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": 20,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "is_active",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "true",
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "lease_start_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "lease_end_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  },
+  {
+    "table_name": "RENT_tenants",
+    "column_name": "currently_paid_up_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null,
+    "character_maximum_length": null,
+    "numeric_precision": null,
+    "numeric_scale": null
+  }
+]
