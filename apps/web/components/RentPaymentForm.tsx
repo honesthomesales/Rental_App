@@ -48,8 +48,6 @@ export function RentPaymentForm({ tenant, onSuccess, onCancel }: RentPaymentForm
       const response = await TenantsService.recordPayment(tenant.id, {
         amount: data.amount,
         payment_date: data.payment_date,
-        description: data.description,
-        reference_number: data.reference_number,
       })
       
       if (response.success && response.data) {

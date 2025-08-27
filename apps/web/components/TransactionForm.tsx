@@ -108,7 +108,6 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
       if (transaction) {
         // Update existing transaction
         const updateData: UpdateTransactionData = {
-          id: transaction.id,
           ...data
         }
         const response = await TransactionsService.update(transaction.id, updateData)

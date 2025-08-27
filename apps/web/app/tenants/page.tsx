@@ -216,9 +216,11 @@ export default function TenantsPage() {
                             {tenant.first_name} {tenant.last_name}
                           </h3>
                           <div className="flex items-center text-sm text-gray-500 mb-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
-                              {getLateStatusLabel(tenant.late_status)}
-                            </span>
+                            {tenant.late_status && (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+                                {getLateStatusLabel(tenant.late_status)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -358,9 +360,15 @@ export default function TenantsPage() {
                                 : 'Not set'}
                           </td>
                           <td className="px-4 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
-                              {getLateStatusLabel(tenant.late_status)}
-                            </span>
+                            {tenant.late_status ? (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLateStatusColor(tenant.late_status)}`}>
+                                {getLateStatusLabel(tenant.late_status)}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                No Status
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-4 text-sm font-medium">
                             <div className="flex space-x-2">

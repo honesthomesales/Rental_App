@@ -1,39 +1,6 @@
-// Temporarily commented out due to missing RENT_transactions table in database types
-/*
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Database } from '../database.types';
-
-// Simple response types to avoid circular references
-interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  success: boolean;
-}
-
-interface Transaction {
-  id: string;
-  tenant_id?: string;
-  property_id?: string;
-  lease_id?: string;
-  transaction_type: string;
-  amount: number;
-  transaction_date: string;
-  payment_status: string;
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface CreateTransactionData {
-  tenant_id?: string;
-  property_id?: string;
-  lease_id?: string;
-  transaction_type: string;
-  amount: number;
-  transaction_date: string;
-  payment_status: string;
-  notes?: string;
-}
+import type { Transaction, CreateTransactionData, UpdateTransactionData, ApiResponse } from '../types';
 
 interface TransactionUI<T> extends Transaction {
   tenant?: any;
@@ -98,7 +65,7 @@ export class TransactionsService {
     }
   }
 
-  static async update(id: string, transactionData: Partial<CreateTransactionData>): Promise<ApiResponse<Transaction>> {
+  static async update(id: string, transactionData: UpdateTransactionData): Promise<ApiResponse<Transaction>> {
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
@@ -211,18 +178,4 @@ export class TransactionsService {
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
-}
-*/
-
-// Temporary placeholder service
-export class TransactionsService {
-  static async getAll() { return { data: [], error: null, success: true }; }
-  static async getById() { return { data: null, error: 'Service temporarily disabled', success: false }; }
-  static async create() { return { data: null, error: 'Service temporarily disabled', success: false }; }
-  static async update() { return { data: null, error: 'Service temporarily disabled', success: false }; }
-  static async delete() { return { data: null, error: 'Service temporarily disabled', success: false }; }
-  static async getByTenant() { return { data: [], error: null, success: true }; }
-  static async getByProperty() { return { data: [], error: null, success: true }; }
-  static async getTotalByTenant() { return { data: 0, error: null, success: true }; }
-  static async getTotalByProperty() { return { data: 0, error: null, success: true }; }
 } 

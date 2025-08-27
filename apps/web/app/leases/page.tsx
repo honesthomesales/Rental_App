@@ -67,7 +67,7 @@ export default function LeasesPage() {
           response.data.map(async (lease) => {
             const [tenantResponse, propertyResponse] = await Promise.all([
               TenantsService.getById(lease.tenant_id),
-              PropertiesService.getById(lease.property_id)
+              lease.property_id ? PropertiesService.getById(lease.property_id) : Promise.resolve({ success: false, data: null, error: 'No property ID' })
             ])
             
             return {

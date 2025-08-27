@@ -838,7 +838,7 @@ export default function PaymentsPage() {
     const property = properties.find(p => p.id === propertyId)
     if (!property?.tenants?.[0]?.payment_history) return null
 
-    const tenantPayment = property.tenants[0].payment_history.find(p => {
+    const tenantPayment = property.tenants[0].payment_history.find((p: any) => {
       const paymentDate = new Date(p.date)
       return paymentDate >= weekStart && paymentDate <= weekEnd && p.status === 'completed'
     })
@@ -905,15 +905,15 @@ export default function PaymentsPage() {
       const paymentDate = new Date(p.payment_date)
       return paymentDate >= monthStart && paymentDate <= monthEnd
     })
-    totalPaid += monthPayments.reduce((sum, p) => sum + p.amount, 0)
+    totalPaid += monthPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
 
     // Check tenant payment history
     if (property?.tenants?.[0]?.payment_history) {
-      const tenantPayments = property.tenants[0].payment_history.filter(p => {
+      const tenantPayments = property.tenants[0].payment_history.filter((p: any) => {
         const paymentDate = new Date(p.date)
         return paymentDate >= monthStart && paymentDate <= monthEnd && p.status === 'completed'
       })
-      totalPaid += tenantPayments.reduce((sum, p) => sum + p.amount, 0)
+      totalPaid += tenantPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
     }
 
     return totalPaid >= monthlyRent

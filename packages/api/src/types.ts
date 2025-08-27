@@ -2,7 +2,7 @@ export type PropertyType = 'house' | 'singlewide' | 'doublewide';
 export type PropertyStatus = 'rented' | 'empty' | 'owner_finance' | 'lease_purchase';
 export type TransactionType = 'rent_payment' | 'loan_payment' | 'property_sale' | 'property_purchase' | 'expense' | 'income';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
-export type LateStatus = 'on_time' | 'late_5_days' | 'late_10_days' | 'eviction_notice';
+export type LateStatus = 'on_time' | 'late_5_days' | 'late_10_days' | 'eviction_notice' | string;
 export type PaymentFrequency = 'monthly' | 'bi_weekly' | 'weekly';
 
 export interface Property {
@@ -19,7 +19,6 @@ export interface Property {
   square_feet?: number;
   year_built?: number;
   purchase_price?: number;
-  purchase_payment?: number;
   purchase_date?: string;
   current_value?: number;
   monthly_rent?: number;
@@ -29,7 +28,6 @@ export interface Property {
   insurance_provider?: string;
   insurance_expiry_date?: string;
   insurance_premium?: number;
-  property_tax?: number;
   owner_name?: string;
   owner_phone?: string;
   owner_email?: string;
@@ -38,34 +36,34 @@ export interface Property {
   notes?: string;
   created_at: string;
   updated_at: string;
-  tenants?: Tenant[];
+  tenants?: any[]; // Made compatible with database tenant data
   active_leases?: Lease[];
   active_lease_count?: number;
 }
 
 export interface Tenant {
   id: string;
-  property_id?: string;
+  property_id?: string | null; // Made nullable to match database types
   first_name: string;
   last_name: string;
-  email?: string;
-  phone?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  lease_start_date?: string;
-  lease_end_date?: string;
-  monthly_rent?: number;
-  security_deposit?: number;
-  lease_pdf_url?: string;
-  payment_history: PaymentHistoryItem[];
-  late_fees_owed: number;
-  late_status: LateStatus;
-  last_payment_date?: string;
+  email?: string | null; // Made nullable to match database types
+  phone?: string | null; // Made nullable to match database types
+  emergency_contact_name?: string | null; // Made nullable to match database types
+  emergency_contact_phone?: string | null; // Made nullable to match database types
+  lease_start_date?: string | null; // Made nullable to match database types
+  lease_end_date?: string | null; // Made nullable to match database types
+  monthly_rent?: number | null; // Made nullable to match database types
+  security_deposit?: number | null; // Made nullable to match database types
+  lease_pdf_url?: string | null; // Made nullable to match database types
+  payment_history?: PaymentHistoryItem[] | any; // Made compatible with Json from database
+  late_fees_owed?: number;
+  late_status?: LateStatus;
+  last_payment_date?: string | null; // Made nullable to match database types
   currently_paid_up_date?: string; // New field: when tenant was last fully paid up
-  notes?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  notes?: string | null; // Made nullable to match database types
+  is_active?: boolean; // Made optional since database types show it as nullable
+  created_at?: string; // Made optional since database types show it as nullable
+  updated_at?: string; // Made optional since database types show it as nullable
   properties?: Property; // Add property information for late tenant queries
   payment_frequency?: PaymentFrequency;
   leases?: Lease[]; // Add lease information
@@ -73,19 +71,19 @@ export interface Tenant {
 
 export interface Lease {
   id: string;
-  tenant_id: string;
-  property_id: string;
+  tenant_id: string; // Made required since database types show it as required
+  property_id: string | null; // Made nullable to match database types
   lease_start_date: string;
   lease_end_date: string;
   rent: number;
-  rent_cadence: string;
-  move_in_fee: number;
-  late_fee_amount: number;
-  lease_pdf?: string;
+  rent_cadence: string; // Made required since database types show it as required
+  move_in_fee?: number | null; // Made nullable to match database types
+  late_fee_amount?: number | null; // Made nullable to match database types
+  lease_pdf?: string | null; // Made nullable to match database types
   status: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
+  notes?: string | null; // Made nullable to match database types
+  created_at: string; // Made required since database types show it as required
+  updated_at: string; // Made required since database types show it as required
 }
 
 export interface PaymentHistoryItem {
@@ -154,20 +152,20 @@ export interface Loan {
 
 export interface Transaction {
   id: string;
-  property_id?: string;
-  tenant_id?: string;
-  loan_id?: string;
-  bank_account_id?: string;
+  property_id?: string | undefined;
+  tenant_id?: string | undefined;
+  loan_id?: string | undefined;
+  bank_account_id?: string | undefined;
   transaction_type: TransactionType;
   amount: number;
-  description?: string;
+  description?: string | undefined;
   transaction_date: string;
   payment_status: PaymentStatus;
-  invoice_image_url?: string;
-  extracted_amount?: number;
-  check_image_url?: string;
-  reference_number?: string;
-  notes?: string;
+  invoice_image_url?: string | undefined;
+  extracted_amount?: number | undefined;
+  check_image_url?: string | undefined;
+  reference_number?: string | undefined;
+  notes?: string | undefined;
   created_at: string;
   updated_at: string;
 }
@@ -279,17 +277,20 @@ export interface UpdateLeaseData extends Partial<CreateLeaseData> {
 }
 
 export interface CreateTransactionData {
-  property_id?: string;
-  tenant_id?: string;
-  loan_id?: string;
-  bank_account_id?: string;
+  property_id?: string | undefined;
+  tenant_id?: string | undefined;
+  loan_id?: string | undefined;
+  bank_account_id?: string | undefined;
   transaction_type: TransactionType;
   amount: number;
-  description?: string;
+  description?: string | undefined;
   transaction_date: string;
   payment_status?: PaymentStatus;
-  reference_number?: string;
-  notes?: string;
+  invoice_image_url?: string | undefined;
+  extracted_amount?: number | undefined;
+  check_image_url?: string | undefined;
+  reference_number?: string | undefined;
+  notes?: string | undefined;
 }
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {

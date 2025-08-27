@@ -1,5 +1,6 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Database } from '../database.types';
+import type { Tenant as TenantType, PaymentHistoryItem, LateStatus } from '../types';
 
 type TenantRow = Database['public']['Tables']['RENT_tenants']['Row'];
 type TenantInsert = Database['public']['Tables']['RENT_tenants']['Insert'];
@@ -15,10 +16,11 @@ interface ApiResponse<T> {
   success: boolean;
 }
 
-interface Tenant extends TenantRow {
-  properties?: PropertyRow;
-  leases?: any[];
-}
+// Remove the local Tenant interface and use the one from types.ts
+// interface Tenant extends TenantRow {
+//   properties?: PropertyRow;
+//   leases?: any[];
+// }
 
 export class TenantsService {
   /**
@@ -28,7 +30,7 @@ export class TenantsService {
     property_id?: string;
     is_active?: boolean;
     late_status?: string;
-  }): Promise<ApiResponse<Tenant[]>> {
+  }): Promise<ApiResponse<TenantType[]>> {
     try {
       const supabase = getSupabaseClient();
       let query = supabase
@@ -54,9 +56,9 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // Fetch properties and leases separately
+      // Fetch properties and leases separately and map to expected Tenant type
       const tenantsWithRelations = await Promise.all(
-        (tenants as Tenant[]).map(async (tenant) => {
+        (tenants as TenantRow[]).map(async (tenant) => {
           // Fetch property
           let property: any = null;
           if (tenant.property_id) {
@@ -75,11 +77,55 @@ export class TenantsService {
             .eq('tenant_id', tenant.id)
             .order('lease_start_date', { ascending: false });
 
-          return {
-            ...tenant,
+          // Parse payment_history from JSONB
+          let paymentHistory: PaymentHistoryItem[] = [];
+          if (tenant.payment_history) {
+            try {
+              const rawPaymentHistory = tenant.payment_history;
+              paymentHistory = Array.isArray(rawPaymentHistory) 
+                ? rawPaymentHistory 
+                : JSON.parse(rawPaymentHistory as string);
+            } catch (e) {
+              console.warn('Failed to parse payment_history for tenant:', tenant.id);
+              paymentHistory = [];
+            }
+          }
+
+          // Map to expected Tenant type
+          const mappedTenant: TenantType = {
+            id: tenant.id,
+            property_id: tenant.property_id || undefined,
+            first_name: tenant.first_name,
+            last_name: tenant.last_name,
+            email: tenant.email || undefined,
+            phone: tenant.phone || undefined,
+            emergency_contact_name: tenant.emergency_contact_name || undefined,
+            emergency_contact_phone: tenant.emergency_contact_phone || undefined,
+            lease_start_date: tenant.lease_start_date || undefined,
+            lease_end_date: tenant.lease_end_date || undefined,
+            monthly_rent: tenant.monthly_rent || undefined,
+            security_deposit: tenant.security_deposit || undefined,
+            lease_pdf_url: tenant.lease_pdf_url || undefined,
+            payment_history: paymentHistory,
+            late_fees_owed: tenant.late_fees_owed || 0,
+            late_status: tenant.late_status || 'on_time',
+            last_payment_date: tenant.last_payment_date || undefined,
+            currently_paid_up_date: undefined, // This field doesn't exist in the database yet
+            notes: tenant.notes || undefined,
+            is_active: tenant.is_active || true,
+            created_at: tenant.created_at,
+            updated_at: tenant.updated_at,
             properties: property,
-            leases: leasesData || []
-          } as Tenant;
+            payment_frequency: undefined, // This field doesn't exist in the database yet
+            leases: (leasesData || []).map(lease => ({
+              ...lease,
+              tenant_id: lease.tenant_id || '',
+              property_id: lease.property_id || '',
+              rent_cadence: lease.rent_cadence || 'monthly'
+            }))
+          };
+
+          return mappedTenant;
         })
       );
 
@@ -92,7 +138,7 @@ export class TenantsService {
   /**
    * Get a tenant by ID
    */
-  static async getById(id: string): Promise<ApiResponse<Tenant>> {
+  static async getById(id: string): Promise<ApiResponse<TenantType>> {
     try {
       const supabase = getSupabaseClient();
       const { data: tenant, error } = await supabase
@@ -123,11 +169,25 @@ export class TenantsService {
         .eq('tenant_id', tenant.id)
         .order('lease_start_date', { ascending: false });
 
-      const tenantWithRelations = {
+      // Parse payment_history from JSONB
+      let paymentHistory: PaymentHistoryItem[] = [];
+      if (tenant.payment_history) {
+        try {
+          paymentHistory = Array.isArray(tenant.payment_history) 
+            ? tenant.payment_history 
+            : JSON.parse(tenant.payment_history as string);
+        } catch (e) {
+          console.warn('Failed to parse payment_history for tenant:', tenant.id);
+          paymentHistory = [];
+        }
+      }
+
+      const tenantWithRelations: TenantType = {
         ...tenant,
         properties: property,
-        leases: leasesData || []
-      } as Tenant;
+        leases: leasesData || [],
+        payment_history: paymentHistory
+      };
 
       return createApiResponse(tenantWithRelations);
     } catch (error) {
@@ -138,7 +198,7 @@ export class TenantsService {
   /**
    * Create a new tenant
    */
-  static async create(tenantData: TenantInsert): Promise<ApiResponse<Tenant>> {
+  static async create(tenantData: TenantInsert): Promise<ApiResponse<TenantType>> {
     try {
       const supabase = getSupabaseClient();
       
@@ -173,7 +233,7 @@ export class TenantsService {
 
       console.log('TenantsService.create - Success, created tenant:', data);
       // Return simple response without additional data for now
-      return createApiResponse(data as Tenant);
+      return createApiResponse(data as TenantType);
     } catch (error) {
       console.error('TenantsService.create - Unexpected error:', error);
       return createApiResponse(null, handleSupabaseError(error));
@@ -183,7 +243,7 @@ export class TenantsService {
   /**
    * Update an existing tenant
    */
-  static async update(id: string, tenantData: TenantUpdate): Promise<ApiResponse<Tenant>> {
+  static async update(id: string, tenantData: TenantUpdate): Promise<ApiResponse<TenantType>> {
     try {
       const supabase = getSupabaseClient()
 
@@ -301,11 +361,25 @@ export class TenantsService {
         .eq('tenant_id', id)
         .order('lease_start_date', { ascending: false });
 
-      const tenantWithRelations = {
+      // Parse payment_history from JSONB
+      let paymentHistory: PaymentHistoryItem[] = [];
+      if (updatedTenant.payment_history) {
+        try {
+          paymentHistory = Array.isArray(updatedTenant.payment_history) 
+            ? updatedTenant.payment_history 
+            : JSON.parse(updatedTenant.payment_history as string);
+        } catch (e) {
+          console.warn('Failed to parse payment_history for tenant:', updatedTenant.id);
+          paymentHistory = [];
+        }
+      }
+
+      const tenantWithRelations: TenantType = {
         ...updatedTenant,
         properties: property,
-        leases: leasesData || []
-      } as Tenant;
+        leases: leasesData || [],
+        payment_history: paymentHistory
+      };
 
       return createApiResponse(tenantWithRelations)
     } catch (error) {
@@ -346,7 +420,7 @@ export class TenantsService {
       is_active?: boolean;
       late_status?: string;
     }
-  ): Promise<ApiResponse<{ data: Tenant[]; total: number; page: number; limit: number; hasMore: boolean }>> {
+  ): Promise<ApiResponse<{ data: TenantType[]; total: number; page: number; limit: number; hasMore: boolean }>> {
     try {
       const supabase = getSupabaseClient();
       const offset = (page - 1) * limit;
@@ -377,7 +451,7 @@ export class TenantsService {
 
       // Fetch properties and leases separately
       const tenantsWithRelations = await Promise.all(
-        (tenants as Tenant[]).map(async (tenant) => {
+        (tenants as TenantRow[]).map(async (tenant) => {
           // Fetch property
           let property: any = null;
           if (tenant.property_id) {
@@ -396,10 +470,24 @@ export class TenantsService {
             .eq('tenant_id', tenant.id)
             .order('lease_start_date', { ascending: false });
 
+          // Parse payment_history from JSONB
+          let paymentHistory: PaymentHistoryItem[] = [];
+          if (tenant.payment_history) {
+            try {
+              paymentHistory = Array.isArray(tenant.payment_history) 
+                ? tenant.payment_history 
+                : JSON.parse(tenant.payment_history as string);
+            } catch (e) {
+              console.warn('Failed to parse payment_history for tenant:', tenant.id);
+              paymentHistory = [];
+            }
+          }
+
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || []
+            leases: leasesData || [],
+            payment_history: paymentHistory
           };
         })
       );
@@ -419,7 +507,7 @@ export class TenantsService {
   /**
    * Search tenants
    */
-  static async search(searchTerm: string): Promise<ApiResponse<Tenant[]>> {
+  static async search(searchTerm: string): Promise<ApiResponse<TenantType[]>> {
     try {
       const supabase = getSupabaseClient();
       const { data: tenants, error } = await supabase
@@ -434,7 +522,7 @@ export class TenantsService {
 
       // Fetch properties and leases separately
       const tenantsWithRelations = await Promise.all(
-        (tenants as Tenant[]).map(async (tenant) => {
+        (tenants as TenantRow[]).map(async (tenant) => {
           // Fetch property
           let property: any = null;
           if (tenant.property_id) {
@@ -453,10 +541,24 @@ export class TenantsService {
             .eq('tenant_id', tenant.id)
             .order('lease_start_date', { ascending: false });
 
+          // Parse payment_history from JSONB
+          let paymentHistory: PaymentHistoryItem[] = [];
+          if (tenant.payment_history) {
+            try {
+              paymentHistory = Array.isArray(tenant.payment_history) 
+                ? tenant.payment_history 
+                : JSON.parse(tenant.payment_history as string);
+            } catch (e) {
+              console.warn('Failed to parse payment_history for tenant:', tenant.id);
+              paymentHistory = [];
+            }
+          }
+
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || []
+            leases: leasesData || [],
+            payment_history: paymentHistory
           };
         })
       );
@@ -470,14 +572,14 @@ export class TenantsService {
   /**
    * Get active tenants
    */
-  static async getActive(): Promise<ApiResponse<Tenant[]>> {
+  static async getActive(): Promise<ApiResponse<TenantType[]>> {
     return this.getAll({ is_active: true });
   }
 
   /**
    * Get late tenants
    */
-  static async getLate(): Promise<ApiResponse<Tenant[]>> {
+  static async getLate(): Promise<ApiResponse<TenantType[]>> {
     try {
       const supabase = getSupabaseClient();
       const { data: tenants, error } = await supabase
@@ -492,7 +594,7 @@ export class TenantsService {
 
       // Fetch properties and leases separately
       const tenantsWithRelations = await Promise.all(
-        (tenants as Tenant[]).map(async (tenant) => {
+        (tenants as TenantRow[]).map(async (tenant) => {
           // Fetch property
           let property: any = null;
           if (tenant.property_id) {
@@ -511,10 +613,24 @@ export class TenantsService {
             .eq('tenant_id', tenant.id)
             .order('lease_start_date', { ascending: false });
 
+          // Parse payment_history from JSONB
+          let paymentHistory: PaymentHistoryItem[] = [];
+          if (tenant.payment_history) {
+            try {
+              paymentHistory = Array.isArray(tenant.payment_history) 
+                ? tenant.payment_history 
+                : JSON.parse(tenant.payment_history as string);
+            } catch (e) {
+              console.warn('Failed to parse payment_history for tenant:', tenant.id);
+              paymentHistory = [];
+            }
+          }
+
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || []
+            leases: leasesData || [],
+            payment_history: paymentHistory
           };
         })
       );
@@ -528,7 +644,7 @@ export class TenantsService {
   /**
    * Get tenants by property
    */
-  static async getByProperty(propertyId: string): Promise<ApiResponse<Tenant[]>> {
+  static async getByProperty(propertyId: string): Promise<ApiResponse<TenantType[]>> {
     return this.getAll({ property_id: propertyId });
   }
 
@@ -541,7 +657,7 @@ export class TenantsService {
       payment_date: string;
       amount: number;
     }
-  ): Promise<ApiResponse<Tenant>> {
+  ): Promise<ApiResponse<TenantType>> {
     try {
       const supabase = getSupabaseClient();
       
@@ -573,7 +689,7 @@ export class TenantsService {
 
       // TODO: Implement payment recording logic when database schema is updated
       // For now, just return the tenant as-is
-      return createApiResponse(currentTenant as Tenant);
+      return createApiResponse(currentTenant as TenantType);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -606,7 +722,7 @@ export class TenantsService {
   /**
    * Calculate total amount due for a tenant using new pay period logic
    */
-  static calculateTotalDue(tenant: Tenant): number {
+  static calculateTotalDue(tenant: TenantType): number {
     if (!tenant.properties) {
       // TODO: Implement total due calculation when database schema is updated
       return 0;
@@ -633,7 +749,7 @@ export class TenantsService {
   /**
    * Calculate late periods based on days late and rent cadence
    */
-  static calculateLatePeriods(tenant: Tenant, daysLate: number): number {
+  static calculateLatePeriods(tenant: TenantType, daysLate: number): number {
     if (!tenant.leases || tenant.leases.length === 0) return 0;
     
     const cadence = tenant.leases[0].rent_cadence || 'monthly';
@@ -655,7 +771,7 @@ export class TenantsService {
   /**
    * Calculate late fees based on late periods and rent cadence
    */
-  static calculateLateFees(tenant: Tenant, latePeriods: number): number {
+  static calculateLateFees(tenant: TenantType, latePeriods: number): number {
     if (!tenant.leases || tenant.leases.length === 0) return 0;
     
     const cadence = tenant.leases[0].rent_cadence || 'monthly';
@@ -683,7 +799,7 @@ export class TenantsService {
   /**
    * Calculate total due including late fees
    */
-  static calculateTotalDueWithLateFees(tenant: Tenant, lateFees: number): number {
+  static calculateTotalDueWithLateFees(tenant: TenantType, lateFees: number): number {
     const baseRent = tenant.leases && tenant.leases.length > 0 
       ? tenant.leases[0].rent 
       : 0; // TODO: Implement base rent calculation when database schema is updated
@@ -695,7 +811,7 @@ export class TenantsService {
    * Calculate what a tenant actually owes using the currently_paid_up_date
    * This is the new improved calculation system
    */
-  static calculateTenantOwedAmount(tenant: Tenant): {
+  static calculateTenantOwedAmount(tenant: TenantType): {
     totalOwed: number;
     totalLateFees: number;
     missedPeriods: number;
@@ -738,7 +854,7 @@ export class TenantsService {
   /**
    * Calculate total days late for a tenant
    */
-  static calculateTotalDaysLate(tenant: Tenant): number {
+  static calculateTotalDaysLate(tenant: TenantType): number {
     if (!tenant.leases || tenant.leases.length === 0) {
       return 0;
     }
@@ -904,7 +1020,7 @@ export class TenantsService {
   /**
    * Calculate total late payments for a tenant
    */
-  static calculateTotalLatePayments(tenant: Tenant, property: any): {
+  static calculateTotalLatePayments(tenant: TenantType, property: any): {
     totalDue: number;
     totalLateFees: number;
     latePeriods: number;
@@ -920,7 +1036,7 @@ export class TenantsService {
   /**
    * Check if a tenant is late on payments
    */
-  static isTenantLate(tenant: Tenant, property: any): boolean {
+  static isTenantLate(tenant: TenantType, property: any): boolean {
     // TODO: Implement late payment check when database schema is updated
     return false;
   }
@@ -941,7 +1057,7 @@ export class TenantsService {
     monthly_rent?: number;
     security_deposit?: number;
     notes?: string;
-  }): Promise<ApiResponse<Tenant>> {
+  }): Promise<ApiResponse<TenantType>> {
     try {
       const supabase = getSupabaseClient();
       
@@ -974,7 +1090,7 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      return createApiResponse(data as Tenant);
+      return createApiResponse(data as TenantType);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
@@ -996,10 +1112,10 @@ export class TenantsService {
     monthly_rent?: number;
     security_deposit?: number;
     notes?: string;
-  }>): Promise<ApiResponse<{ created: Tenant[]; errors: string[] }>> {
+  }>): Promise<ApiResponse<{ created: TenantType[]; errors: string[] }>> {
     try {
       const supabase = getSupabaseClient();
-      const created: Tenant[] = [];
+      const created: TenantType[] = [];
       const errors: string[] = [];
 
       for (const tenantData of tenantsData) {
@@ -1024,7 +1140,7 @@ export class TenantsService {
   /**
    * Calculate total amount owed by a tenant
    */
-  static calculateTotalAmountOwed(tenant: Tenant): number {
+  static calculateTotalAmountOwed(tenant: TenantType): number {
     // TODO: Implement total amount calculation when database schema is updated
     // For now, return 0 since these fields don't exist in the current schema
     return 0;
@@ -1033,7 +1149,7 @@ export class TenantsService {
   /**
    * Get the rent amount for a tenant
    */
-  static getRentAmount(tenant: Tenant): number {
+  static getRentAmount(tenant: TenantType): number {
     // TODO: Implement rent amount calculation when database schema is updated
     // For now, return 0 since monthly_rent field doesn't exist in the current schema
     return 0;
@@ -1042,7 +1158,7 @@ export class TenantsService {
   /**
    * Calculate days since last payment
    */
-  static calculateDaysSinceLastPayment(tenant: Tenant): number {
+  static calculateDaysSinceLastPayment(tenant: TenantType): number {
     // TODO: Implement days since last payment calculation when database schema is updated
     return 0;
   }
@@ -1050,7 +1166,7 @@ export class TenantsService {
   /**
    * Calculate days since lease start
    */
-  static calculateDaysSinceLeaseStart(tenant: Tenant): number {
+  static calculateDaysSinceLeaseStart(tenant: TenantType): number {
     // TODO: Implement days since lease start calculation when database schema is updated
     return 0;
   }
