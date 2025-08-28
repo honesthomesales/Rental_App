@@ -262,15 +262,14 @@ export default function TenantsPage() {
                       <div className="flex space-x-2">
                         <Link
                           href={`/tenants/edit/?id=${tenant.id}`}
-                          className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 flex items-center flex-1 justify-center"
+                          className="bg-gray-600 text-white p-2 rounded text-sm hover:bg-gray-700 flex items-center justify-center"
                           title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit {tenant.first_name}
+                          <Edit className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => handleDelete(tenant.id)}
-                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 flex items-center"
+                          className="bg-red-600 text-white p-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -374,18 +373,17 @@ export default function TenantsPage() {
                             <div className="flex space-x-2">
                               <Link
                                 href={`/tenants/edit/?id=${tenant.id}`}
-                                className="text-blue-600 hover:text-blue-900 flex items-center"
+                                className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded flex items-center justify-center"
                                 title={`Edit ${tenant.first_name} ${tenant.last_name}`}
                               >
-                                <Edit className="w-4 h-4 mr-1" />
-                                Edit {tenant.first_name}
+                                <Edit className="w-4 h-4" />
                               </Link>
                               <button
                                 onClick={() => handleDelete(tenant.id)}
-                                className="text-red-600 hover:text-red-900 flex items-center"
+                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded flex items-center justify-center"
+                                title="Delete tenant"
                               >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Delete
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
