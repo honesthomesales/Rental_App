@@ -2,6 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TenantsService = void 0;
 const client_1 = require("../client");
+// Remove the local Tenant interface and use the one from types.ts
+// interface Tenant extends TenantRow {
+//   properties?: PropertyRow;
+//   leases?: any[];
+// }
 class TenantsService {
     /**
      * Get all tenants with optional filtering
@@ -26,7 +31,7 @@ class TenantsService {
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            // Fetch properties and leases separately
+            // Fetch properties and leases separately and map to expected Tenant type
             const tenantsWithRelations = await Promise.all(tenants.map(async (tenant) => {
                 // Fetch property
                 let property = null;
@@ -44,11 +49,54 @@ class TenantsService {
                     .select('*')
                     .eq('tenant_id', tenant.id)
                     .order('lease_start_date', { ascending: false });
-                return {
-                    ...tenant,
+                // Parse payment_history from JSONB
+                let paymentHistory = [];
+                if (tenant.payment_history) {
+                    try {
+                        const rawPaymentHistory = tenant.payment_history;
+                        paymentHistory = Array.isArray(rawPaymentHistory)
+                            ? rawPaymentHistory
+                            : JSON.parse(rawPaymentHistory);
+                    }
+                    catch (e) {
+                        console.warn('Failed to parse payment_history for tenant:', tenant.id);
+                        paymentHistory = [];
+                    }
+                }
+                // Map to expected Tenant type
+                const mappedTenant = {
+                    id: tenant.id,
+                    property_id: tenant.property_id || undefined,
+                    first_name: tenant.first_name,
+                    last_name: tenant.last_name,
+                    email: tenant.email || undefined,
+                    phone: tenant.phone || undefined,
+                    emergency_contact_name: tenant.emergency_contact_name || undefined,
+                    emergency_contact_phone: tenant.emergency_contact_phone || undefined,
+                    lease_start_date: tenant.lease_start_date || undefined,
+                    lease_end_date: tenant.lease_end_date || undefined,
+                    monthly_rent: tenant.monthly_rent || undefined,
+                    security_deposit: tenant.security_deposit || undefined,
+                    lease_pdf_url: tenant.lease_pdf_url || undefined,
+                    payment_history: paymentHistory,
+                    late_fees_owed: tenant.late_fees_owed || 0,
+                    late_status: tenant.late_status || 'on_time',
+                    last_payment_date: tenant.last_payment_date || undefined,
+                    currently_paid_up_date: undefined, // This field doesn't exist in the database yet
+                    notes: tenant.notes || undefined,
+                    is_active: tenant.is_active || true,
+                    created_at: tenant.created_at,
+                    updated_at: tenant.updated_at,
                     properties: property,
-                    leases: leasesData || []
+                    payment_frequency: undefined, // This field doesn't exist in the database yet
+                    leases: (leasesData || []).map(lease => ({
+                        ...lease,
+                        tenant_id: lease.tenant_id || '',
+                        property_id: lease.property_id || '',
+                        rent_cadence: lease.rent_cadence || 'monthly'
+                    }))
                 };
+                return mappedTenant;
             }));
             return (0, client_1.createApiResponse)(tenantsWithRelations);
         }
@@ -86,10 +134,24 @@ class TenantsService {
                 .select('*')
                 .eq('tenant_id', tenant.id)
                 .order('lease_start_date', { ascending: false });
+            // Parse payment_history from JSONB
+            let paymentHistory = [];
+            if (tenant.payment_history) {
+                try {
+                    paymentHistory = Array.isArray(tenant.payment_history)
+                        ? tenant.payment_history
+                        : JSON.parse(tenant.payment_history);
+                }
+                catch (e) {
+                    console.warn('Failed to parse payment_history for tenant:', tenant.id);
+                    paymentHistory = [];
+                }
+            }
             const tenantWithRelations = {
                 ...tenant,
                 properties: property,
-                leases: leasesData || []
+                leases: leasesData || [],
+                payment_history: paymentHistory
             };
             return (0, client_1.createApiResponse)(tenantWithRelations);
         }
@@ -237,10 +299,24 @@ class TenantsService {
                 .select('*')
                 .eq('tenant_id', id)
                 .order('lease_start_date', { ascending: false });
+            // Parse payment_history from JSONB
+            let paymentHistory = [];
+            if (updatedTenant.payment_history) {
+                try {
+                    paymentHistory = Array.isArray(updatedTenant.payment_history)
+                        ? updatedTenant.payment_history
+                        : JSON.parse(updatedTenant.payment_history);
+                }
+                catch (e) {
+                    console.warn('Failed to parse payment_history for tenant:', updatedTenant.id);
+                    paymentHistory = [];
+                }
+            }
             const tenantWithRelations = {
                 ...updatedTenant,
                 properties: property,
-                leases: leasesData || []
+                leases: leasesData || [],
+                payment_history: paymentHistory
             };
             return (0, client_1.createApiResponse)(tenantWithRelations);
         }
@@ -311,10 +387,24 @@ class TenantsService {
                     .select('*')
                     .eq('tenant_id', tenant.id)
                     .order('lease_start_date', { ascending: false });
+                // Parse payment_history from JSONB
+                let paymentHistory = [];
+                if (tenant.payment_history) {
+                    try {
+                        paymentHistory = Array.isArray(tenant.payment_history)
+                            ? tenant.payment_history
+                            : JSON.parse(tenant.payment_history);
+                    }
+                    catch (e) {
+                        console.warn('Failed to parse payment_history for tenant:', tenant.id);
+                        paymentHistory = [];
+                    }
+                }
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || []
+                    leases: leasesData || [],
+                    payment_history: paymentHistory
                 };
             }));
             return (0, client_1.createApiResponse)({
@@ -361,10 +451,24 @@ class TenantsService {
                     .select('*')
                     .eq('tenant_id', tenant.id)
                     .order('lease_start_date', { ascending: false });
+                // Parse payment_history from JSONB
+                let paymentHistory = [];
+                if (tenant.payment_history) {
+                    try {
+                        paymentHistory = Array.isArray(tenant.payment_history)
+                            ? tenant.payment_history
+                            : JSON.parse(tenant.payment_history);
+                    }
+                    catch (e) {
+                        console.warn('Failed to parse payment_history for tenant:', tenant.id);
+                        paymentHistory = [];
+                    }
+                }
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || []
+                    leases: leasesData || [],
+                    payment_history: paymentHistory
                 };
             }));
             return (0, client_1.createApiResponse)(tenantsWithRelations);
@@ -411,10 +515,24 @@ class TenantsService {
                     .select('*')
                     .eq('tenant_id', tenant.id)
                     .order('lease_start_date', { ascending: false });
+                // Parse payment_history from JSONB
+                let paymentHistory = [];
+                if (tenant.payment_history) {
+                    try {
+                        paymentHistory = Array.isArray(tenant.payment_history)
+                            ? tenant.payment_history
+                            : JSON.parse(tenant.payment_history);
+                    }
+                    catch (e) {
+                        console.warn('Failed to parse payment_history for tenant:', tenant.id);
+                        paymentHistory = [];
+                    }
+                }
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || []
+                    leases: leasesData || [],
+                    payment_history: paymentHistory
                 };
             }));
             return (0, client_1.createApiResponse)(tenantsWithRelations);

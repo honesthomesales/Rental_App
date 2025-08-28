@@ -33,12 +33,12 @@ export declare class LeasesService {
      */
     static updateLeaseStatus(leaseId: string): Promise<ApiResponse<Lease>>;
     /**
-     * Get all properties with their active lease status
+     * Get all properties with their lease status and active leases
      */
     static getAllPropertiesWithLeaseStatus(): Promise<ApiResponse<Array<{
         property_id: string;
         has_active_lease: boolean;
-        active_lease_count: number;
         active_leases: Lease[];
+        active_lease_count: number;
     }>>>;
 }

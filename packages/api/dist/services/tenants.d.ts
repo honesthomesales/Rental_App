@@ -1,16 +1,11 @@
 import type { Database } from '../database.types';
-type TenantRow = Database['public']['Tables']['RENT_tenants']['Row'];
+import type { Tenant as TenantType } from '../types';
 type TenantInsert = Database['public']['Tables']['RENT_tenants']['Insert'];
 type TenantUpdate = Database['public']['Tables']['RENT_tenants']['Update'];
-type PropertyRow = Database['public']['Tables']['RENT_properties']['Row'];
 interface ApiResponse<T> {
     data: T | null;
     error: string | null;
     success: boolean;
-}
-interface Tenant extends TenantRow {
-    properties?: PropertyRow;
-    leases?: any[];
 }
 export declare class TenantsService {
     /**
@@ -20,19 +15,19 @@ export declare class TenantsService {
         property_id?: string;
         is_active?: boolean;
         late_status?: string;
-    }): Promise<ApiResponse<Tenant[]>>;
+    }): Promise<ApiResponse<TenantType[]>>;
     /**
      * Get a tenant by ID
      */
-    static getById(id: string): Promise<ApiResponse<Tenant>>;
+    static getById(id: string): Promise<ApiResponse<TenantType>>;
     /**
      * Create a new tenant
      */
-    static create(tenantData: TenantInsert): Promise<ApiResponse<Tenant>>;
+    static create(tenantData: TenantInsert): Promise<ApiResponse<TenantType>>;
     /**
      * Update an existing tenant
      */
-    static update(id: string, tenantData: TenantUpdate): Promise<ApiResponse<Tenant>>;
+    static update(id: string, tenantData: TenantUpdate): Promise<ApiResponse<TenantType>>;
     /**
      * Delete a tenant
      */
@@ -45,7 +40,7 @@ export declare class TenantsService {
         is_active?: boolean;
         late_status?: string;
     }): Promise<ApiResponse<{
-        data: Tenant[];
+        data: TenantType[];
         total: number;
         page: number;
         limit: number;
@@ -54,26 +49,26 @@ export declare class TenantsService {
     /**
      * Search tenants
      */
-    static search(searchTerm: string): Promise<ApiResponse<Tenant[]>>;
+    static search(searchTerm: string): Promise<ApiResponse<TenantType[]>>;
     /**
      * Get active tenants
      */
-    static getActive(): Promise<ApiResponse<Tenant[]>>;
+    static getActive(): Promise<ApiResponse<TenantType[]>>;
     /**
      * Get late tenants
      */
-    static getLate(): Promise<ApiResponse<Tenant[]>>;
+    static getLate(): Promise<ApiResponse<TenantType[]>>;
     /**
      * Get tenants by property
      */
-    static getByProperty(propertyId: string): Promise<ApiResponse<Tenant[]>>;
+    static getByProperty(propertyId: string): Promise<ApiResponse<TenantType[]>>;
     /**
      * Record a payment for a tenant
      */
     static recordPayment(tenantId: string, paymentData: {
         payment_date: string;
         amount: number;
-    }): Promise<ApiResponse<Tenant>>;
+    }): Promise<ApiResponse<TenantType>>;
     /**
      * Get late tenants with detailed information using existing database structure
      */
@@ -81,7 +76,7 @@ export declare class TenantsService {
     /**
      * Calculate total amount due for a tenant using new pay period logic
      */
-    static calculateTotalDue(tenant: Tenant): number;
+    static calculateTotalDue(tenant: TenantType): number;
     /**
      * Calculate days late based on last payment date
      */
@@ -89,20 +84,20 @@ export declare class TenantsService {
     /**
      * Calculate late periods based on days late and rent cadence
      */
-    static calculateLatePeriods(tenant: Tenant, daysLate: number): number;
+    static calculateLatePeriods(tenant: TenantType, daysLate: number): number;
     /**
      * Calculate late fees based on late periods and rent cadence
      */
-    static calculateLateFees(tenant: Tenant, latePeriods: number): number;
+    static calculateLateFees(tenant: TenantType, latePeriods: number): number;
     /**
      * Calculate total due including late fees
      */
-    static calculateTotalDueWithLateFees(tenant: Tenant, lateFees: number): number;
+    static calculateTotalDueWithLateFees(tenant: TenantType, lateFees: number): number;
     /**
      * Calculate what a tenant actually owes using the currently_paid_up_date
      * This is the new improved calculation system
      */
-    static calculateTenantOwedAmount(tenant: Tenant): {
+    static calculateTenantOwedAmount(tenant: TenantType): {
         totalOwed: number;
         totalLateFees: number;
         missedPeriods: number;
@@ -116,7 +111,7 @@ export declare class TenantsService {
     /**
      * Calculate total days late for a tenant
      */
-    static calculateTotalDaysLate(tenant: Tenant): number;
+    static calculateTotalDaysLate(tenant: TenantType): number;
     /**
      * Get the late fee amount for a specific rent cadence
      */
@@ -154,7 +149,7 @@ export declare class TenantsService {
     /**
      * Calculate total late payments for a tenant
      */
-    static calculateTotalLatePayments(tenant: Tenant, property: any): {
+    static calculateTotalLatePayments(tenant: TenantType, property: any): {
         totalDue: number;
         totalLateFees: number;
         latePeriods: number;
@@ -162,7 +157,7 @@ export declare class TenantsService {
     /**
      * Check if a tenant is late on payments
      */
-    static isTenantLate(tenant: Tenant, property: any): boolean;
+    static isTenantLate(tenant: TenantType, property: any): boolean;
     /**
      * Create tenant by property address
      */
@@ -179,7 +174,7 @@ export declare class TenantsService {
         monthly_rent?: number;
         security_deposit?: number;
         notes?: string;
-    }): Promise<ApiResponse<Tenant>>;
+    }): Promise<ApiResponse<TenantType>>;
     /**
      * Bulk create tenants by property address
      */
@@ -197,24 +192,24 @@ export declare class TenantsService {
         security_deposit?: number;
         notes?: string;
     }>): Promise<ApiResponse<{
-        created: Tenant[];
+        created: TenantType[];
         errors: string[];
     }>>;
     /**
      * Calculate total amount owed by a tenant
      */
-    static calculateTotalAmountOwed(tenant: Tenant): number;
+    static calculateTotalAmountOwed(tenant: TenantType): number;
     /**
      * Get the rent amount for a tenant
      */
-    static getRentAmount(tenant: Tenant): number;
+    static getRentAmount(tenant: TenantType): number;
     /**
      * Calculate days since last payment
      */
-    static calculateDaysSinceLastPayment(tenant: Tenant): number;
+    static calculateDaysSinceLastPayment(tenant: TenantType): number;
     /**
      * Calculate days since lease start
      */
-    static calculateDaysSinceLeaseStart(tenant: Tenant): number;
+    static calculateDaysSinceLeaseStart(tenant: TenantType): number;
 }
 export {};

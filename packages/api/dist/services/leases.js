@@ -176,44 +176,50 @@ class LeasesService {
         }
     }
     /**
-     * Get all properties with their active lease status
+     * Get all properties with their lease status and active leases
      */
     static async getAllPropertiesWithLeaseStatus() {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
-            // Get all leases with status = 'active'
+            // Get all active leases with property information and tenant information
             const { data: activeLeases, error } = await supabase
                 .from('RENT_leases')
-                .select('*')
-                .eq('status', 'active');
+                .select(`
+          *,
+          RENT_tenants!inner(
+            id,
+            property_id,
+            is_active
+          )
+        `)
+                .eq('status', 'active')
+                .gte('lease_end_date', new Date().toISOString().split('T')[0])
+                .eq('RENT_tenants.is_active', true)
+                .not('RENT_tenants.property_id', 'is', null);
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            // Group active leases by property
+            // Group leases by property
             const propertyLeaseMap = new Map();
-            (activeLeases || []).forEach(lease => {
-                if (lease.property_id) { // Only process leases with valid property_id
+            activeLeases?.forEach(lease => {
+                if (lease.property_id && lease.RENT_tenants && lease.RENT_tenants.property_id === lease.property_id) {
                     if (!propertyLeaseMap.has(lease.property_id)) {
                         propertyLeaseMap.set(lease.property_id, []);
                     }
                     propertyLeaseMap.get(lease.property_id).push(lease);
                 }
             });
-            // Get all properties
-            const { data: properties, error: propertiesError } = await supabase
+            // Get all properties to ensure we have entries for all properties
+            const { data: allProperties } = await supabase
                 .from('RENT_properties')
                 .select('id');
-            if (propertiesError) {
-                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(propertiesError));
-            }
-            // Create result array
-            const result = (properties || []).map(property => {
-                const activeLeases = propertyLeaseMap.get(property.id) || [];
+            const result = (allProperties || []).map(property => {
+                const leases = propertyLeaseMap.get(property.id) || [];
                 return {
                     property_id: property.id,
-                    has_active_lease: activeLeases.length > 0,
-                    active_lease_count: activeLeases.length,
-                    active_leases: activeLeases
+                    has_active_lease: leases.length > 0,
+                    active_leases: leases,
+                    active_lease_count: leases.length
                 };
             });
             return (0, client_1.createApiResponse)(result);

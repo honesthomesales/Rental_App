@@ -1,47 +1,18 @@
-export declare class TransactionsService {
-    static getAll(): Promise<{
-        data: never[];
-        error: null;
-        success: boolean;
-    }>;
-    static getById(): Promise<{
-        data: null;
-        error: string;
-        success: boolean;
-    }>;
-    static create(): Promise<{
-        data: null;
-        error: string;
-        success: boolean;
-    }>;
-    static update(): Promise<{
-        data: null;
-        error: string;
-        success: boolean;
-    }>;
-    static delete(): Promise<{
-        data: null;
-        error: string;
-        success: boolean;
-    }>;
-    static getByTenant(): Promise<{
-        data: never[];
-        error: null;
-        success: boolean;
-    }>;
-    static getByProperty(): Promise<{
-        data: never[];
-        error: null;
-        success: boolean;
-    }>;
-    static getTotalByTenant(): Promise<{
-        data: number;
-        error: null;
-        success: boolean;
-    }>;
-    static getTotalByProperty(): Promise<{
-        data: number;
-        error: null;
-        success: boolean;
-    }>;
+import type { Transaction, CreateTransactionData, UpdateTransactionData, ApiResponse } from '../types';
+interface TransactionUI<T> extends Transaction {
+    tenant?: any;
+    property?: any;
+    lease?: any;
 }
+export declare class TransactionsService {
+    static getAll(): Promise<ApiResponse<Transaction[]>>;
+    static getById(id: string): Promise<ApiResponse<TransactionUI<Transaction>>>;
+    static create(transactionData: CreateTransactionData): Promise<ApiResponse<Transaction>>;
+    static update(id: string, transactionData: UpdateTransactionData): Promise<ApiResponse<Transaction>>;
+    static delete(id: string): Promise<ApiResponse<boolean>>;
+    static getByTenant(tenantId: string): Promise<ApiResponse<Transaction[]>>;
+    static getByProperty(propertyId: string): Promise<ApiResponse<Transaction[]>>;
+    static getTotalByTenant(tenantId: string): Promise<ApiResponse<number>>;
+    static getTotalByProperty(propertyId: string): Promise<ApiResponse<number>>;
+}
+export {};

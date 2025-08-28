@@ -10,7 +10,7 @@ class OtherService {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
             const { data, error } = await supabase
-                .from('rent_other')
+                .from('RENT_other')
                 .select('*')
                 .order('date', { ascending: false });
             if (error) {
@@ -31,7 +31,7 @@ class OtherService {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
             const { data, error } = await supabase
-                .from('rent_other')
+                .from('RENT_other')
                 .select('*')
                 .gte('date', startDate)
                 .lte('date', endDate)
@@ -54,7 +54,7 @@ class OtherService {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
             const { data, error } = await supabase
-                .from('rent_other')
+                .from('RENT_other')
                 .insert([entryData])
                 .select()
                 .single();
@@ -77,7 +77,7 @@ class OtherService {
             const supabase = (0, client_1.getSupabaseClient)();
             const { id, ...updateData } = entryData;
             const { data, error } = await supabase
-                .from('rent_other')
+                .from('RENT_other')
                 .update(updateData)
                 .eq('id', id)
                 .select()
@@ -100,7 +100,7 @@ class OtherService {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
             const { error } = await supabase
-                .from('rent_other')
+                .from('RENT_other')
                 .delete()
                 .eq('id', id);
             if (error) {
