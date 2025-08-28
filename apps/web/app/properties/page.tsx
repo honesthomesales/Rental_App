@@ -555,9 +555,14 @@ export default function PropertiesPage() {
                               </div>
                             )
                           }
-                          // No rent information available
+                          // No active leases or tenants - show $0 to indicate no income
                           else {
-                            return <div className="text-sm text-gray-500">N/A</div>
+                            return (
+                              <div className="text-sm font-medium text-red-600">
+                                $0/month
+                                <div className="text-xs text-gray-500">(No Tenant)</div>
+                              </div>
+                            )
                           }
                         })()}
                       </td>
