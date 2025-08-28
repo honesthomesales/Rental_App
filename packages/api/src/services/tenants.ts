@@ -774,22 +774,85 @@ export class TenantsService {
   /**
    * Get late tenants with detailed information using existing database structure
    */
-  static async getLateTenants(): Promise<ApiResponse<any[]>> { // Changed LateTenant to any[] as LateTenant type is removed
+  static async getLateTenants(): Promise<ApiResponse<any[]>> {
     try {
       const supabase = getSupabaseClient();
+      
+      // Get all active tenants with their properties and leases
       const { data: tenants, error } = await supabase
         .from('RENT_tenants')
-        .select('*')
-        .eq('is_active', true) // Only check active tenants
+        .select(`
+          *,
+          RENT_properties!inner(
+            id,
+            name,
+            address,
+            monthly_rent
+          ),
+          RENT_leases!inner(
+            id,
+            rent,
+            rent_cadence,
+            lease_start_date,
+            lease_end_date,
+            status
+          )
+        `)
+        .eq('is_active', true)
+        .eq('RENT_leases.status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) {
         return createApiResponse(null, handleSupabaseError(error));
       }
 
-      // TODO: Implement late tenant logic when database schema is updated
-      // For now, return empty array
-      return createApiResponse([]);
+      if (!tenants || tenants.length === 0) {
+        return createApiResponse([]);
+      }
+
+      // Process tenants to identify late payments
+      const lateTenants = tenants
+        .map(tenant => {
+          if (!tenant.RENT_properties || !tenant.RENT_leases || tenant.RENT_leases.length === 0) {
+            return null;
+          }
+
+          const property = tenant.RENT_properties;
+          const lease = tenant.RENT_leases[0];
+          
+          // Calculate days late based on last payment date
+          const lastPaymentDate = tenant.last_payment_date;
+          const daysLate = this.calculateDaysLate(lastPaymentDate || undefined);
+          
+          // Calculate late periods and fees
+          const latePeriods = this.calculateLatePeriods(tenant, daysLate);
+          const lateFees = this.calculateLateFees(tenant, latePeriods);
+          
+          // Calculate total due (rent + late fees)
+          const rentAmount = lease.rent || 0;
+          const totalDue = rentAmount + lateFees;
+          
+          // Only include tenants who are actually late (have outstanding amounts)
+          if (totalDue > 0) {
+            return {
+              ...tenant,
+              properties: property,
+              leases: [lease],
+              days_late: daysLate,
+              late_periods: latePeriods,
+              late_fees: lateFees,
+              rent_amount: rentAmount,
+              total_due: totalDue,
+              late_status: tenant.late_status || 'on_time'
+            };
+          }
+          
+          return null;
+        })
+        .filter(tenant => tenant !== null)
+        .sort((a, b) => (b?.total_due || 0) - (a?.total_due || 0)); // Sort by total due descending
+
+      return createApiResponse(lateTenants);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }

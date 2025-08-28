@@ -1017,8 +1017,8 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      {/* Single Sticky Header */}
+      <header className="sticky top-0 z-20 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
@@ -1068,6 +1068,51 @@ export default function PaymentsPage() {
                 Add Payment
               </button>
             </div>
+            
+            {/* Week Navigation and Search */}
+            <div className="flex items-center justify-between py-4 border-t border-gray-100">
+              <button
+                onClick={() => setCurrentWeekOffset(prev => prev - 1)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+              >
+                Previous Week
+              </button>
+              
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {weeklyDates[0]?.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} - {weeklyDates[weeklyDates.length - 1]?.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </h2>
+                <p className="text-sm text-gray-600">Weekly payment tracking</p>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search properties or tenants..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="w-32 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:w-48 transition-all duration-200"
+                  />
+                </div>
+                
+                <button
+                  onClick={() => setCurrentWeekOffset(prev => prev + 1)}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Next Week
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -1105,52 +1150,7 @@ export default function PaymentsPage() {
         ) : (
           <div className="bg-white rounded-lg shadow">
             
-            {/* Sticky Week Navigation Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between p-4">
-                <button
-                  onClick={() => setCurrentWeekOffset(prev => prev - 1)}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Previous Week
-                </button>
-                
-                <div className="text-center">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {weeklyDates[0]?.toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })} - {weeklyDates[weeklyDates.length - 1]?.toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </h2>
-                  <p className="text-sm text-gray-600">Weekly payment tracking</p>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search properties or tenants..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      className="w-32 pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:w-48 transition-all duration-200"
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentWeekOffset(prev => prev + 1)}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                  >
-                    Next Week
-                  </button>
-                </div>
-              </div>
-            </div>
+
 
             {/* Grid View */}
             {viewMode === 'grid' && (
