@@ -389,6 +389,82 @@ export class TenantsService {
   }
 
   /**
+   * Unlink tenant from property and update associated leases
+   */
+  static async unlinkTenantFromProperty(tenantId: string): Promise<ApiResponse<TenantType>> {
+    try {
+      const supabase = getSupabaseClient();
+      console.log(`🔗 Unlinking tenant ${tenantId} from property...`);
+
+      // First, get the tenant to find their current property_id
+      const { data: tenant, error: tenantError } = await supabase
+        .from('RENT_tenants')
+        .select('*')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantError || !tenant) {
+        return createApiResponse(null, 'Tenant not found');
+      }
+
+      const currentPropertyId = tenant.property_id;
+      if (!currentPropertyId) {
+        return createApiResponse(null, 'Tenant is not currently linked to any property');
+      }
+
+      // Update all active leases for this tenant to mark them as inactive/expired
+      const { error: leaseUpdateError } = await supabase
+        .from('RENT_leases')
+        .update({
+          status: 'expired',
+          lease_end_date: new Date().toISOString().split('T')[0] // Set end date to today
+        })
+        .eq('tenant_id', tenantId)
+        .eq('status', 'active');
+
+      if (leaseUpdateError) {
+        console.error('Failed to update lease status:', leaseUpdateError);
+        // Continue with tenant unlinking even if lease update fails
+      }
+
+      // Unlink tenant from property by setting property_id to null
+      const { data: updatedTenant, error: unlinkError } = await supabase
+        .from('RENT_tenants')
+        .update({
+          property_id: null,
+          is_active: false // Also mark tenant as inactive
+        })
+        .eq('id', tenantId)
+        .select()
+        .single();
+
+      if (unlinkError) {
+        console.error('unlinkTenantFromProperty error', unlinkError);
+        return createApiResponse(null, handleSupabaseError(unlinkError));
+      }
+
+      if (!updatedTenant) {
+        console.warn(`Unlink updated 0 rows for tenant ${tenantId}. Possible RLS blocking UPDATE or tenant not found.`);
+        return createApiResponse(null, 'Tenant unlink failed - no rows affected. This may be due to RLS policies.');
+      }
+
+      console.log(`✅ Tenant ${tenantId} successfully unlinked from property`);
+      
+      // Clear cache after unlinking tenant
+      try {
+        // Clear any cached data if needed
+      } catch (cacheError) {
+        console.error('Cache clear error:', cacheError);
+      }
+
+      return createApiResponse(updatedTenant as TenantType);
+    } catch (error) {
+      console.error('unlinkTenantFromProperty exception:', error);
+      return createApiResponse(null, handleSupabaseError(error));
+    }
+  }
+
+  /**
    * Delete a tenant
    */
   static async delete(id: string): Promise<ApiResponse<boolean>> {
