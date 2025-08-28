@@ -1,6 +1,8 @@
 import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
 import type { Database } from '../database.types';
 import type { Tenant as TenantType, PaymentHistoryItem, LateStatus } from '../types';
+import { PaymentAllocationsService } from './paymentAllocations';
+import { RentPeriodsService } from './rentPeriods';
 
 type TenantRow = Database['public']['Tables']['RENT_tenants']['Row'];
 type TenantInsert = Database['public']['Tables']['RENT_tenants']['Insert'];
@@ -752,27 +754,98 @@ export class TenantsService {
         return createApiResponse(null, 'Tenant not found');
       }
 
-      // Fetch property data separately
-      let property: any = null;
-      if (currentTenant.property_id) {
-        const { data: propData } = await supabase
-          .from('RENT_properties')
-          .select('id, name, address, notes, monthly_rent')
-          .eq('id', currentTenant.property_id)
-          .single();
-        property = propData;
+      if (!currentTenant.property_id) {
+        return createApiResponse(null, 'Tenant is not linked to any property');
       }
 
-      // TODO: Implement payment recording logic when database schema is updated
-      // For now, just return the tenant as-is
-      return createApiResponse(currentTenant as TenantType);
+      // Get the active lease for this tenant
+      const { data: lease, error: leaseError } = await supabase
+        .from('RENT_leases')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('status', 'active')
+        .single();
+
+      if (leaseError || !lease) {
+        return createApiResponse(null, 'No active lease found for tenant');
+      }
+
+      // Create the payment record
+      const { data: payment, error: paymentError } = await supabase
+        .from('RENT_payments')
+        .insert({
+          property_id: currentTenant.property_id,
+          tenant_id: tenantId,
+          lease_id: lease.id,
+          payment_date: paymentData.payment_date,
+          amount: paymentData.amount,
+          payment_type: 'rent',
+          payment_method: 'manual',
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        return createApiResponse(null, handleSupabaseError(paymentError));
+      }
+
+      // Ensure rent periods exist for this lease
+      await RentPeriodsService.generateRentPeriods(
+        lease.id,
+        tenantId,
+        currentTenant.property_id,
+        lease.lease_start_date,
+        lease.lease_end_date,
+        lease.rent,
+        lease.rent_cadence || 'monthly',
+        lease.rent_due_day || 1
+      );
+
+      // Allocate the payment across rent periods
+      const allocationResult = await PaymentAllocationsService.allocatePayment(
+        payment.id,
+        tenantId,
+        paymentData.amount,
+        paymentData.payment_date
+      );
+
+      if (!allocationResult.success) {
+        console.warn('Payment allocation had issues:', allocationResult.errors);
+      }
+
+      // Update tenant's last payment date
+      const { error: updateError } = await supabase
+        .from('RENT_tenants')
+        .update({
+          last_payment_date: paymentData.payment_date,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tenantId);
+
+      if (updateError) {
+        console.warn('Failed to update tenant last payment date:', updateError);
+      }
+
+      // Return the updated tenant
+      const { data: updatedTenant, error: fetchError } = await supabase
+        .from('RENT_tenants')
+        .select('*')
+        .eq('id', tenantId)
+        .single();
+
+      if (fetchError) {
+        return createApiResponse(null, handleSupabaseError(fetchError));
+      }
+
+      return createApiResponse(updatedTenant as TenantType);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
 
   /**
-   * Get late tenants with detailed information using existing database structure
+   * Get late tenants with detailed information using the new rent period system
    */
   static async getLateTenants(): Promise<ApiResponse<any[]>> {
     try {
@@ -810,9 +883,9 @@ export class TenantsService {
         return createApiResponse([]);
       }
 
-      // Process tenants to identify late payments
-      const lateTenants = tenants
-        .map(tenant => {
+      // Process tenants to identify late payments using rent periods
+      const lateTenants = await Promise.all(
+        tenants.map(async (tenant) => {
           if (!tenant.RENT_properties || !tenant.RENT_leases || tenant.RENT_leases.length === 0) {
             return null;
           }
@@ -820,39 +893,39 @@ export class TenantsService {
           const property = tenant.RENT_properties;
           const lease = tenant.RENT_leases[0];
           
-          // Calculate days late based on last payment date
-          const lastPaymentDate = tenant.last_payment_date;
-          const daysLate = this.calculateDaysLate(lastPaymentDate || undefined);
+          // Get rent period summary for this tenant
+          const periodSummary = await RentPeriodsService.getTenantRentPeriodSummary(tenant.id);
           
-          // Calculate late periods and fees
-          const latePeriods = this.calculateLatePeriods(tenant, daysLate);
-          const lateFees = this.calculateLateFees(tenant, latePeriods);
+          if (!periodSummary.success || !periodSummary.data) {
+            return null;
+          }
+
+          const summary = periodSummary.data;
           
-          // Calculate total due (rent + late fees)
-          const rentAmount = lease.rent || 0;
-          const totalDue = rentAmount + lateFees;
-          
-          // Only include tenants who are actually late (have outstanding amounts)
-          if (totalDue > 0) {
+          // Only include tenants who actually owe money
+          if (summary.total_owed > 0) {
             return {
               ...tenant,
               properties: property,
               leases: [lease],
-              days_late: daysLate,
-              late_periods: latePeriods,
-              late_fees: lateFees,
-              rent_amount: rentAmount,
-              total_due: totalDue,
-              late_status: tenant.late_status || 'on_time'
+              days_late: summary.overdue_periods > 0 ? 30 : 0, // Simplified for now
+              late_periods: summary.overdue_periods,
+              late_fees: summary.total_late_fees,
+              rent_amount: lease.rent || 0,
+              total_due: summary.total_owed,
+              late_status: summary.overdue_periods > 0 ? 'late_5_days' : 'on_time'
             };
           }
           
           return null;
         })
+      );
+
+      const filteredLateTenants = lateTenants
         .filter(tenant => tenant !== null)
         .sort((a, b) => (b?.total_due || 0) - (a?.total_due || 0)); // Sort by total due descending
 
-      return createApiResponse(lateTenants);
+      return createApiResponse(filteredLateTenants);
     } catch (error) {
       return createApiResponse(null, handleSupabaseError(error));
     }
