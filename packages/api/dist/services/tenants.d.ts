@@ -29,6 +29,10 @@ export declare class TenantsService {
      */
     static update(id: string, tenantData: TenantUpdate): Promise<ApiResponse<TenantType>>;
     /**
+     * Unlink tenant from property and update associated leases
+     */
+    static unlinkTenantFromProperty(tenantId: string): Promise<ApiResponse<TenantType>>;
+    /**
      * Delete a tenant
      */
     static delete(id: string): Promise<ApiResponse<boolean>>;
@@ -70,7 +74,7 @@ export declare class TenantsService {
         amount: number;
     }): Promise<ApiResponse<TenantType>>;
     /**
-     * Get late tenants with detailed information using existing database structure
+     * Get late tenants with detailed information using the new rent period system
      */
     static getLateTenants(): Promise<ApiResponse<any[]>>;
     /**

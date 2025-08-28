@@ -182,6 +182,7 @@ class LeasesService {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
             // Get all active leases with property information and tenant information
+            // Only include leases where the tenant is still actively linked to the property
             const { data: activeLeases, error } = await supabase
                 .from('RENT_leases')
                 .select(`
@@ -199,10 +200,13 @@ class LeasesService {
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
-            // Group leases by property
+            // Group leases by property, ensuring tenant is still linked to the same property
             const propertyLeaseMap = new Map();
             activeLeases?.forEach(lease => {
-                if (lease.property_id && lease.RENT_tenants && lease.RENT_tenants.property_id === lease.property_id) {
+                if (lease.property_id &&
+                    lease.RENT_tenants &&
+                    lease.RENT_tenants.property_id === lease.property_id &&
+                    lease.RENT_tenants.is_active) {
                     if (!propertyLeaseMap.has(lease.property_id)) {
                         propertyLeaseMap.set(lease.property_id, []);
                     }
