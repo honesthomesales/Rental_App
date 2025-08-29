@@ -1409,3 +1409,4 @@ export default function PaymentsPage() {
 
 
 
+"// Updated sticky header positioning" 
