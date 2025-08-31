@@ -1,0 +1,24 @@
+# Project Guardrails for Cursor
+
+## Paths
+- Use ONLY this workspace: C:\Projects\Rental_App
+- Do NOT reference OneDrive paths or user profile cloud folders (e.g., C:\Users\*\OneDrive\*).
+
+## Database (Postgres/Supabase) - RENT_* schema
+- Use the existing tables exactly as named below. Do not rename, drop, or alter schemas without an explicit prompt.
+- Key tables: RENT_leases, RENT_tenants, RENT_properties, RENT_rent_periods, RENT_payments, RENT_payment_allocations, RENT_insurance_policies, RENT_maintenance_requests.
+
+### Table summaries
+- RENT_leases(id uuid PK, tenant_id uuid FK, property_id uuid FK, rent numeric(10,2), rent_cadence varchar(20) default 'monthly', rent_due_day int default 1, ...)
+- RENT_rent_periods(id uuid PK, lease_id uuid FK, tenant_id uuid FK, property_id uuid FK, period_due_date date, rent_amount numeric(10,2), rent_cadence varchar(20), status varchar default 'unpaid', amount_paid numeric default 0, late_fee_applied numeric default 0, late_fee_waived boolean default false, ...)
+- RENT_payments(id uuid PK, lease_id uuid FK, tenant_id uuid FK, property_id uuid FK, payment_date date, amount numeric(10,2), status 'completed', ...)
+- RENT_payment_allocations(id uuid PK, payment_id uuid FK, rent_period_id uuid FK, amount_to_late_fee numeric default 0, amount_to_rent numeric default 0, applied_at timestamptz default now(), UNIQUE(payment_id, rent_period_id)).
+
+## Late-fee and allocation rules (for any rent logic)
+- Late fee by cadence: weekly=$10, biweekly=$20, monthly=$45.
+- Grace = payment_date within 5 days of due_date -> no late fee.
+- Allocation order: oldest due first; pay late fee before principal; allow prepay to future periods.
+
+## Safety
+- Do not introduce new tables without explicit instruction.
+- Do not move files or alter repo structure unless asked.

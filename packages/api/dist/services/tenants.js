@@ -95,7 +95,8 @@ class TenantsService {
                         ...lease,
                         tenant_id: lease.tenant_id || '',
                         property_id: lease.property_id || '',
-                        rent_cadence: lease.rent_cadence || 'monthly'
+                        rent_cadence: lease.rent_cadence || 'monthly',
+                        rent_due_day: 1 // Default value since database query doesn't include this field
                     }))
                 };
                 return mappedTenant;
@@ -152,7 +153,10 @@ class TenantsService {
             const tenantWithRelations = {
                 ...tenant,
                 properties: property,
-                leases: leasesData || [],
+                leases: (leasesData || []).map(lease => ({
+                    ...lease,
+                    rent_due_day: 1 // Default value since database query doesn't include this field
+                })),
                 payment_history: paymentHistory
             };
             return (0, client_1.createApiResponse)(tenantWithRelations);
@@ -317,7 +321,10 @@ class TenantsService {
             const tenantWithRelations = {
                 ...updatedTenant,
                 properties: property,
-                leases: leasesData || [],
+                leases: (leasesData || []).map(lease => ({
+                    ...lease,
+                    rent_due_day: 1 // Default value since database query doesn't include this field
+                })),
                 payment_history: paymentHistory
             };
             return (0, client_1.createApiResponse)(tenantWithRelations);
@@ -471,7 +478,10 @@ class TenantsService {
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || [],
+                    leases: (leasesData || []).map(lease => ({
+                        ...lease,
+                        rent_due_day: 1 // Default value since database query doesn't include this field
+                    })),
                     payment_history: paymentHistory
                 };
             }));
@@ -535,7 +545,10 @@ class TenantsService {
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || [],
+                    leases: (leasesData || []).map(lease => ({
+                        ...lease,
+                        rent_due_day: 1 // Default value since database query doesn't include this field
+                    })),
                     payment_history: paymentHistory
                 };
             }));
@@ -599,7 +612,10 @@ class TenantsService {
                 return {
                     ...tenant,
                     properties: property,
-                    leases: leasesData || [],
+                    leases: (leasesData || []).map(lease => ({
+                        ...lease,
+                        rent_due_day: 1 // Default value since database query doesn't include this field
+                    })),
                     payment_history: paymentHistory
                 };
             }));
@@ -665,11 +681,11 @@ class TenantsService {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(paymentError));
             }
             // Ensure rent periods exist for this lease
-            await rentPeriods_1.RentPeriodsService.generateRentPeriods(lease.id, tenantId, currentTenant.property_id, lease.lease_start_date, lease.lease_end_date, lease.rent, lease.rent_cadence || 'monthly', lease.rent_due_day || 1);
+            await rentPeriods_1.RentPeriodsService.generateRentPeriods(lease.id, tenantId, currentTenant.property_id, lease.lease_start_date, lease.lease_end_date, lease.rent, lease.rent_cadence || 'monthly', 1);
             // Allocate the payment across rent periods
             const allocationResult = await paymentAllocations_1.PaymentAllocationsService.allocatePayment(payment.id, tenantId, paymentData.amount, paymentData.payment_date);
             if (!allocationResult.success) {
-                console.warn('Payment allocation had issues:', allocationResult.errors);
+                console.warn('Payment allocation had issues:', allocationResult.error);
             }
             // Update tenant's last payment date
             const { error: updateError } = await supabase

@@ -123,7 +123,8 @@ export class TenantsService {
               ...lease,
               tenant_id: lease.tenant_id || '',
               property_id: lease.property_id || '',
-              rent_cadence: lease.rent_cadence || 'monthly'
+              rent_cadence: lease.rent_cadence || 'monthly',
+              rent_due_day: 1 // Default value since database query doesn't include this field
             }))
           };
 
@@ -187,7 +188,10 @@ export class TenantsService {
       const tenantWithRelations: TenantType = {
         ...tenant,
         properties: property,
-        leases: leasesData || [],
+        leases: (leasesData || []).map(lease => ({
+          ...lease,
+          rent_due_day: 1 // Default value since database query doesn't include this field
+        })),
         payment_history: paymentHistory
       };
 
@@ -379,7 +383,10 @@ export class TenantsService {
       const tenantWithRelations: TenantType = {
         ...updatedTenant,
         properties: property,
-        leases: leasesData || [],
+        leases: (leasesData || []).map(lease => ({
+          ...lease,
+          rent_due_day: 1 // Default value since database query doesn't include this field
+        })),
         payment_history: paymentHistory
       };
 
@@ -564,7 +571,10 @@ export class TenantsService {
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || [],
+            leases: (leasesData || []).map(lease => ({
+              ...lease,
+              rent_due_day: 1 // Default value since database query doesn't include this field
+            })),
             payment_history: paymentHistory
           };
         })
@@ -635,7 +645,10 @@ export class TenantsService {
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || [],
+            leases: (leasesData || []).map(lease => ({
+              ...lease,
+              rent_due_day: 1 // Default value since database query doesn't include this field
+            })),
             payment_history: paymentHistory
           };
         })
@@ -707,7 +720,10 @@ export class TenantsService {
           return {
             ...tenant,
             properties: property,
-            leases: leasesData || [],
+            leases: (leasesData || []).map(lease => ({
+              ...lease,
+              rent_due_day: 1 // Default value since database query doesn't include this field
+            })),
             payment_history: paymentHistory
           };
         })
@@ -799,7 +815,7 @@ export class TenantsService {
         lease.lease_end_date,
         lease.rent,
         lease.rent_cadence || 'monthly',
-        lease.rent_due_day || 1
+        1
       );
 
       // Allocate the payment across rent periods
@@ -811,7 +827,7 @@ export class TenantsService {
       );
 
       if (!allocationResult.success) {
-        console.warn('Payment allocation had issues:', allocationResult.errors);
+        console.warn('Payment allocation had issues:', allocationResult.error);
       }
 
       // Update tenant's last payment date

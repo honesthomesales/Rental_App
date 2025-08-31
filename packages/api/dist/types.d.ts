@@ -74,6 +74,7 @@ export interface Lease {
     lease_end_date: string;
     rent: number;
     rent_cadence: string;
+    rent_due_day?: number;
     move_in_fee?: number | null;
     late_fee_amount?: number | null;
     lease_pdf?: string | null;

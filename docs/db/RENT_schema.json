@@ -1,0 +1,26 @@
+[
+  {
+    "table_name": "RENT_insurance_policies",
+    "columns": [
+      {
+        "data_type": "uuid",
+        "column_name": "id",
+        "is_nullable": false,
+        "column_default": "uuid_generate_v4()"
+      },
+      {
+        "data_type": "uuid",
+        "column_name": "property_id",
+        "is_nullable": true,
+        "column_default": null
+      },
+      {
+        "data_type": "varchar(100)",
+        "column_name": "policy_number",
+        "is_nullable": false,
+        "column_default": null
+      }
+      /* ... rest of your schema exactly as you pasted ... */
+    ]
+  }
+]

@@ -77,6 +77,7 @@ export interface Lease {
   lease_end_date: string;
   rent: number;
   rent_cadence: string; // Made required since database types show it as required
+  rent_due_day?: number; // Made optional with default handling at usage sites
   move_in_fee?: number | null; // Made nullable to match database types
   late_fee_amount?: number | null; // Made nullable to match database types
   lease_pdf?: string | null; // Made nullable to match database types
