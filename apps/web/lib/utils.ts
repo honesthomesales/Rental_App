@@ -278,8 +278,21 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
   }
   
   try {
-    const cadence = extractRentCadence(property.notes);
-    const monthlyRent = property.monthly_rent;
+    // Get lease information from the leases array
+    const activeLease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null;
+    if (!activeLease) {
+      console.log('calculateTotalLatePayments: No active lease found for tenant');
+      return {
+        totalLateFees: 0,
+        totalOutstanding: 0,
+        totalDue: 0,
+        latePeriods: 0,
+        payPeriods: []
+      };
+    }
+
+    const cadence = activeLease.rent_cadence || 'monthly';
+    const monthlyRent = activeLease.rent || property.monthly_rent;
     console.log('calculateTotalLatePayments: Cadence:', cadence, 'Monthly rent:', monthlyRent);
     // Convert monthly rent to the actual rent amount for the cadence
     let rentAmount = monthlyRent;
@@ -291,7 +304,7 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
     // For monthly, keep as is
     
     console.log('Tenant calculation - Cadence:', cadence, 'Monthly rent:', monthlyRent, 'Period rent:', rentAmount);
-    const expectedDates = getLastExpectedPaymentDates(tenant.lease_start_date, cadence, 12);
+    const expectedDates = getLastExpectedPaymentDates(activeLease.lease_start_date, cadence, 12);
     
     let totalLateFees = 0;
     let totalOutstanding = 0;
@@ -353,7 +366,8 @@ export function isTenantLate(tenant: any, property: any): boolean {
     }
     
     console.log('isTenantLate: Starting check for tenant', tenant.first_name, tenant.last_name);
-    console.log('isTenantLate: Tenant lease_start_date:', tenant.lease_start_date);
+    const activeLease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null;
+    console.log('isTenantLate: Tenant lease_start_date:', activeLease?.lease_start_date);
     console.log('isTenantLate: Property monthly_rent:', property.monthly_rent);
     
     const latePaymentInfo = calculateTotalLatePayments(tenant, property);

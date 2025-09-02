@@ -44,11 +44,11 @@ INSERT INTO RENT_transactions (property_id, tenant_id, loan_id, bank_account_id,
 
 -- Insert lease records for all existing tenants (6 months ago start, 2030 end)
 INSERT INTO RENT_leases (tenant_id, property_id, lease_start_date, lease_end_date, rent, rent_cadence, move_in_fee, late_fee_amount, lease_pdf, status, notes) VALUES
-((SELECT id FROM RENT_tenants WHERE first_name = 'Sarah' AND last_name = 'Johnson'), (SELECT id FROM RENT_properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2025-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', ''),
-((SELECT id FROM RENT_tenants WHERE first_name = 'David' AND last_name = 'Chen'), (SELECT id FROM RENT_properties WHERE name = 'Oak Ridge House'), '2025-01-23', '2030-01-01', 2800.00, 'biweekly', 2800.00, 20.00, NULL, 'active', ''),
-((SELECT id FROM RENT_tenants WHERE first_name = 'Emily' AND last_name = 'Rodriguez'), (SELECT id FROM RENT_properties WHERE name = 'Riverside Doublewide'), '2025-01-23', '2030-01-01', 2200.00, 'monthly', 2200.00, 45.00, NULL, 'active', ''),
-((SELECT id FROM RENT_tenants WHERE first_name = 'ABC Coffee Shop'), (SELECT id FROM RENT_properties WHERE name = 'Mobile Home Park Lot 15'), '2025-01-23', '2030-01-01', 1400.00, 'monthly', 2800.00, 45.00, NULL, 'active', ''),
-((SELECT id FROM RENT_tenants WHERE first_name = 'Late' AND last_name = 'Tenant'), (SELECT id FROM RENT_properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2025-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', '');
+((SELECT id FROM RENT_tenants WHERE first_name = 'Sarah' AND last_name = 'Johnson'), (SELECT id FROM RENT_properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2024-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', ''),
+((SELECT id FROM RENT_tenants WHERE first_name = 'David' AND last_name = 'Chen'), (SELECT id FROM RENT_properties WHERE name = 'Oak Ridge House'), '2024-01-23', '2030-01-01', 2800.00, 'biweekly', 2800.00, 20.00, NULL, 'active', ''),
+((SELECT id FROM RENT_tenants WHERE first_name = 'Emily' AND last_name = 'Rodriguez'), (SELECT id FROM RENT_properties WHERE name = 'Riverside Doublewide'), '2024-01-23', '2030-01-01', 2200.00, 'monthly', 2200.00, 45.00, NULL, 'active', ''),
+((SELECT id FROM RENT_tenants WHERE first_name = 'ABC Coffee Shop'), (SELECT id FROM RENT_properties WHERE name = 'Mobile Home Park Lot 15'), '2024-01-23', '2030-01-01', 1400.00, 'monthly', 2800.00, 45.00, NULL, 'active', ''),
+((SELECT id FROM RENT_tenants WHERE first_name = 'Late' AND last_name = 'Tenant'), (SELECT id FROM RENT_properties WHERE name = 'Sunset Mobile Home Park Lot 101'), '2024-01-23', '2030-01-01', 1800.00, 'weekly', 1800.00, 10.00, NULL, 'active', '');
 
 -- Insert sample scraped payments
 INSERT INTO RENT_scraped_payments (source, raw_data, extracted_amount, extracted_date, sender_name, sender_email, sender_phone, description, is_processed, proposed_property_id, proposed_tenant_id, proposed_transaction_type, confidence_score) VALUES
@@ -89,7 +89,7 @@ WHERE t.is_active = true;
 -- Update tenant lease_start_date to match the new lease records
 UPDATE RENT_tenants 
 SET 
-    lease_start_date = '2025-01-15',  -- 6 months ago
+    lease_start_date = '2024-01-15',  -- 6 months ago
     lease_end_date = '2030-01-01',
     updated_at = NOW()
 WHERE is_active = true;
