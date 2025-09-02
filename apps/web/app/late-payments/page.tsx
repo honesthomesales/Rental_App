@@ -62,14 +62,13 @@ export default function LatePaymentsPage() {
           const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
           if (!lease || !lease.lease_start_date) return
 
-          // Use the same logic as dashboard
-          const tenantWithLease = { ...tenant, lease_start_date: lease.lease_start_date }
+          // Use the same logic as dashboard - pass the tenant with leases array intact
           const propertyWithNotes = { ...property, notes: property.notes || '' }
           
-          const isLate = isTenantLate(tenantWithLease, propertyWithNotes)
+          const isLate = isTenantLate(tenant, propertyWithNotes)
           
           if (isLate) {
-            const latePaymentInfo = calculateTotalLatePayments(tenantWithLease, propertyWithNotes)
+            const latePaymentInfo = calculateTotalLatePayments(tenant, propertyWithNotes)
             
             lateTenantsList.push({
               id: tenant.id,
