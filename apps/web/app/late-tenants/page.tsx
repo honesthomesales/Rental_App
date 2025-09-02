@@ -83,14 +83,14 @@ export default function LateTenantsPage() {
       const tenantsWithLeases = await Promise.all(
         allTenants.map(async (tenant) => {
           // Get property
-          const { data: property } = await supabase
+          const { data: property } = await supabase!
             .from('RENT_properties')
             .select('*')
             .eq('id', tenant.property_id)
             .single();
 
           // Get leases (get the most recent active lease)
-          const { data: leases } = await supabase
+          const { data: leases } = await supabase!
             .from('RENT_leases')
             .select('*')
             .eq('tenant_id', tenant.id)
