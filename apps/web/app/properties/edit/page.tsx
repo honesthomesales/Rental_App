@@ -114,6 +114,7 @@ function PropertyEditContent() {
               property={property}
               onSuccess={handleSuccess}
               onCancel={handleCancel}
+              modal={false}
             />
           </div>
         </div>

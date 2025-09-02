@@ -36,7 +36,7 @@ jobs:
       - name: Build
         run: |
           cd apps/web
-          npm run build:no-lint
+          npm run build:static
         env:
           NODE_ENV: production
           GITHUB_PAGES: true

@@ -43,9 +43,10 @@ interface PropertyFormProps {
   property?: Property
   onSuccess?: (property: Property) => void
   onCancel?: () => void
+  modal?: boolean
 }
 
-export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProps) {
+export function PropertyForm({ property, onSuccess, onCancel, modal = true }: PropertyFormProps) {
   const [loading, setLoading] = useState(false)
   
   const {
@@ -129,25 +130,8 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <Home className="w-6 h-6 text-primary-600 mr-3" />
-            <h2 className="text-2xl font-bold text-gray-900">
-              {property ? 'Edit Property' : 'Add New Property'}
-            </h2>
-          </div>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+  const formContent = (
+    <form onSubmit={handleSubmit(onSubmit)} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="md:col-span-2">
@@ -547,7 +531,31 @@ export function PropertyForm({ property, onSuccess, onCancel }: PropertyFormProp
             </button>
           </div>
         </form>
-      </div>
-    </div>
   )
+
+  if (modal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center">
+              <Home className="w-6 h-6 text-primary-600 mr-3" />
+              <h2 className="text-2xl font-bold text-gray-900">
+                {property ? 'Edit Property' : 'Add New Property'}
+              </h2>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          {formContent}
+        </div>
+      </div>
+    )
+  }
+
+  return formContent
 } 
