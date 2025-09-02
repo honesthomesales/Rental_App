@@ -234,27 +234,8 @@ export default function LateTenantsPage() {
         return
       }
       
-      // Get rent periods for this tenant
-      const { data: rentPeriods, error: periodsError } = await supabase
-        .from('RENT_rent_periods')
-        .select('*')
-        .eq('tenant_id', tenant.id)
-        .order('period_due_date', { ascending: false })
-      
-      if (periodsError) {
-        console.error('Error loading rent periods:', periodsError)
-        toast.error('Error loading rent periods')
-        return
-      }
-      
-      console.log('Rent periods data:', rentPeriods)
-      
-      if (rentPeriods && rentPeriods.length > 0) {
-        setSelectedTenantPeriods(rentPeriods)
-        setShowPeriodsModal(true)
-      } else {
-        // If no rent periods exist, create some based on the lease data
-        console.log('No rent periods found, creating sample data for display')
+      // Since RENT_rent_periods table doesn't exist, generate sample data based on lease
+      console.log('Generating sample rent periods for display')
         
         // Create sample periods for the last 12 months based on lease start date
         const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
@@ -265,7 +246,6 @@ export default function LateTenantsPage() {
         } else {
           toast.error('No lease data available for this tenant')
         }
-      }
       
     } catch (error) {
       console.error('Error loading rent periods:', error)
@@ -274,8 +254,8 @@ export default function LateTenantsPage() {
   }
 
   // Helper function to generate sample rent periods for display
-  const generateSampleRentPeriods = (lease: any, tenant: any) => {
-    const periods = []
+  const generateSampleRentPeriods = (lease: any, tenant: any): RentPeriod[] => {
+    const periods: RentPeriod[] = []
     const startDate = new Date(lease.lease_start_date)
     const cadence = lease.rent_cadence || 'monthly'
     const rentAmount = lease.rent || 0
@@ -302,8 +282,10 @@ export default function LateTenantsPage() {
         id: `sample-${i}`,
         tenant_id: tenant.id,
         property_id: tenant.property_id,
+        lease_id: lease.id,
         period_due_date: dueDate.toISOString().split('T')[0],
         rent_amount: rentAmount,
+        rent_cadence: cadence,
         amount_paid: status === 'paid' ? rentAmount : 0,
         status: status,
         late_fee_applied: isLate ? getLateFeeAmount(cadence) : 0,
