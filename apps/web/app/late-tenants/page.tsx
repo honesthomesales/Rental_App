@@ -62,6 +62,11 @@ export default function LateTenantsPage() {
     try {
       console.log('Loading tenants with lease data...')
       
+      if (!supabase) {
+        console.error('Supabase client not available')
+        return
+      }
+      
       // Use Supabase directly to get tenants with lease data
       const { data: tenantsWithLeases, error } = await supabase
         .from('RENT_tenants')
