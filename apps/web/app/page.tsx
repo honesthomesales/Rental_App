@@ -7,7 +7,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { PropertiesService } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
-import { extractRentCadence, normalizeRentToMonthly } from '../lib/utils'
+import { extractRentCadence, normalizeRentToMonthly, calculateTotalLatePayments, isTenantLate } from '../lib/utils'
 
 interface Property {
   id: string
@@ -184,7 +184,7 @@ export default function Dashboard() {
           }
           
           // Use the new late payment calculation system
-          return TenantsService.isTenantLate(tenant, property)
+          return isTenantLate(tenant, property)
         } catch (error) {
           console.error('Error checking tenant late status:', error)
           return false
@@ -196,7 +196,7 @@ export default function Dashboard() {
         try {
           const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           if (property && tenant.leases && tenant.leases.length > 0) {
-            const latePaymentInfo = TenantsService.calculateTotalLatePayments(tenant, property)
+            const latePaymentInfo = calculateTotalLatePayments(tenant, property)
             return sum + latePaymentInfo.totalDue
           }
         } catch (error) {
