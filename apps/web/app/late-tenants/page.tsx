@@ -106,6 +106,11 @@ export default function LateTenantsPage() {
       console.log('Tenants with leases loaded:', tenantsWithLeases)
 
       const lateTenantsList: any[] = []
+      
+      // Debug: Let's see what we're working with
+      console.log('=== DEBUGGING LATE TENANTS CALCULATION ===')
+      console.log('Current date:', new Date().toISOString().split('T')[0])
+      console.log('Number of tenants found:', tenantsWithLeases.length)
 
       // Process each tenant to find late payments
       tenantsWithLeases.forEach((tenant: any) => {
@@ -125,6 +130,13 @@ export default function LateTenantsPage() {
           }
           
           const propertyWithNotes = { ...property, notes: property.notes || '' }
+          
+          console.log('=== PROCESSING TENANT ===')
+          console.log('Tenant:', tenant.first_name, tenant.last_name)
+          console.log('Lease start date:', lease.lease_start_date)
+          console.log('Rent cadence:', lease.rent_cadence)
+          console.log('Rent amount:', lease.rent)
+          console.log('Payment history:', tenant.payment_history)
           
           console.log('Checking if tenant is late:', tenant.first_name, tenant.last_name)
           const isLate = isTenantLate(tenantWithLeases, propertyWithNotes)
