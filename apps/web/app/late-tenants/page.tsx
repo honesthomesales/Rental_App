@@ -27,6 +27,8 @@ export default function LateTenantsPage() {
   const [editingLateFeeValue, setEditingLateFeeValue] = useState<number>(0)
 
   useEffect(() => {
+    // Version identifier for testing - remove after verification
+    console.log('Late Tenants Page Version: 2025-01-15-fix-tolowercase-error')
     loadLateTenants()
   }, [])
 
