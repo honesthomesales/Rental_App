@@ -4,22 +4,18 @@ import type { ApiResponse } from '../types';
 export interface PaymentAllocationResult {
   success: boolean;
   message: string;
-  allocations: any[];
-  totalApplied: number;
-  totalLateFees: number;
+  paymentId?: string;
+  remainingAmount: number;
 }
 
-export interface RentPeriodWithBalance {
+export interface PaymentWithDetails {
   id: string;
-  period_due_date: string;
-  rent_amount: number;
-  rent_cadence: string;
-  status: string;
-  amount_paid: number;
-  late_fee_applied: number;
-  late_fee_waived: number;
-  balance: number;
-  daysLate: number;
+  tenantId: string | null;
+  propertyId: string | null;
+  paymentDate: string;
+  amount: number;
+  paymentType: string;
+  notes?: string | null;
 }
 
 export class PaymentAllocationsService {
@@ -58,175 +54,97 @@ export class PaymentAllocationsService {
   }
 
   /**
-   * Get unpaid rent periods for a tenant - Real implementation
+   * Record a payment for a tenant using existing RENT_payments table
    */
-  static async getUnpaidRentPeriods(tenantId: string): Promise<ApiResponse<RentPeriodWithBalance[]>> {
+  static async allocatePayment(
+    tenantId: string,
+    propertyId: string,
+    amount: number,
+    paymentDate: string = new Date().toISOString().split('T')[0],
+    paymentType: string = 'rent_payment',
+    notes?: string
+  ): Promise<ApiResponse<PaymentAllocationResult>> {
     try {
       const supabase = getSupabaseClient();
-      
-      const { data: periods, error } = await supabase
-        .from('RENT_rent_periods')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'unpaid')
-        .order('period_due_date', { ascending: true });
 
-      if (error) {
-        return createApiResponse(null, handleSupabaseError(error));
+      // Insert payment record
+      const { data: payment, error: paymentError } = await supabase
+        .from('RENT_payments')
+        .insert({
+          tenant_id: tenantId,
+          property_id: propertyId,
+          payment_date: paymentDate,
+          amount: amount,
+          payment_type: paymentType,
+          notes: notes
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error inserting payment:', paymentError);
+        return createApiResponse(null, handleSupabaseError(paymentError));
       }
 
-      const periodsWithBalance: RentPeriodWithBalance[] = (periods || []).map(period => {
-        const balance = period.rent_amount - period.amount_paid;
-        const daysLate = this.calculateDaysLate(period.period_due_date, new Date().toISOString().split('T')[0]);
-        
-        return {
-          id: period.id,
-          period_due_date: period.period_due_date,
-          rent_amount: period.rent_amount,
-          rent_cadence: period.rent_cadence,
-          status: period.status,
-          amount_paid: period.amount_paid,
-          late_fee_applied: period.late_fee_applied,
-          late_fee_waived: period.late_fee_waived,
-          balance: balance,
-          daysLate: daysLate
-        };
-      });
+      // Update tenant's last payment date
+      const { error: updateError } = await supabase
+        .from('RENT_tenants')
+        .update({
+          last_payment_date: paymentDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tenantId);
 
-      return createApiResponse(periodsWithBalance);
+      if (updateError) {
+        console.error('Error updating tenant:', updateError);
+        // Don't fail the whole operation for this
+      }
+
+      const result: PaymentAllocationResult = {
+        success: true,
+        message: `Payment of $${amount} recorded successfully`,
+        paymentId: payment.id,
+        remainingAmount: 0 // For now, we don't track remaining amounts in the simplified version
+      };
+
+      return createApiResponse(result);
     } catch (error) {
+      console.error('Error in allocatePayment:', error);
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
 
   /**
-   * Allocate payment to rent periods - Real implementation
+   * Get payments for a tenant using existing RENT_payments table
    */
-  static async allocatePayment(
-    paymentId: string, 
-    tenantId: string, 
-    paymentAmount: number, 
-    paymentDate: string
-  ): Promise<ApiResponse<PaymentAllocationResult>> {
+  static async getUnpaidRentPeriods(tenantId: string): Promise<ApiResponse<PaymentWithDetails[]>> {
     try {
       const supabase = getSupabaseClient();
-      
-      // Get unpaid rent periods for this tenant, ordered by due date (oldest first)
-      const { data: unpaidPeriods, error: periodsError } = await supabase
-        .from('RENT_rent_periods')
+
+      const { data: payments, error } = await supabase
+        .from('RENT_payments')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('status', 'unpaid')
-        .order('period_due_date', { ascending: true });
+        .order('payment_date', { ascending: false });
 
-      if (periodsError) {
-        return createApiResponse(null, handleSupabaseError(periodsError));
+      if (error) {
+        console.error('Error fetching payments:', error);
+        return createApiResponse(null, handleSupabaseError(error));
       }
 
-      if (!unpaidPeriods || unpaidPeriods.length === 0) {
-        return createApiResponse({
-          success: true,
-          message: 'No unpaid periods found for allocation',
-          allocations: [],
-          totalApplied: 0,
-          totalLateFees: 0
-        });
-      }
+      const paymentsWithDetails = payments?.map(payment => ({
+        id: payment.id,
+        tenantId: payment.tenant_id,
+        propertyId: payment.property_id,
+        paymentDate: payment.payment_date,
+        amount: payment.amount,
+        paymentType: payment.payment_type,
+        notes: payment.notes
+      })) || [];
 
-      let remainingAmount = paymentAmount;
-      const allocations: any[] = [];
-      let totalApplied = 0;
-      let totalLateFees = 0;
-
-      // Allocate payment to periods in order (oldest first)
-      for (const period of unpaidPeriods) {
-        if (remainingAmount <= 0) break;
-
-        const periodBalance = period.rent_amount - period.amount_paid;
-        const lateFeeBalance = period.late_fee_applied - (period.late_fee_waived ? period.late_fee_applied : 0);
-        const totalPeriodBalance = periodBalance + lateFeeBalance;
-
-        if (totalPeriodBalance <= 0) continue; // Period already fully paid
-
-        let amountToLateFee = 0;
-        let amountToRent = 0;
-
-        // Pay late fees first, then rent
-        if (remainingAmount >= lateFeeBalance && lateFeeBalance > 0) {
-          amountToLateFee = lateFeeBalance;
-          remainingAmount -= lateFeeBalance;
-          totalLateFees += lateFeeBalance;
-        } else if (remainingAmount > 0 && lateFeeBalance > 0) {
-          amountToLateFee = remainingAmount;
-          remainingAmount = 0;
-          totalLateFees += amountToLateFee;
-        }
-
-        if (remainingAmount >= periodBalance && periodBalance > 0) {
-          amountToRent = periodBalance;
-          remainingAmount -= periodBalance;
-        } else if (remainingAmount > 0 && periodBalance > 0) {
-          amountToRent = remainingAmount;
-          remainingAmount = 0;
-        }
-
-        if (amountToLateFee > 0 || amountToRent > 0) {
-          // Create payment allocation record
-          const { error: allocationError } = await supabase
-            .from('RENT_payment_allocations')
-            .insert({
-              payment_id: paymentId,
-              rent_period_id: period.id,
-              amount_to_late_fee: amountToLateFee,
-              amount_to_rent: amountToRent,
-              applied_at: new Date().toISOString()
-            });
-
-          if (allocationError) {
-            console.error('Error creating payment allocation:', allocationError);
-          }
-
-          // Update the rent period
-          const newAmountPaid = period.amount_paid + amountToRent;
-          const newLateFeeWaived = amountToLateFee > 0 ? period.late_fee_applied : period.late_fee_waived;
-          const newStatus = (newAmountPaid >= period.rent_amount && newLateFeeWaived >= period.late_fee_applied) ? 'paid' : 'unpaid';
-
-          const { error: updateError } = await supabase
-            .from('RENT_rent_periods')
-            .update({
-              amount_paid: newAmountPaid,
-              late_fee_waived: newLateFeeWaived,
-              status: newStatus,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', period.id);
-
-          if (updateError) {
-            console.error('Error updating rent period:', updateError);
-          }
-
-          allocations.push({
-            period_id: period.id,
-            period_due_date: period.period_due_date,
-            amount_to_rent: amountToRent,
-            amount_to_late_fee: amountToLateFee,
-            new_status: newStatus
-          });
-
-          totalApplied += amountToRent + amountToLateFee;
-        }
-      }
-
-      const result: PaymentAllocationResult = {
-        success: true,
-        message: `Payment allocated to ${allocations.length} periods`,
-        allocations,
-        totalApplied,
-        totalLateFees
-      };
-      
-      return createApiResponse(result);
+      return createApiResponse(paymentsWithDetails);
     } catch (error) {
+      console.error('Error in getUnpaidRentPeriods:', error);
       return createApiResponse(null, handleSupabaseError(error));
     }
   }
