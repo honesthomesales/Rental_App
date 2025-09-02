@@ -36,39 +36,40 @@ export default function LatePaymentsPage() {
     try {
       setLoading(true)
       
-      // Load all tenants with lease data
-      const tenantsResponse = await TenantsService.getAll()
-      const tenantsData = tenantsResponse.data
+      // Use the getLateTenants method which includes lease data
+      const lateTenantsResponse = await TenantsService.getLateTenants()
+      const lateTenantsData = lateTenantsResponse.data
       
-      // Load all properties
-      const propertiesResponse = await PropertiesService.getAll()
-      const propertiesData = propertiesResponse.data
-      
-      if (!tenantsData || !propertiesData) {
-        console.error('Failed to load data')
+      if (!lateTenantsData) {
+        console.error('Failed to load late tenants data')
         return
       }
+      
+      console.log('Late tenants data:', lateTenantsData)
 
       const lateTenantsList: LateTenant[] = []
 
-      // Process each tenant to find late payments (same logic as dashboard)
-      tenantsData.forEach((tenant: any) => {
+      // Process each late tenant (data already includes property and lease info)
+      lateTenantsData.forEach((tenant: any) => {
         try {
-          // Find the property for this tenant
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
-          if (!property) return
+          // The getLateTenants method already includes property and lease data
+          const property = tenant.RENT_properties
+          const lease = tenant.RENT_leases && tenant.RENT_leases.length > 0 ? tenant.RENT_leases[0] : null
+          
+          if (!property || !lease || !lease.lease_start_date) return
 
-          // Get lease data from the joined leases table
-          const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
-          if (!lease || !lease.lease_start_date) return
-
-          // Use the same logic as dashboard - pass the tenant with leases array intact
+          // Create tenant object with leases array for compatibility with calculation functions
+          const tenantWithLeases = {
+            ...tenant,
+            leases: tenant.RENT_leases
+          }
+          
           const propertyWithNotes = { ...property, notes: property.notes || '' }
           
-          const isLate = isTenantLate(tenant, propertyWithNotes)
+          const isLate = isTenantLate(tenantWithLeases, propertyWithNotes)
           
           if (isLate) {
-            const latePaymentInfo = calculateTotalLatePayments(tenant, propertyWithNotes)
+            const latePaymentInfo = calculateTotalLatePayments(tenantWithLeases, propertyWithNotes)
             
             lateTenantsList.push({
               id: tenant.id,
@@ -77,7 +78,7 @@ export default function LatePaymentsPage() {
               property_id: tenant.property_id,
               property_name: property.name,
               property_address: property.address,
-              rent: lease.rent || 0, // Use lease rent instead of property monthly_rent
+              rent: lease.rent || 0,
               total_owed: latePaymentInfo.totalDue,
               late_periods: latePaymentInfo.latePeriods,
               lease_start_date: lease.lease_start_date,
