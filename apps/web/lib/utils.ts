@@ -52,7 +52,11 @@ export function formatRentWithCadence(amount: number, cadence?: string): string 
  * @param cadence - The rent cadence (weekly, bi-weekly, monthly)
  * @returns The late fee amount
  */
-export function getLateFeeAmount(cadence: string): number {
+export function getLateFeeAmount(cadence: string | null | undefined): number {
+  if (!cadence || typeof cadence !== 'string') {
+    return 45 // Default to monthly late fee
+  }
+  
   const normalizedCadence = cadence.toLowerCase().trim()
   
   switch (normalizedCadence) {
