@@ -396,7 +396,7 @@ export default function Dashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Monthly Income</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${stats.monthly_income.toLocaleString()}
+                    ${Math.round(stats.monthly_income).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -426,7 +426,7 @@ export default function Dashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
                   <p className="text-2xl font-bold text-red-600">
-                    ${stats.outstanding_balances.toLocaleString()}
+                    ${Math.round(stats.outstanding_balances).toLocaleString()}
                   </p>
                 </div>
               </div>

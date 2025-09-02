@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { TenantsService } from '@rental-app/api/src/services/tenants'
-import { PropertiesService } from '@rental-app/api/src/services/properties'
+import { TenantsService, PropertiesService } from '@rental-app/api'
 import { calculateTotalLatePayments, isTenantLate } from '../../lib/utils'
 import LatePaymentDetailsModal from '../../components/LatePaymentDetailsModal'
 
@@ -191,7 +190,7 @@ export default function LatePaymentsPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-medium text-gray-900">Total Outstanding</h3>
             <p className="text-3xl font-bold text-red-600">
-              ${lateTenants.reduce((sum, tenant) => sum + tenant.total_owed, 0).toLocaleString()}
+              ${Math.round(lateTenants.reduce((sum, tenant) => sum + tenant.total_owed, 0)).toLocaleString()}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
@@ -269,11 +268,11 @@ export default function LatePaymentsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">${tenant.rent.toLocaleString()}</div>
+                      <div className="text-sm text-gray-900">${Math.round(tenant.rent).toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-red-600">
-                        ${tenant.total_owed.toLocaleString()}
+                        ${Math.round(tenant.total_owed).toLocaleString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
