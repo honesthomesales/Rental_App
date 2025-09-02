@@ -58,37 +58,56 @@ export default function LateTenantsPage() {
       }
       
       // Use Supabase directly to get tenants with lease data
-      const { data: tenantsWithLeases, error } = await supabase
+      // First, let's get all active tenants
+      const { data: allTenants, error: tenantsError } = await supabase
         .from('RENT_tenants')
-        .select(`
-          *,
-          RENT_properties!inner(
-            id,
-            name,
-            address,
-            monthly_rent
-          ),
-          RENT_leases!inner(
-            id,
-            rent,
-            rent_cadence,
-            lease_start_date,
-            lease_end_date,
-            status
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
-        .eq('RENT_leases.status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading tenants with leases:', error)
+      if (tenantsError) {
+        console.error('Error loading tenants:', tenantsError)
         toast.error('Error loading tenant data')
         return
       }
 
+      console.log('All active tenants:', allTenants)
+
+      if (!allTenants || allTenants.length === 0) {
+        console.log('No active tenants found')
+        setLateTenants([])
+        return
+      }
+
+      // Now get properties and leases for each tenant
+      const tenantsWithLeases = await Promise.all(
+        allTenants.map(async (tenant) => {
+          // Get property
+          const { data: property } = await supabase
+            .from('RENT_properties')
+            .select('*')
+            .eq('id', tenant.property_id)
+            .single();
+
+          // Get leases (get the most recent active lease)
+          const { data: leases } = await supabase
+            .from('RENT_leases')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .eq('status', 'active')
+            .order('lease_start_date', { ascending: false })
+            .limit(1);
+
+          return {
+            ...tenant,
+            RENT_properties: property,
+            RENT_leases: leases || []
+          };
+        })
+      );
+
       if (!tenantsWithLeases || tenantsWithLeases.length === 0) {
-        console.log('No tenants found')
+        console.log('No tenants with leases found')
         setLateTenants([])
         return
       }
