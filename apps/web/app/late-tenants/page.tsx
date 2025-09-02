@@ -35,24 +35,14 @@ export default function LateTenantsPage() {
       setLoading(true)
       console.log('Loading late tenants...')
       
-      // Try the API method first
-      const response = await TenantsService.getLateTenants()
-      console.log('Late tenants response:', response)
-      
-      if (response.success && response.data && response.data.length > 0) {
-        console.log('Late tenants data from API:', response.data)
-        setLateTenants(response.data)
-        return
-      }
-      
-      // Fallback: Use the same approach as dashboard
-      console.log('API returned no data, trying fallback method...')
+      // Skip the API method since it depends on non-existent RENT_rent_periods table
+      // Go directly to the fallback method that works with existing data
+      console.log('Using fallback method directly (API method requires RENT_rent_periods table)...')
       await loadLateTenantsFallback()
       
     } catch (error) {
       console.error('Error loading late tenants:', error)
-      console.log('Trying fallback method...')
-      await loadLateTenantsFallback()
+      toast.error('Error loading late tenants')
     } finally {
       setLoading(false)
     }
