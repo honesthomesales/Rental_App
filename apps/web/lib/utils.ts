@@ -191,17 +191,27 @@ export function calculateLateFeesForPeriod(
     paymentHistory = []
   }
   
-  // Find payments for this period (within 5 days of expected date)
+  // Find payments for this period (more flexible matching)
   const periodStart = new Date(expectedDate)
   periodStart.setDate(periodStart.getDate() - 2) // Allow 2 days early
   
   const periodEnd = new Date(expectedDate)
   periodEnd.setDate(periodEnd.getDate() + 5) // 5 days grace period
   
-  const periodPayments = paymentHistory.filter(payment => {
+  // First try to find payments within the grace period
+  let periodPayments = paymentHistory.filter(payment => {
     const paymentDate = new Date(payment.date)
     return paymentDate >= periodStart && paymentDate <= periodEnd && payment.status === 'completed'
   })
+  
+  // If no payments found in grace period, look for any payments made after the expected date
+  // This handles cases where payments were made late but still should count
+  if (periodPayments.length === 0) {
+    periodPayments = paymentHistory.filter(payment => {
+      const paymentDate = new Date(payment.date)
+      return paymentDate >= expectedDate && payment.status === 'completed'
+    })
+  }
   
   const totalPaid = periodPayments.reduce((sum, payment) => sum + payment.amount, 0)
   const outstanding = Math.max(0, rentAmount - totalPaid)
@@ -210,14 +220,20 @@ export function calculateLateFeesForPeriod(
   const today = new Date()
   const isLate = periodPayments.length === 0 && today > periodEnd
   
-  // Only log if this period is late to reduce console clutter
-  if (isLate) {
-    console.log('LATE PERIOD:', {
+  // Log payment matching details for debugging
+  if (periodPayments.length > 0 || isLate) {
+    console.log('PAYMENT PERIOD ANALYSIS:', {
       expectedDate: expectedDateStr,
+      periodStart: periodStart.toISOString().split('T')[0],
       periodEnd: periodEnd.toISOString().split('T')[0],
       today: today.toISOString().split('T')[0],
+      paymentsFound: periodPayments.length,
+      totalPaid,
+      rentAmount,
       outstanding,
-      lateFee: outstanding > 0 ? lateFeeAmount : 0
+      isLate,
+      lateFee: outstanding > 0 ? lateFeeAmount : 0,
+      allPayments: paymentHistory.map(p => ({ date: p.date, amount: p.amount, status: p.status }))
     })
   }
   
@@ -266,8 +282,8 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
   console.log('calculateTotalLatePayments: Starting calculation for', tenant.first_name, tenant.last_name);
   
   // Defensive checks for SSR
-  if (!tenant || !property || !tenant.lease_start_date || !property?.monthly_rent) {
-    console.log('calculateTotalLatePayments: Missing required data - tenant:', !!tenant, 'property:', !!property, 'lease_start_date:', tenant?.lease_start_date, 'monthly_rent:', property?.monthly_rent);
+  if (!tenant || !property) {
+    console.log('calculateTotalLatePayments: Missing required data - tenant:', !!tenant, 'property:', !!property);
     return {
       totalLateFees: 0,
       totalOutstanding: 0,
@@ -280,7 +296,7 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
   try {
     // Get lease information from the leases array
     const activeLease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null;
-    if (!activeLease) {
+    if (!activeLease || !activeLease.lease_start_date) {
       console.log('calculateTotalLatePayments: No active lease found for tenant');
       return {
         totalLateFees: 0,
@@ -306,6 +322,10 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
     console.log('Tenant calculation - Cadence:', cadence, 'Monthly rent:', monthlyRent, 'Period rent:', rentAmount);
     const expectedDates = getLastExpectedPaymentDates(activeLease.lease_start_date, cadence, 12);
     
+    // Use actual payment history from the tenant object (which comes from payment_history JSON field)
+    const paymentHistory = tenant.payment_history || [];
+    console.log('Payment history for', tenant.first_name, ':', paymentHistory);
+    
     let totalLateFees = 0;
     let totalOutstanding = 0;
     let latePeriods = 0;
@@ -313,9 +333,9 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
     const payPeriods = expectedDates.map(expectedDate => {
       const periodResult = calculateLateFeesForPeriod(
         expectedDate,
-        tenant.payment_history,
-        cadence,
-        rentAmount
+        paymentHistory,
+        rentAmount,
+        cadence
       );
       
       if (periodResult.isLate) {
