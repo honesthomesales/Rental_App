@@ -141,8 +141,13 @@ export default function LateTenantsPage() {
           // Create tenant object with leases array for compatibility with calculation functions
           const tenantWithLeases = {
             ...tenant,
-            leases: tenant.RENT_leases
+            leases: tenant.RENT_leases || []
           }
+          
+          console.log('=== DATA STRUCTURE DEBUG ===')
+          console.log('tenant.RENT_leases:', tenant.RENT_leases)
+          console.log('tenantWithLeases.leases:', tenantWithLeases.leases)
+          console.log('property:', property)
           
           const propertyWithNotes = { ...property, notes: property.notes || '' }
           
