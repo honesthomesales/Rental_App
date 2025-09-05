@@ -156,17 +156,17 @@ export default function LateTenantsPage() {
       // Transform overdue periods to match the existing LateTenant interface
       const lateTenantsList: LateTenant[] = overduePeriods.map(period => ({
         id: period.tenant_id,
-        first_name: period.tenant_name.split(' ')[0] || '',
-        last_name: period.tenant_name.split(' ').slice(1).join(' ') || '',
-        email: '', // Not available in rent source
-        phone: '', // Not available in rent source
+        first_name: period.RENT_leases?.RENT_tenants?.first_name || '',
+        last_name: period.RENT_leases?.RENT_tenants?.last_name || '',
+        email: period.RENT_leases?.RENT_tenants?.email || '',
+        phone: period.RENT_leases?.RENT_tenants?.phone || '',
         property_id: period.property_id,
-        property_address: period.property_address,
-        rent: period.rent_amount,
-        total_due: period.rent_amount,
+        property_address: period.RENT_leases?.RENT_properties?.address || '',
+        rent: period.RENT_leases?.rent || 0,
+        total_due: period.RENT_leases?.rent || 0,
         late_periods: 1, // Each period represents one late period
-        lease_start_date: '', // Not available in rent source
-        rent_cadence: period.rent_cadence,
+        lease_start_date: period.RENT_leases?.lease_start_date || '',
+        rent_cadence: period.RENT_leases?.rent_cadence || '',
         late_fees: 0, // Late fees not stored in current schema
         total_late_fees: 0, // Late fees not stored in current schema
         days_late: period.days_overdue, // Add missing property
