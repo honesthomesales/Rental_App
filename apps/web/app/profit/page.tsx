@@ -298,11 +298,11 @@ export default function ProfitPage() {
                             (endDate.getMonth() - startDate.getMonth()) + 1
        
        // Calculate potential income (sum of all property monthly rents * months in range)
-       const calculatedMonthlyPotentialIncome = propertiesData.reduce((sum: number, property: unknown) => {
-         const rentCadence = extractRentCadence(property.notes)
-         const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
-         return sum + normalizedRent
-       }, 0)
+               const calculatedMonthlyPotentialIncome = propertiesData.reduce((sum: number, property: any) => {
+          const rentCadence = extractRentCadence(property.notes)
+          const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+          return sum + normalizedRent
+        }, 0)
 
        // Update state for modal access
        setProperties(propertiesData)
