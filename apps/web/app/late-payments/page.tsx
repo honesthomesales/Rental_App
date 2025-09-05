@@ -50,7 +50,7 @@ export default function LatePaymentsPage() {
       const lateTenantsList: LateTenant[] = []
 
       // Process each late tenant (data already includes property and lease info)
-      lateTenantsData.forEach((tenant: unknown) => {
+      lateTenantsData.forEach((tenant: any) => {
         try {
           // The getLateTenants method already includes property and lease data
           const property = tenant.RENT_properties
