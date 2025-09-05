@@ -165,7 +165,7 @@ export default function LateTenantsPage() {
         rent: period.RENT_leases?.rent || 0,
         total_due: period.RENT_leases?.rent || 0,
         late_periods: 1, // Each period represents one late period
-        lease_start_date: period.RENT_leases?.lease_start_date || '',
+        lease_start_date: '', // Not available in current query
         rent_cadence: period.RENT_leases?.rent_cadence || '',
         late_fees: 0, // Late fees not stored in current schema
         total_late_fees: 0, // Late fees not stored in current schema
