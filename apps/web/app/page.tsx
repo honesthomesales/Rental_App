@@ -6,7 +6,7 @@ import { Plus, Search, DollarSign, Home, Users, AlertTriangle } from 'lucide-rea
 import toast from 'react-hot-toast'
 import { PropertiesService } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
-import { normalizeRentToMonthly } from '../lib/utils'
+import { normalizeRentToMonthly, extractRentCadence } from '../lib/utils'
 
 interface Property {
   id: string
@@ -37,6 +37,7 @@ interface Property {
   notes: string | null
   created_at: string
   updated_at: string
+  active_leases?: any[]
 }
 
 interface DashboardStats {
@@ -222,14 +223,14 @@ export default function Dashboard() {
   // Calculate stats using new view data
   const calculateDashboardStatsFromViews = useCallback((
     propertiesData: Property[], 
-    tenantsData: unknown[], 
-    expectedData: unknown[], 
-    collectedData: unknown[]
+    tenantsData: any[], 
+    expectedData: any[], 
+    collectedData: any[]
   ): DashboardStats => {
     // Calculate basic stats
     const totalRent = propertiesData.reduce((sum, property) => {
       const rentCadence = extractRentCadence(property.notes || undefined)
-      const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+      const normalizedRent = normalizeRentToMonthly(property.active_leases?.[0]?.rent || 0, rentCadence)
       return sum + normalizedRent
     }, 0)
     
@@ -248,15 +249,15 @@ export default function Dashboard() {
     
     // Calculate monthly income from collected data
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
-    const currentMonthCollected = collectedData.find((item: { month: string }) => 
-      item.month.startsWith(currentMonth)
+    const currentMonthCollected = (collectedData as any[]).find((item: any) => 
+      item.month && item.month.startsWith(currentMonth)
     )
     const monthlyIncome = currentMonthCollected ? 
       (currentMonthCollected.collected_rent || 0) + (currentMonthCollected.collected_late_fees || 0) : 0
     
     // Calculate expected vs collected for current month
-    const currentMonthExpected = expectedData.find((item: unknown) => 
-      item.month.startsWith(currentMonth)
+    const currentMonthExpected = (expectedData as any[]).find((item: any) => 
+      item.month && item.month.startsWith(currentMonth)
     )
     const expectedRent = currentMonthExpected ? 
       (currentMonthExpected.expected_rent || 0) + (currentMonthExpected.expected_late_fees || 0) : 0
@@ -268,9 +269,9 @@ export default function Dashboard() {
     let lateTenantsCount = 0
     if (tenantsData && tenantsData.length > 0) {
       // This will be improved when we have proper period data
-      lateTenantsCount = tenantsData.filter((tenant: unknown) => {
+      lateTenantsCount = tenantsData.filter((tenant: any) => {
         try {
-          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           if (!property || !tenant.leases || tenant.leases.length === 0) {
             return false
           }
@@ -282,7 +283,7 @@ export default function Dashboard() {
           
           if (daysSinceStart > 30) {
             const paymentHistory = tenant.payment_history || []
-            const recentPayments = paymentHistory.filter((p: unknown) => {
+            const recentPayments = paymentHistory.filter((p: any) => {
               const paymentDate = new Date(p.date)
               const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
               return daysSincePayment <= 30
@@ -317,11 +318,11 @@ export default function Dashboard() {
   }, [])
 
   // Memoize expensive calculations (original method)
-  const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: unknown[]): DashboardStats => {
+  const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: any[]): DashboardStats => {
     // Calculate basic stats with normalized rent amounts
     const totalRent = propertiesData.reduce((sum, property) => {
       const rentCadence = extractRentCadence(property.notes || undefined)
-      const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+      const normalizedRent = normalizeRentToMonthly(property.active_leases?.[0]?.rent || 0, rentCadence)
       return sum + normalizedRent
     }, 0)
     
@@ -345,10 +346,10 @@ export default function Dashboard() {
     if (tenantsData && tenantsData.length > 0) {
       // For now, use a simple calculation based on lease data
       // This will be improved when we have proper payment data
-      lateTenantsCount = tenantsData.filter((tenant: unknown) => {
+      lateTenantsCount = tenantsData.filter((tenant: any) => {
         try {
           // Find the property for this tenant
-          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           
           if (!property || !tenant.leases || tenant.leases.length === 0) {
             return false
@@ -364,7 +365,7 @@ export default function Dashboard() {
           if (daysSinceStart > 30) {
             // Check if there are any payments in the payment_history
             const paymentHistory = tenant.payment_history || []
-            const recentPayments = paymentHistory.filter((p: unknown) => {
+            const recentPayments = paymentHistory.filter((p: any) => {
               const paymentDate = new Date(p.date)
               const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
               return daysSincePayment <= 30
@@ -381,9 +382,9 @@ export default function Dashboard() {
       }).length
       
       // Calculate total outstanding from late tenants
-      totalOutstanding = tenantsData.reduce((sum, tenant: unknown) => {
+      totalOutstanding = tenantsData.reduce((sum, tenant: any) => {
         try {
-          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           if (property && tenant.leases && tenant.leases.length > 0) {
             const lease = tenant.leases[0]
             const leaseStartDate = new Date(lease.lease_start_date)
@@ -392,7 +393,7 @@ export default function Dashboard() {
             
             if (daysSinceStart > 30) {
               const paymentHistory = tenant.payment_history || []
-              const recentPayments = paymentHistory.filter((p: unknown) => {
+              const recentPayments = paymentHistory.filter((p: any) => {
                 const paymentDate = new Date(p.date)
                 const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
                 return daysSincePayment <= 30
@@ -452,8 +453,8 @@ export default function Dashboard() {
     if (!filteredProperties.length) return []
     
     return [...filteredProperties].sort((a, b) => {
-      let aValue: unknown
-      let bValue: unknown
+      let aValue: any
+      let bValue: any
       
       switch (sortField) {
         case 'name':
@@ -473,8 +474,8 @@ export default function Dashboard() {
           bValue = b.status?.toLowerCase() || ''
           break
         case 'rent':
-          aValue = a.leases?.[0]?.rent || 0
-          bValue = b.leases?.[0]?.rent || 0
+          aValue = a.active_leases?.[0]?.rent || 0
+          bValue = b.active_leases?.[0]?.rent || 0
           break
         default:
           return 0
@@ -802,7 +803,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {property.leases?.[0]?.rent ? `${property.leases[0].rent.toLocaleString()} (${property.leases[0].rent_cadence})` : 'N/A'}
+                        {property.active_leases?.[0]?.rent ? `${property.active_leases[0].rent.toLocaleString()} (${property.active_leases[0].rent_cadence})` : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button

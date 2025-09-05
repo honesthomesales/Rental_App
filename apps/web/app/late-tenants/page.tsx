@@ -204,7 +204,7 @@ export default function LateTenantsPage() {
           id: period.lease_id,
           tenant_id: period.tenant_id,
           property_id: period.property_id,
-          rent: period.rent_amount,
+          rent: 0, // Will be calculated from lease data
           rent_cadence: period.rent_cadence,
           lease_start_date: '',
           lease_end_date: '',
@@ -310,7 +310,7 @@ export default function LateTenantsPage() {
 
       console.log('Tenants with leases loaded:', tenantsWithLeases)
 
-      const lateTenantsList: unknown[] = []
+      const lateTenantsList: LateTenant[] = []
       
       // Debug: Let's see what we're working with
       console.log('=== DEBUGGING LATE TENANTS CALCULATION ===')
@@ -373,35 +373,47 @@ export default function LateTenantsPage() {
           if (isLate.isLate) {
             
             lateTenantsList.push({
+              // Tenant properties (all required fields)
               id: tenant.id,
               first_name: tenant.first_name,
               last_name: tenant.last_name,
-              phone: tenant.phone,
-              property_id: tenant.property_id,
-              property_name: property.name,
-              property_address: property.address,
-              rent: lease.rent || 0,
+              email: tenant.email || null,
+              phone: tenant.phone || null,
+              property_id: tenant.property_id || null,
+              emergency_contact_name: tenant.emergency_contact_name || null,
+              emergency_contact_phone: tenant.emergency_contact_phone || null,
+              lease_start_date: tenant.lease_start_date || null,
+              lease_end_date: tenant.lease_end_date || null,
+              security_deposit: tenant.security_deposit || null,
+              lease_pdf_url: tenant.lease_pdf_url || null,
+              payment_history: tenant.payment_history || [],
+              late_fees_owed: tenant.late_fees_owed || 0,
+              late_status: tenant.late_status || undefined,
+              last_payment_date: tenant.last_payment_date || null,
+              currently_paid_up_date: (tenant as any).currently_paid_up_date || null,
+              notes: tenant.notes || null,
+              is_active: tenant.is_active || true,
+              created_at: tenant.created_at || new Date().toISOString(),
+              updated_at: tenant.updated_at || new Date().toISOString(),
+              // LateTenant specific properties
               total_due: Math.round(isLate.totalDue),
               late_periods: isLate.latePeriods,
-              lease_start_date: lease.lease_start_date,
-              rent_cadence: lease.rent_cadence || 'monthly',
-              late_fees: Math.round(isLate.totalLateFees),
-              total_late_fees: Math.round(isLate.totalLateFees),
               days_late: 30, // Simplified for now
-              late_status: 'late_5_days',
+              total_late_fees: Math.round(isLate.totalLateFees),
               properties: {
+                id: property.id,
                 name: property.name,
                 address: property.address,
-                // monthly_rent removed - rent data comes from RENT_leases
-              },
-              leases: [{
-                id: lease.id,
-                rent: lease.rent,
-                rent_cadence: lease.rent_cadence,
-                lease_start_date: lease.lease_start_date,
-                lease_end_date: lease.lease_end_date,
-                status: lease.status
-              }]
+                city: property.city || '',
+                state: property.state || '',
+                zip_code: property.zip_code || '',
+                property_type: property.property_type || 'house',
+                status: property.status || 'rented',
+                is_for_sale: property.is_for_sale || false,
+                is_for_rent: property.is_for_rent || true,
+                created_at: property.created_at || new Date().toISOString(),
+                updated_at: property.updated_at || new Date().toISOString()
+              }
             })
           }
         } catch (error) {
@@ -422,11 +434,11 @@ export default function LateTenantsPage() {
 
   // New function to calculate late status using actual database tables
   const calculateLateStatusFromDatabase = async (
-    tenant: unknown, 
-    property: unknown, 
-    lease: unknown, 
-    payments: unknown[], 
-    rentPeriods: unknown[]
+    tenant: any, 
+    property: any, 
+    lease: any, 
+    payments: any[], 
+    rentPeriods: any[]
   ) => {
     const today = new Date()
     let totalLateFees = 0
@@ -467,18 +479,17 @@ export default function LateTenantsPage() {
     } else {
       // Use actual rent periods from database
       for (const period of rentPeriods) {
-        if (period.status === 'unpaid' || period.amount_paid < period.rent_amount) {
-          const periodDueDate = new Date(period.period_due_date)
-          const outstanding = period.rent_amount - (period.amount_paid || 0)
+        const periodDueDate = new Date(period.period_due_date)
+        const rentAmount = lease.rent || 0
+        const outstanding = rentAmount - (period.amount_paid || 0)
+        
+        if (outstanding > 0 && today > periodDueDate) {
+          latePeriods++
+          totalOutstanding += outstanding
           
-          if (outstanding > 0 && today > periodDueDate) {
-            latePeriods++
-            totalOutstanding += outstanding
-            
-            // Add late fee if not waived
-            if (!period.late_fee_waived) {
-              totalLateFees += period.late_fee_applied || getLateFeeAmount(period.rent_cadence)
-            }
+          // Add late fee if not waived
+          if (!period.late_fee_waived) {
+            totalLateFees += period.late_fee_applied || getLateFeeAmount(lease.rent_cadence)
           }
         }
       }
@@ -607,17 +618,22 @@ export default function LateTenantsPage() {
         return
       }
 
+      // Get lease information from the tenant
+      const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
+      const rentAmount = lease?.rent || 0
+      
       // Transform the data to match RentPeriod interface
-      const transformedPeriods: RentPeriod[] = periods.map((period: unknown) => ({
+      const transformedPeriods: RentPeriod[] = periods.map((period: any) => ({
         id: period.id,
         tenant_id: period.tenant_id,
         property_id: period.property_id,
         lease_id: period.lease_id,
         period_due_date: period.period_due_date,
-        rent_amount: period.rent_amount,
-        rent_cadence: period.rent_cadence,
-        status: period.status,
-        amount_paid: period.amount_paid,
+        amount_paid: period.amount_paid || 0,
+        late_fee_applied: period.late_fee_applied || 0,
+        late_fee_waived: period.late_fee_waived || false,
+        due_date_override: period.due_date_override,
+        notes: period.notes,
         created_at: period.created_at,
         updated_at: period.updated_at
       }))
@@ -632,7 +648,7 @@ export default function LateTenantsPage() {
   }
 
   // Helper function to generate sample rent periods for display
-  const generateSampleRentPeriods = (lease: unknown, tenant: unknown): RentPeriod[] => {
+  const generateSampleRentPeriods = (lease: any, tenant: any): RentPeriod[] => {
     const periods: RentPeriod[] = []
     const startDate = new Date(lease.lease_start_date)
     const cadence = lease.rent_cadence || 'monthly'
@@ -662,12 +678,9 @@ export default function LateTenantsPage() {
         property_id: tenant.property_id,
         lease_id: lease.id,
         period_due_date: dueDate.toISOString().split('T')[0],
-        rent_amount: rentAmount,
-        rent_cadence: cadence,
         amount_paid: status === 'paid' ? rentAmount : 0,
-        status: status,
-        // late_fee_applied: isLate ? getLateFeeAmount(cadence) : 0, // Not in current schema
-        // late_fee_waived: false, // Not in current schema
+        late_fee_applied: isLate ? getLateFeeAmount(cadence) : 0,
+        late_fee_waived: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -1035,8 +1048,8 @@ export default function LateTenantsPage() {
                           <span className="font-medium text-gray-600">Unpaid Amount:</span>
                           <p className="text-lg font-semibold text-blue-600">
                             ${Math.round(selectedTenantPeriods
-                              .filter(p => p.status !== 'paid')
-                              .reduce((sum, p) => sum + (p.rent_amount - p.amount_paid), 0))
+                              .filter(p => (p.amount_paid || 0) < (selectedTenant ? getRentAmount(selectedTenant) : 0))
+                              .reduce((sum, p) => sum + ((selectedTenant ? getRentAmount(selectedTenant) : 0) - (p.amount_paid || 0)), 0))
                               .toLocaleString()}
                           </p>
                         </div>
@@ -1053,8 +1066,8 @@ export default function LateTenantsPage() {
                           <span className="font-medium text-gray-600">Total Due:</span>
                           <p className="text-lg font-semibold text-blue-600">
                             ${Math.round(selectedTenantPeriods
-                              .filter(p => p.status !== 'paid')
-                              .reduce((sum, p) => sum + (p.rent_amount - p.amount_paid), 0) +
+                              .filter(p => (p.amount_paid || 0) < (selectedTenant ? getRentAmount(selectedTenant) : 0))
+                              .reduce((sum, p) => sum + ((selectedTenant ? getRentAmount(selectedTenant) : 0) - (p.amount_paid || 0)), 0) +
                               selectedTenantPeriods
                                 // .filter(p => !p.late_fee_waived) // Not in current schema
                                 .reduce((sum, p) => sum + 0, 0) // Late fees not in current schema
@@ -1088,18 +1101,19 @@ export default function LateTenantsPage() {
                               {new Date(period.period_due_date).toLocaleDateString()}
                             </td>
                             <td className="py-4 px-4 font-medium">
-                              ${Math.round(period.rent_amount).toLocaleString()}
+                              ${Math.round(selectedTenant ? getRentAmount(selectedTenant) : 0).toLocaleString()}
                             </td>
                             <td className="py-4 px-4">
                               ${Math.round(period.amount_paid).toLocaleString()}
                             </td>
                             <td className="py-4 px-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                period.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                period.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                (period.amount_paid || 0) >= (selectedTenant ? getRentAmount(selectedTenant) : 0) ? 'bg-green-100 text-green-800' :
+                                (period.amount_paid || 0) > 0 ? 'bg-yellow-100 text-yellow-800' :
                                 'bg-red-100 text-red-800'
                               }`}>
-                                {period.status}
+                                {(period.amount_paid || 0) >= (selectedTenant ? getRentAmount(selectedTenant) : 0) ? 'paid' :
+                                 (period.amount_paid || 0) > 0 ? 'partial' : 'unpaid'}
                               </span>
                             </td>
                             <td className="py-4 px-4">
