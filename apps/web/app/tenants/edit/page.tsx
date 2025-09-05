@@ -21,7 +21,7 @@ interface Tenant {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
-  properties?: any;
+  properties?: unknown;
   leases?: Array<{
     id: string;
     rent: number;

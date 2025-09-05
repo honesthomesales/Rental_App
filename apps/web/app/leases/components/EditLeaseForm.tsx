@@ -74,7 +74,7 @@ export default function EditLeaseForm({ isOpen, onClose, onSuccess, lease }: Edi
   }, [editLease.rent_cadence, editLease.late_fee_amount])
 
   // Track field changes
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     setEditLease(prev => ({ ...prev, [field]: value }))
     
     // Check if this field affects future periods

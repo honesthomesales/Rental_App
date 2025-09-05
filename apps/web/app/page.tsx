@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, DollarSign, Home, Users, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Search, DollarSign, Home, Users, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { PropertiesService } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
-import { extractRentCadence, normalizeRentToMonthly, calculateTotalLatePayments, isTenantLate } from '../lib/utils'
+import { normalizeRentToMonthly } from '../lib/utils'
 
 interface Property {
   id: string
@@ -223,9 +222,9 @@ export default function Dashboard() {
   // Calculate stats using new view data
   const calculateDashboardStatsFromViews = useCallback((
     propertiesData: Property[], 
-    tenantsData: any[], 
-    expectedData: any[], 
-    collectedData: any[]
+    tenantsData: unknown[], 
+    expectedData: unknown[], 
+    collectedData: unknown[]
   ): DashboardStats => {
     // Calculate basic stats
     const totalRent = propertiesData.reduce((sum, property) => {
@@ -249,14 +248,14 @@ export default function Dashboard() {
     
     // Calculate monthly income from collected data
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
-    const currentMonthCollected = collectedData.find((item: any) => 
+    const currentMonthCollected = collectedData.find((item: { month: string }) => 
       item.month.startsWith(currentMonth)
     )
     const monthlyIncome = currentMonthCollected ? 
       (currentMonthCollected.collected_rent || 0) + (currentMonthCollected.collected_late_fees || 0) : 0
     
     // Calculate expected vs collected for current month
-    const currentMonthExpected = expectedData.find((item: any) => 
+    const currentMonthExpected = expectedData.find((item: unknown) => 
       item.month.startsWith(currentMonth)
     )
     const expectedRent = currentMonthExpected ? 
@@ -269,9 +268,9 @@ export default function Dashboard() {
     let lateTenantsCount = 0
     if (tenantsData && tenantsData.length > 0) {
       // This will be improved when we have proper period data
-      lateTenantsCount = tenantsData.filter((tenant: any) => {
+      lateTenantsCount = tenantsData.filter((tenant: unknown) => {
         try {
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
           if (!property || !tenant.leases || tenant.leases.length === 0) {
             return false
           }
@@ -283,7 +282,7 @@ export default function Dashboard() {
           
           if (daysSinceStart > 30) {
             const paymentHistory = tenant.payment_history || []
-            const recentPayments = paymentHistory.filter((p: any) => {
+            const recentPayments = paymentHistory.filter((p: unknown) => {
               const paymentDate = new Date(p.date)
               const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
               return daysSincePayment <= 30
@@ -318,7 +317,7 @@ export default function Dashboard() {
   }, [])
 
   // Memoize expensive calculations (original method)
-  const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: any[]): DashboardStats => {
+  const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: unknown[]): DashboardStats => {
     // Calculate basic stats with normalized rent amounts
     const totalRent = propertiesData.reduce((sum, property) => {
       const rentCadence = extractRentCadence(property.notes || undefined)
@@ -346,10 +345,10 @@ export default function Dashboard() {
     if (tenantsData && tenantsData.length > 0) {
       // For now, use a simple calculation based on lease data
       // This will be improved when we have proper payment data
-      lateTenantsCount = tenantsData.filter((tenant: any) => {
+      lateTenantsCount = tenantsData.filter((tenant: unknown) => {
         try {
           // Find the property for this tenant
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
           
           if (!property || !tenant.leases || tenant.leases.length === 0) {
             return false
@@ -365,7 +364,7 @@ export default function Dashboard() {
           if (daysSinceStart > 30) {
             // Check if there are any payments in the payment_history
             const paymentHistory = tenant.payment_history || []
-            const recentPayments = paymentHistory.filter((p: any) => {
+            const recentPayments = paymentHistory.filter((p: unknown) => {
               const paymentDate = new Date(p.date)
               const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
               return daysSincePayment <= 30
@@ -382,9 +381,9 @@ export default function Dashboard() {
       }).length
       
       // Calculate total outstanding from late tenants
-      totalOutstanding = tenantsData.reduce((sum, tenant: any) => {
+      totalOutstanding = tenantsData.reduce((sum, tenant: unknown) => {
         try {
-          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
+          const property = propertiesData.find((p: unknown) => p.id === tenant.property_id)
           if (property && tenant.leases && tenant.leases.length > 0) {
             const lease = tenant.leases[0]
             const leaseStartDate = new Date(lease.lease_start_date)
@@ -393,7 +392,7 @@ export default function Dashboard() {
             
             if (daysSinceStart > 30) {
               const paymentHistory = tenant.payment_history || []
-              const recentPayments = paymentHistory.filter((p: any) => {
+              const recentPayments = paymentHistory.filter((p: unknown) => {
                 const paymentDate = new Date(p.date)
                 const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
                 return daysSincePayment <= 30
@@ -453,8 +452,8 @@ export default function Dashboard() {
     if (!filteredProperties.length) return []
     
     return [...filteredProperties].sort((a, b) => {
-      let aValue: any
-      let bValue: any
+      let aValue: unknown
+      let bValue: unknown
       
       switch (sortField) {
         case 'name':

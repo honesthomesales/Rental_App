@@ -14,7 +14,7 @@ interface LateTenant {
   late_periods: number
   lease_start_date: string
   rent_cadence: string
-  late_payment_info: any
+  late_payment_info: unknown
 }
 
 interface PaymentPeriod {
@@ -32,7 +32,7 @@ interface PaymentPeriod {
 interface LatePaymentDetailsModalProps {
   tenant: LateTenant
   onClose: () => void
-  onSave: (updatedData: any) => void
+  onSave: (updatedData: unknown) => void
 }
 
 export default function LatePaymentDetailsModal({ tenant, onClose, onSave }: LatePaymentDetailsModalProps) {
@@ -41,7 +41,7 @@ export default function LatePaymentDetailsModal({ tenant, onClose, onSave }: Lat
 
   useEffect(() => {
     if (tenant.late_payment_info?.payPeriods) {
-      const periods = tenant.late_payment_info.payPeriods.map((period: any) => ({
+      const periods = tenant.late_payment_info.payPeriods.map((period: unknown) => ({
         ...period,
         editedLateFees: period.lateFees,
         editedPaymentDate: '',

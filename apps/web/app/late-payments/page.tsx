@@ -18,7 +18,7 @@ interface LateTenant {
   late_periods: number
   lease_start_date: string
   rent_cadence: string
-  late_payment_info: any
+  late_payment_info: unknown
 }
 
 export default function LatePaymentsPage() {
@@ -50,7 +50,7 @@ export default function LatePaymentsPage() {
       const lateTenantsList: LateTenant[] = []
 
       // Process each late tenant (data already includes property and lease info)
-      lateTenantsData.forEach((tenant: any) => {
+      lateTenantsData.forEach((tenant: unknown) => {
         try {
           // The getLateTenants method already includes property and lease data
           const property = tenant.RENT_properties
@@ -140,7 +140,7 @@ export default function LatePaymentsPage() {
     setSelectedTenant(null)
   }
 
-  const handleModalSave = async (updatedData: any) => {
+  const handleModalSave = async (updatedData: unknown) => {
     // Here you would save the updated data to the database
     
     

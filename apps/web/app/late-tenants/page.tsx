@@ -20,7 +20,7 @@ import toast from 'react-hot-toast'
 import { LateTenantNotice } from '@/components/LateTenantNotice'
 
 export default function LateTenantsPage() {
-  const router = useRouter()
+  // const router = useRouter()
   const [lateTenants, setLateTenants] = useState<LateTenant[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTenant, setSelectedTenant] = useState<LateTenant | null>(null)
@@ -310,7 +310,7 @@ export default function LateTenantsPage() {
 
       console.log('Tenants with leases loaded:', tenantsWithLeases)
 
-      const lateTenantsList: any[] = []
+      const lateTenantsList: unknown[] = []
       
       // Debug: Let's see what we're working with
       console.log('=== DEBUGGING LATE TENANTS CALCULATION ===')
@@ -422,11 +422,11 @@ export default function LateTenantsPage() {
 
   // New function to calculate late status using actual database tables
   const calculateLateStatusFromDatabase = async (
-    tenant: any, 
-    property: any, 
-    lease: any, 
-    payments: any[], 
-    rentPeriods: any[]
+    tenant: unknown, 
+    property: unknown, 
+    lease: unknown, 
+    payments: unknown[], 
+    rentPeriods: unknown[]
   ) => {
     const today = new Date()
     let totalLateFees = 0
@@ -608,7 +608,7 @@ export default function LateTenantsPage() {
       }
 
       // Transform the data to match RentPeriod interface
-      const transformedPeriods: RentPeriod[] = periods.map((period: any) => ({
+      const transformedPeriods: RentPeriod[] = periods.map((period: unknown) => ({
         id: period.id,
         tenant_id: period.tenant_id,
         property_id: period.property_id,
@@ -632,7 +632,7 @@ export default function LateTenantsPage() {
   }
 
   // Helper function to generate sample rent periods for display
-  const generateSampleRentPeriods = (lease: any, tenant: any): RentPeriod[] => {
+  const generateSampleRentPeriods = (lease: unknown, tenant: unknown): RentPeriod[] => {
     const periods: RentPeriod[] = []
     const startDate = new Date(lease.lease_start_date)
     const cadence = lease.rent_cadence || 'monthly'

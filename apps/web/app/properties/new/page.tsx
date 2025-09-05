@@ -43,7 +43,7 @@ export default function NewPropertyPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
-    let parsedValue: any = value
+    let parsedValue: unknown = value
 
     if (type === 'number') {
       parsedValue = value === '' ? undefined : parseFloat(value)

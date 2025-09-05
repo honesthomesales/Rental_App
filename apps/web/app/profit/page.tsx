@@ -179,10 +179,10 @@ export default function ProfitPage() {
        
        // Calculate profit data from views
        const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
-       const currentMonthExpected = expectedData?.find((item: any) => 
+       const currentMonthExpected = expectedData?.find((item: unknown) => 
          item.month.startsWith(currentMonth)
        )
-       const currentMonthCollected = collectedData?.find((item: any) => 
+       const currentMonthCollected = collectedData?.find((item: unknown) => 
          item.month.startsWith(currentMonth)
        )
        
@@ -193,7 +193,7 @@ export default function ProfitPage() {
        
        // Calculate other metrics from properties
        const totalProperties = propertiesData.data?.length || 0
-       const potentialIncome = propertiesData.data?.reduce((sum: number, property: any) => {
+       const potentialIncome = propertiesData.data?.reduce((sum: number, property: unknown) => {
          const rentCadence = extractRentCadence(property.notes || undefined)
          const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
          return sum + normalizedRent
@@ -257,7 +257,7 @@ export default function ProfitPage() {
 
        // Fetch other entries for the date range
        // TODO: RENT_other table doesn't exist - temporarily disabled
-       const otherEntriesData: any[] = []
+       const otherEntriesData: unknown[] = []
        const otherEntriesError = null
 
        // const { data: otherEntriesData, error: otherEntriesError } = await supabase
@@ -298,7 +298,7 @@ export default function ProfitPage() {
                             (endDate.getMonth() - startDate.getMonth()) + 1
        
        // Calculate potential income (sum of all property monthly rents * months in range)
-       const calculatedMonthlyPotentialIncome = propertiesData.reduce((sum: number, property: any) => {
+       const calculatedMonthlyPotentialIncome = propertiesData.reduce((sum: number, property: unknown) => {
          const rentCadence = extractRentCadence(property.notes)
          const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
          return sum + normalizedRent
@@ -315,10 +315,10 @@ export default function ProfitPage() {
        const potentialIncome = calculatedMonthlyPotentialIncome
        
        // Calculate expected income (for properties that currently have renters)
-       const occupiedPropertyIds = new Set(tenantsData.map((tenant: any) => tenant.property_id))
+       const occupiedPropertyIds = new Set(tenantsData.map((tenant: unknown) => tenant.property_id))
        const monthlyExpectedIncome = propertiesData
-         .filter((property: any) => occupiedPropertyIds.has(property.id))
-         .reduce((sum: number, property: any) => {
+         .filter((property: unknown) => occupiedPropertyIds.has(property.id))
+         .reduce((sum: number, property: unknown) => {
            const rentCadence = extractRentCadence(property.notes)
            const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
            return sum + normalizedRent
@@ -331,75 +331,75 @@ export default function ProfitPage() {
 
        // Calculate collected income for the date range (only positive values)
        const collectedIncome = paymentsData
-         .reduce((sum: number, payment: any) => {
+         .reduce((sum: number, payment: unknown) => {
            const positiveAmount = Math.max(0, payment.amount || 0)
            return sum + positiveAmount
          }, 0)
 
        // Calculate collected rent income (only rent payments for collection rate)
        const collectedRentIncome = paymentsData
-         .filter((payment: any) => {
+         .filter((payment: unknown) => {
            const paymentType = payment.payment_type?.toLowerCase() || ''
            return paymentType === 'rent'
          })
-         .reduce((sum: number, payment: any) => {
+         .reduce((sum: number, payment: unknown) => {
            const positiveAmount = Math.max(0, payment.amount || 0)
            return sum + positiveAmount
          }, 0)
 
        // Calculate total payments income/expense for the date range (all values, positive and negative)
        const totalPaymentsIncome = paymentsData
-         .reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0)
+         .reduce((sum: number, payment: unknown) => sum + (payment.amount || 0), 0)
 
        // Calculate expenses by type
        // Calculate total insurance from properties
-       const insurance = propertiesData.reduce((sum: number, property: any) => {
+       const insurance = propertiesData.reduce((sum: number, property: unknown) => {
          return sum + (property.insurance_premium || 0)
        }, 0)
        
        // Calculate total taxes from properties
-       const taxes = propertiesData.reduce((sum: number, property: any) => {
+       const taxes = propertiesData.reduce((sum: number, property: unknown) => {
          return sum + (property.property_tax || 0)
        }, 0)
        
        // Calculate total payments from properties
-       const totalPayments = propertiesData.reduce((sum: number, property: any) => {
+       const totalPayments = propertiesData.reduce((sum: number, property: unknown) => {
          return sum + (property.purchase_payment || 0)
        }, 0)
        
        // Calculate repairs from payments (type "Repairs" not case sensitive)
        const repairs = paymentsData
-         .filter((payment: any) => {
+         .filter((payment: unknown) => {
            const paymentType = payment.payment_type?.toLowerCase() || ''
            return paymentType === 'repairs'
          })
-         .reduce((sum: number, payment: any) => {
+         .reduce((sum: number, payment: unknown) => {
            const amount = Math.abs(payment.amount || 0)
            return sum + amount
          }, 0)
        
        // Calculate other expenses (all negative values that are not repairs)
        const otherExpenses = paymentsData
-         .filter((payment: any) => {
+         .filter((payment: unknown) => {
            const paymentType = payment.payment_type?.toLowerCase() || ''
            const isNegative = (payment.amount || 0) < 0
            const isNotRepair = paymentType !== 'repairs'
            return isNegative && isNotRepair
          })
-         .reduce((sum: number, payment: any) => {
+         .reduce((sum: number, payment: unknown) => {
            const amount = Math.abs(payment.amount || 0)
            return sum + amount
          }, 0)
        
        // Calculate misc income (all positive values that are not rent)
        const miscIncome = paymentsData
-         .filter((payment: any) => {
+         .filter((payment: unknown) => {
            const paymentType = payment.payment_type?.toLowerCase() || ''
            const isPositive = (payment.amount || 0) > 0
            const isNotRent = paymentType !== 'rent'
            return isPositive && isNotRent
          })
-         .reduce((sum: number, payment: any) => {
+         .reduce((sum: number, payment: unknown) => {
            return sum + (payment.amount || 0)
          }, 0)
 
@@ -471,7 +471,7 @@ export default function ProfitPage() {
     }
   }
 
-  const editEntry = (entry: any) => {
+  const editEntry = (entry: unknown) => {
     setEditingEntry(entry)
     setNewEntry({
       type: entry.type,
@@ -585,7 +585,7 @@ export default function ProfitPage() {
     }
   }
 
-  const editPayment = (payment: any) => {
+  const editPayment = (payment: unknown) => {
     // For now, just show a toast message since we need to implement payment editing
     toast('Payment editing functionality will be implemented soon')
   }
@@ -882,7 +882,7 @@ export default function ProfitPage() {
                     </tr>
                   </thead>
                                    <tbody>
-                                         {rentPayments.map((payment: any) => {
+                                         {rentPayments.map((payment: unknown) => {
                        const property = properties.find(p => p.id === payment.property_id)
                        return (
                          <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">

@@ -128,10 +128,10 @@ export async function POST(request: NextRequest) {
     // Generate rent periods using the RPC function
     console.log('Calling rent_generate_periods with lease ID:', lease.id)
     console.log('Supabase client type:', typeof supabase)
-    console.log('RPC method available:', typeof (supabase as any).rpc)
+    console.log('RPC method available:', typeof supabase.rpc)
     
     try {
-      const { data, error: periodsError } = await (supabase as any).rpc('rent_generate_periods', {
+      const { data, error: periodsError } = await supabase.rpc('rent_generate_periods', {
         p_lease_id: lease.id
       })
       

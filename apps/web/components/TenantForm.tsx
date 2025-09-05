@@ -65,7 +65,7 @@ type TenantFormData = z.infer<typeof tenantSchema>
 
 interface TenantFormProps {
   tenant?: Tenant
-  onSuccess: (tenant: any) => void // Use any to avoid type conflicts
+  onSuccess: (tenant: unknown) => void // Use any to avoid type conflicts
   onCancel: () => void
 }
 

@@ -13,10 +13,8 @@ import {
   RefreshCw,
   X,
   Search,
-  Filter,
   SortAsc,
   SortDesc,
-  MoreHorizontal,
   Archive,
   Plus
 } from 'lucide-react'
@@ -339,7 +337,7 @@ export default function LeasesPage() {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let aValue: any, bValue: any
+      let aValue: string | number, bValue: string | number
 
       switch (sortField) {
         case 'tenant':

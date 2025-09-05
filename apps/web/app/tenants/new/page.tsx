@@ -5,7 +5,7 @@ import { TenantsService } from '@rental-app/api'
 import { toast } from 'react-hot-toast'
 
 export default function NewTenantPage() {
-  const handleSuccess = (tenant: any) => {
+  const handleSuccess = (tenant: unknown) => {
     toast.success('Tenant created successfully!')
     // Redirect to tenants list
     window.location.href = '/tenants'

@@ -193,8 +193,8 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
               if (allocationMode === 'auto') {
                 // Auto-allocate to oldest unpaid periods
                 const unpaidPeriods = rentPeriods
-                  .filter((period: any) => period.status !== 'paid')
-                  .sort((a: any, b: any) => new Date(a.period_due_date).getTime() - new Date(b.period_due_date).getTime())
+                  .filter((period: unknown) => period.status !== 'paid')
+                  .sort((a: unknown, b: unknown) => new Date(a.period_due_date).getTime() - new Date(b.period_due_date).getTime())
                 
                 let remainingAmount = parseFloat(amount)
                 for (const period of unpaidPeriods) {
@@ -796,7 +796,7 @@ export default function PaymentsPage() {
   // Generate weekly dates (Fridays) for the grid
   const generateWeeklyDates = (weeks: number = 8) => {
     const dates: Date[] = []
-    let currentDate = new Date()
+    const currentDate = new Date()
     
     // Find the most recent Friday
     while (currentDate.getDay() !== 5) { // 5 = Friday
@@ -1125,7 +1125,7 @@ export default function PaymentsPage() {
     const property = properties.find(p => p.id === propertyId)
     if (!property?.tenants?.[0]?.payment_history) return null
 
-    const tenantPayment = property.tenants[0].payment_history.find((p: any) => {
+    const tenantPayment = property.tenants[0].payment_history.find((p: unknown) => {
       const paymentDate = new Date(p.date)
       return paymentDate >= weekStart && paymentDate <= weekEnd && p.status === 'completed'
     })
@@ -1192,15 +1192,15 @@ export default function PaymentsPage() {
       const paymentDate = new Date(p.payment_date)
       return paymentDate >= monthStart && paymentDate <= monthEnd
     })
-    totalPaid += monthPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+    totalPaid += monthPayments.reduce((sum: number, p: unknown) => sum + p.amount, 0)
 
     // Check tenant payment history
     if (property?.tenants?.[0]?.payment_history) {
-      const tenantPayments = property.tenants[0].payment_history.filter((p: any) => {
+      const tenantPayments = property.tenants[0].payment_history.filter((p: unknown) => {
         const paymentDate = new Date(p.date)
         return paymentDate >= monthStart && paymentDate <= monthEnd && p.status === 'completed'
       })
-      totalPaid += tenantPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+      totalPaid += tenantPayments.reduce((sum: number, p: unknown) => sum + p.amount, 0)
     }
 
     return totalPaid >= monthlyRent

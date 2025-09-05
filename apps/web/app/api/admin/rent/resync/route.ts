@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const asOfDate = body.as_of || new Date().toISOString().split('T')[0]
 
     // Call the resync function
-    const { data, error } = await (supabase as any).rpc('RENT_resync_all', {
+    const { data, error } = await supabase.rpc('RENT_resync_all', {
       p_as_of: asOfDate
     })
 
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     // Process results
     const results = data || []
     const totalPeriods = results.length
-    const overpaidCount = results.filter((r: any) => r.note === 'overpaid').length
-    const totalRemainingDue = results.reduce((sum: number, r: any) => sum + parseFloat(r.remaining_due || 0), 0)
+    const overpaidCount = results.filter((r: { note: string }) => r.note === 'overpaid').length
+    const totalRemainingDue = results.reduce((sum: number, r: { remaining_due?: string }) => sum + parseFloat(r.remaining_due || '0'), 0)
 
     return NextResponse.json({
       success: true,

@@ -25,7 +25,7 @@ export async function POST(
       )
     }
 
-    const { data, error } = await (supabase as any).rpc('RENT_assess_late_fees', {
+    const { data, error } = await supabase.rpc('RENT_assess_late_fees', {
       lease_id: leaseId
     })
 
