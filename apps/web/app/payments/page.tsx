@@ -193,8 +193,8 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
               if (allocationMode === 'auto') {
                 // Auto-allocate to oldest unpaid periods
                 const unpaidPeriods = rentPeriods
-                  .filter((period: unknown) => period.status !== 'paid')
-                  .sort((a: unknown, b: unknown) => new Date(a.period_due_date).getTime() - new Date(b.period_due_date).getTime())
+                  .filter((period: any) => period.status !== 'paid')
+                  .sort((a: any, b: any) => new Date(a.period_due_date).getTime() - new Date(b.period_due_date).getTime())
                 
                 let remainingAmount = parseFloat(amount)
                 for (const period of unpaidPeriods) {
