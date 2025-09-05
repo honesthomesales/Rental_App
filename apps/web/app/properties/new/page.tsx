@@ -26,7 +26,7 @@ export default function NewPropertyPage() {
     purchase_price: undefined,
     purchase_date: '',
     current_value: undefined,
-    monthly_rent: undefined,
+    // monthly_rent removed - rent data comes from RENT_leases
     is_for_sale: false,
     is_for_rent: true,
     insurance_policy_number: '',
@@ -313,19 +313,7 @@ export default function NewPropertyPage() {
             <div className="card-content">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Financial Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="monthly_rent" className="label">Monthly Rent</label>
-                  <input
-                    type="number"
-                    id="monthly_rent"
-                    name="monthly_rent"
-                    value={formData.monthly_rent || ''}
-                    onChange={handleInputChange}
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
+                {/* Monthly Rent removed - rent data comes from RENT_leases */}
                 <div>
                   <label htmlFor="purchase_price" className="label">Purchase Price</label>
                   <input

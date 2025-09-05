@@ -20,7 +20,7 @@ interface Tenant {
   phone?: string;
   lease_start_date?: string;
   lease_end_date?: string;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data comes from RENT_leases
   notes?: string;
   is_active?: boolean;
   created_at?: string;
@@ -42,7 +42,7 @@ interface CreateTenantData {
   last_name: string;
   email?: string;
   phone?: string;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data comes from RENT_leases
   lease_start_date?: string;
   lease_end_date?: string;
   notes?: string;
@@ -51,12 +51,11 @@ interface CreateTenantData {
 interface UpdateTenantData extends CreateTenantData {}
 
 const tenantSchema = z.object({
-  property_id: z.string().nullable().optional(),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email format').optional().or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
-  monthly_rent: z.string().optional().or(z.literal('')), // Tenant's monthly rent amount
+  // monthly_rent removed - rent data comes from RENT_leases
   lease_start_date: z.string().optional().or(z.literal('')), // Tenant's preferred dates
   lease_end_date: z.string().optional().or(z.literal('')), // Tenant's preferred dates
   notes: z.string().optional().or(z.literal(''))
@@ -97,14 +96,17 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
       const activeLease = tenant.leases?.[0]
       console.log('TenantForm: Active lease:', activeLease)
       
+      // Determine property_id: use active lease property if available, otherwise tenant's direct property
+      const propertyId = (activeLease as any)?.property_id || tenant.property_id || undefined
+      console.log('TenantForm: Using property_id:', propertyId)
+      
       reset({
-        property_id: tenant.property_id || undefined,
         first_name: tenant.first_name,
         last_name: tenant.last_name,
         email: tenant.email || undefined,
         phone: tenant.phone || undefined,
-        // Use lease rent if available, otherwise fall back to tenant monthly_rent
-        monthly_rent: activeLease?.rent?.toString() || tenant.monthly_rent?.toString() || undefined,
+        // Use lease rent if available
+        // monthly_rent removed - rent data comes from RENT_leases
         lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
         lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
         notes: tenant.notes || undefined,
@@ -131,10 +133,12 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
     try {
       setLoading(true)
       
-      // Convert monthly_rent from string to number for API
+      // Convert data for API (monthly_rent removed)
       const formData: CreateTenantData = {
         ...data,
-        monthly_rent: data.monthly_rent ? parseFloat(data.monthly_rent) : undefined
+        // monthly_rent removed - rent data comes from RENT_leases
+        // Don't include property_id in form submission - it's managed through leases
+        property_id: undefined
       }
       
       console.log('Form data (ready for API):', formData);
@@ -262,20 +266,7 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Rent
-              </label>
-              <input
-                {...register('monthly_rent')}
-                type="text"
-                className="input"
-                placeholder="Enter monthly rent amount"
-              />
-              {errors.monthly_rent && (
-                <p className="text-sm text-red-600 mt-1">{errors.monthly_rent.message}</p>
-              )}
-            </div>
+            {/* Monthly Rent removed - rent data comes from RENT_leases */}
 
             {/* Property Assignment */}
             <div className="md:col-span-2">
@@ -283,17 +274,21 @@ export function TenantForm({ tenant, onSuccess, onCancel }: TenantFormProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign to Property (Optional)
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Property
               </label>
-              <select {...register('property_id')} className="input" defaultValue={tenant?.property_id || ''}>
-                <option value="">Select a property (optional)</option>
-                {properties.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {property.name} - {property.address}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                {(() => {
+                  // Get property info from active lease or tenant's direct property
+                  const activeLease = tenant?.leases?.[0]
+                  const propertyId = (activeLease as any)?.property_id || tenant?.property_id
+                  const property = properties.find(p => p.id === propertyId)
+                  return property ? `${property.name} - ${property.address}` : 'No property assigned'
+                })()}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Property cannot be changed. Create a new lease to change property.
+              </p>
             </div>
 
             {/* Lease Information */}

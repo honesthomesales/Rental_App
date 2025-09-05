@@ -13,7 +13,7 @@ interface Property {
   state: string
   latitude?: number
   longitude?: number
-  monthly_rent?: number
+  // monthly_rent removed - rent data comes from RENT_leases
   property_type?: string
   status?: string
 }
@@ -69,11 +69,7 @@ export default function ClientOnlyMap({ properties }: ClientOnlyMapProps) {
               <h3 className="font-semibold text-gray-900 mb-1">{property.name}</h3>
               <p className="text-sm text-gray-600 mb-1">{property.address}</p>
               <p className="text-sm text-gray-600 mb-2">{property.city}, {property.state}</p>
-              {property.monthly_rent && (
-                <p className="text-sm font-medium text-green-600">
-                  ${property.monthly_rent.toLocaleString()}/mo
-                </p>
-              )}
+              {/* Rent amount removed - comes from lease data */}
               {property.property_type && (
                 <p className="text-xs text-gray-500 capitalize">
                   {property.property_type}

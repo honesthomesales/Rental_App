@@ -22,7 +22,7 @@ export interface Property {
   purchase_payment?: number;
   purchase_date?: string;
   current_value?: number;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data should come from RENT_leases
   is_for_sale: boolean;
   is_for_rent: boolean;
   insurance_policy_number?: string;

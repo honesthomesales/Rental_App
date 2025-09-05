@@ -7,12 +7,14 @@ import { Plus, Search, Edit, Trash2, Users, Phone, Mail, Calendar, DollarSign } 
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { getActiveLeaseByTenant } from '../../src/lib/rentSource'
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [tenantLeaseInfo, setTenantLeaseInfo] = useState<Record<string, any>>({})
 
   const router = useRouter()
 
@@ -28,6 +30,22 @@ export default function TenantsPage() {
       if (response.success && response.data) {
         console.log('✅ Tenants loaded:', response.data)
         setTenants(response.data)
+        
+        // Load lease info for each tenant if using lease periods
+        if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true') {
+          const leaseInfoPromises = response.data.map(async (tenant) => {
+            const leaseInfo = await getActiveLeaseByTenant(tenant.id)
+            return { tenantId: tenant.id, leaseInfo }
+          })
+          
+          const leaseInfoResults = await Promise.all(leaseInfoPromises)
+          const leaseInfoMap = leaseInfoResults.reduce((acc, { tenantId, leaseInfo }) => {
+            acc[tenantId] = leaseInfo
+            return acc
+          }, {} as Record<string, any>)
+          
+          setTenantLeaseInfo(leaseInfoMap)
+        }
       } else {
         console.error('❌ Failed to load tenants:', response.error)
         toast.error('Failed to load tenants')
@@ -243,15 +261,42 @@ export default function TenantsPage() {
                             <span className="font-medium">Property:</span> {tenant.properties.name}
                           </div>
                         )}
-                        {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent ? (
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
-                          </div>
-                        ) : tenant.monthly_rent ? (
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Rent:</span> ${tenant.monthly_rent.toLocaleString()}/month
-                          </div>
-                        ) : null}
+                        {(() => {
+                          // Use rentSource if enabled, otherwise fall back to existing logic
+                          if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' && tenantLeaseInfo[tenant.id]) {
+                            const leaseInfo = tenantLeaseInfo[tenant.id]
+                            if (leaseInfo) {
+                              return (
+                                <div className="text-sm text-gray-600">
+                                  <span className="font-medium">Rent:</span> ${leaseInfo.rent.toLocaleString()}/{leaseInfo.cadence}
+                                </div>
+                              )
+                            } else {
+                              return (
+                                <div className="text-sm text-gray-500">
+                                  <span className="font-medium">Rent:</span> No active lease
+                                </div>
+                              )
+                            }
+                          } else {
+                            // Fallback to existing logic
+                            if (tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent) {
+                              return (
+                                <div className="text-sm text-gray-600">
+                                  <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/month
+                                </div>
+                              )
+                            } else if (tenant.leases?.[0]?.rent) {
+                              return (
+                                <div className="text-sm text-gray-600">
+                                  <span className="font-medium">Rent:</span> ${tenant.leases[0].rent.toLocaleString()}/{tenant.leases[0].rent_cadence}
+                                </div>
+                              )
+                            } else {
+                              return null
+                            }
+                          }
+                        })()}
                         {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].lease_start_date && (
                           <div className="text-sm text-gray-600">
                             <span className="font-medium">Lease Start:</span> {new Date(tenant.leases[0].lease_start_date).toLocaleDateString()}
@@ -352,11 +397,26 @@ export default function TenantsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">
-                            {tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent
-                              ? `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence || 'month'}` 
-                              : tenant.monthly_rent 
-                                ? `$${tenant.monthly_rent.toLocaleString()}/month`
-                                : 'Not set'}
+                            {(() => {
+                              // Use rentSource if enabled, otherwise fall back to existing logic
+                              if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' && tenantLeaseInfo[tenant.id]) {
+                                const leaseInfo = tenantLeaseInfo[tenant.id]
+                                if (leaseInfo) {
+                                  return `$${leaseInfo.rent.toLocaleString()}/${leaseInfo.cadence}`
+                                } else {
+                                  return 'No active lease'
+                                }
+                              } else {
+                                // Fallback to existing logic
+                                if (tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent) {
+                                  return `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence || 'month'}`
+                                } else if (tenant.leases?.[0]?.rent) {
+                                  return `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence}`
+                                } else {
+                                  return 'Not set'
+                                }
+                              }
+                            })()}
                           </td>
                           <td className="px-4 py-4">
                             {tenant.late_status ? (

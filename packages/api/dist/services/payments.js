@@ -82,7 +82,7 @@ class PaymentsService {
             // Get all properties
             const { data: properties, error: propertiesError } = await supabase
                 .from('RENT_properties')
-                .select('id, name, address, city, state, monthly_rent, notes')
+                .select('id, name, address, city, state, notes')
                 .order('name');
             if (propertiesError) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(propertiesError));
@@ -141,6 +141,28 @@ class PaymentsService {
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
+            // If this is a rent payment, automatically allocate it to rent periods
+            if (paymentData.payment_type?.toLowerCase() === 'rent' && data?.id) {
+                try {
+                    console.log('Auto-allocating rent payment to periods:', data.id);
+                    // Call the RPC function to automatically allocate the payment
+                    const { error: allocationError } = await supabase.rpc('RENT_apply_payment', {
+                        payment_id: data.id
+                    });
+                    if (allocationError) {
+                        console.error('Error auto-allocating payment:', allocationError);
+                        // Don't fail the payment creation if allocation fails
+                        // The payment is still created, just not allocated
+                    }
+                    else {
+                        console.log('Payment successfully auto-allocated to rent periods');
+                    }
+                }
+                catch (allocationError) {
+                    console.error('Error in auto-allocation process:', allocationError);
+                    // Don't fail the payment creation if allocation fails
+                }
+            }
             return (0, client_1.createApiResponse)(data);
         }
         catch (error) {
@@ -163,6 +185,27 @@ class PaymentsService {
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
             }
+            // If this is a rent payment and amount was changed, re-allocate it
+            if (data?.payment_type?.toLowerCase() === 'rent' && updateData.amount !== undefined) {
+                try {
+                    console.log('Re-allocating updated rent payment to periods:', paymentId);
+                    // Call the RPC function to re-allocate the payment
+                    const { error: allocationError } = await supabase.rpc('RENT_apply_payment', {
+                        payment_id: paymentId
+                    });
+                    if (allocationError) {
+                        console.error('Error re-allocating payment:', allocationError);
+                        // Don't fail the payment update if allocation fails
+                    }
+                    else {
+                        console.log('Payment successfully re-allocated to rent periods');
+                    }
+                }
+                catch (allocationError) {
+                    console.error('Error in re-allocation process:', allocationError);
+                    // Don't fail the payment update if allocation fails
+                }
+            }
             return (0, client_1.createApiResponse)(data);
         }
         catch (error) {
@@ -175,12 +218,29 @@ class PaymentsService {
     static async deletePayment(paymentId) {
         try {
             const supabase = (0, client_1.getSupabaseClient)();
+            // First, get the payment to check if it's a rent payment
+            const { data: payment, error: fetchError } = await supabase
+                .from('RENT_payments')
+                .select('payment_type')
+                .eq('id', paymentId)
+                .single();
+            if (fetchError) {
+                return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(fetchError));
+            }
+            // Delete the payment
             const { error } = await supabase
                 .from('RENT_payments')
                 .delete()
                 .eq('id', paymentId);
             if (error) {
                 return (0, client_1.createApiResponse)(null, (0, client_1.handleSupabaseError)(error));
+            }
+            // If this was a rent payment, we should also remove its allocations
+            // Note: This would require a separate RPC function to de-allocate
+            // For now, we'll just log that the payment was deleted
+            if (payment?.payment_type?.toLowerCase() === 'rent') {
+                console.log('Rent payment deleted - allocations may need manual cleanup:', paymentId);
+                // TODO: Implement RENT_deallocate_payment RPC function
             }
             return (0, client_1.createApiResponse)(true);
         }

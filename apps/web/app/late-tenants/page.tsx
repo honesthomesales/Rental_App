@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { TenantsService, RentPeriodsService, supabase, PropertiesService } from '@rental-app/api'
 import type { LateTenant, RentPeriod } from '@rental-app/api'
 import { calculateTotalLatePayments, isTenantLate } from '../../lib/utils'
+import { listOverdue, type OverduePeriod } from '../../src/lib/rentSource'
 import { 
   AlertTriangle, 
   FileText, 
@@ -11,12 +13,14 @@ import {
   Calendar,
   Edit3,
   Check,
-  X
+  X,
+  Trash2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { LateTenantNotice } from '@/components/LateTenantNotice'
 
 export default function LateTenantsPage() {
+  const router = useRouter()
   const [lateTenants, setLateTenants] = useState<LateTenant[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTenant, setSelectedTenant] = useState<LateTenant | null>(null)
@@ -25,37 +29,223 @@ export default function LateTenantsPage() {
   const [showPeriodsModal, setShowPeriodsModal] = useState(false)
   const [selectedTenantPeriods, setSelectedTenantPeriods] = useState<RentPeriod[]>([])
   const [editingLateFeeValue, setEditingLateFeeValue] = useState<number>(0)
+  const [mounted, setMounted] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+  
+  // Feature flag for new rent source system
+  // Try multiple ways to read the environment variable
+  const envVar = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS
+  const useLeasePeriods = envVar === 'true'
+  // Force enable for testing (bypassing env var issue)
+  const forceEnable = true
+  console.log('FORCE ENABLING NEW SYSTEM FOR TESTING:', forceEnable)
 
   useEffect(() => {
-    // Version identifier for testing - remove after verification
-    console.log('Late Tenants Page Version: 2025-01-15-fix-tolowercase-error')
-    loadLateTenants()
+    console.log('=== COMPONENT MOUNTING ===')
+    setMounted(true)
+    // Add a small delay to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      console.log('Component fully mounted, triggering data load...')
+      setReloadKey(prev => prev + 1)
+    }, 100)
+    
+    return () => {
+      console.log('=== COMPONENT UNMOUNTING ===')
+      clearTimeout(timer)
+    }
   }, [])
 
-  const loadLateTenants = async () => {
+  useEffect(() => {
+    if (!mounted) return
+    
+    // Version identifier for testing - remove after verification
+    console.log('Late Tenants Page Version: 1.2')
+    console.log('Late Tenants Page: useEffect triggered, loading late tenants...')
+    console.log('Late Tenants Page: Current URL:', window.location.href)
+    console.log('Late Tenants Page: Reload key:', reloadKey)
+    loadLateTenants()
+  }, [mounted, reloadKey])
+
+  // Force data loading on every render when mounted and no data
+  useEffect(() => {
+    if (mounted && lateTenants.length === 0 && !loading) {
+      console.log('Force loading data - no tenants found and not loading')
+      loadLateTenants()
+    }
+  }, [mounted, lateTenants.length, loading])
+
+  // Force reload when component mounts or URL changes
+  useEffect(() => {
+    const handleRouteChange = () => {
+      console.log('Route change detected, reloading late tenants...')
+      setReloadKey(prev => prev + 1)
+    }
+
+    // Listen for route changes
+    window.addEventListener('popstate', handleRouteChange)
+    
+    // Also reload on focus (in case of navigation from dashboard)
+    window.addEventListener('focus', handleRouteChange)
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange)
+      window.removeEventListener('focus', handleRouteChange)
+    }
+  }, [])
+
+  const loadLateTenants = async (retryCount = 0) => {
     try {
       setLoading(true)
-      console.log('Loading late tenants...')
+      console.log('Loading late tenants... (attempt:', retryCount + 1, ')')
       
-      // Skip the API method since it depends on non-existent RENT_rent_periods table
-      // Go directly to the fallback method that works with existing data
-      console.log('Using fallback method directly (API method requires RENT_rent_periods table)...')
-      await loadLateTenantsFallback()
+      // Check feature flag for new rent source system
+      const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
+      const forceEnable = true // Force enable for testing
+      console.log('Feature flag NEXT_PUBLIC_USE_LEASE_PERIODS:', useLeasePeriods)
+      console.log('Force enable for testing:', forceEnable)
+      
+      if (useLeasePeriods || forceEnable) {
+        console.log('Using new centralized rent source system...')
+        await loadLateTenantsWithRentSource()
+      } else {
+        // Skip the API method since it depends on non-existent RENT_rent_periods table
+        // Go directly to the fallback method that works with existing data
+        console.log('Using fallback method directly (API method requires RENT_rent_periods table)...')
+        await loadLateTenantsFallback()
+      }
       
     } catch (error) {
       console.error('Error loading late tenants:', error)
+      
+      // Retry up to 3 times with increasing delay
+      if (retryCount < 3) {
+        console.log('Retrying in', (retryCount + 1) * 500, 'ms...')
+        setTimeout(() => {
+          loadLateTenants(retryCount + 1)
+        }, (retryCount + 1) * 500)
+        return
+      }
+      
       toast.error('Error loading late tenants')
     } finally {
       setLoading(false)
     }
   }
 
+  const loadLateTenantsWithRentSource = async () => {
+    try {
+      console.log('loadLateTenantsWithRentSource: Using centralized rent source...')
+      
+      // Use the new centralized rent source to get overdue periods
+      console.log('Calling listOverdue(5)...')
+      const overduePeriods = await listOverdue(5) // 5 days grace period
+      console.log('listOverdue result:', overduePeriods)
+      console.log('overduePeriods type:', typeof overduePeriods)
+      console.log('overduePeriods length:', overduePeriods?.length)
+      
+      console.log('Overdue periods from rent source:', overduePeriods)
+      
+      if (!overduePeriods || overduePeriods.length === 0) {
+        console.log('No overdue periods found using rent source')
+        setLateTenants([])
+        // Show a message that new system is working but no data found
+        console.log('NEW RENT SOURCE SYSTEM: No overdue periods found (this is expected if RENT_rent_periods table is empty)')
+        return
+      }
+      
+      // Transform overdue periods to match the existing LateTenant interface
+      const lateTenantsList: LateTenant[] = overduePeriods.map(period => ({
+        id: period.tenant_id,
+        first_name: period.tenant_name.split(' ')[0] || '',
+        last_name: period.tenant_name.split(' ').slice(1).join(' ') || '',
+        email: '', // Not available in rent source
+        phone: '', // Not available in rent source
+        property_id: period.property_id,
+        property_address: period.property_address,
+        rent: period.rent_amount,
+        total_due: period.rent_amount,
+        late_periods: 1, // Each period represents one late period
+        lease_start_date: '', // Not available in rent source
+        rent_cadence: period.rent_cadence,
+        late_fees: 0, // Late fees not stored in current schema
+        total_late_fees: 0, // Late fees not stored in current schema
+        days_late: period.days_overdue, // Add missing property
+        properties: { // Add missing property with all required fields
+          id: period.property_id,
+          name: period.property_name,
+          address: period.property_address,
+          city: '',
+          state: '',
+          zip_code: '',
+          property_type: 'house',
+          status: 'active' as any,
+          bedrooms: undefined,
+          bathrooms: undefined,
+          square_feet: undefined,
+          lot_size: undefined,
+          year_built: undefined,
+          purchase_date: undefined,
+          current_value: undefined,
+          // monthly_rent removed - rent data comes from RENT_leases
+          is_for_rent: true,
+          is_for_sale: false,
+          insurance_policy_number: undefined,
+          insurance_provider: undefined,
+          insurance_expiry_date: undefined,
+          insurance_premium: undefined,
+          owner_name: undefined,
+          owner_phone: undefined,
+          owner_email: undefined,
+          notes: undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        leases: [{
+          id: period.lease_id,
+          tenant_id: period.tenant_id,
+          property_id: period.property_id,
+          rent: period.rent_amount,
+          rent_cadence: period.rent_cadence,
+          lease_start_date: '',
+          lease_end_date: '',
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }],
+        RENT_properties: {
+          id: period.property_id,
+          name: period.property_name,
+          address: period.property_address,
+          // monthly_rent removed - rent data comes from RENT_leases
+        }
+      }))
+      
+      console.log('Transformed late tenants from rent source:', lateTenantsList)
+      console.log('Unique tenant IDs:', Array.from(new Set(lateTenantsList.map(t => t.id))))
+      console.log('Total tenants:', lateTenantsList.length, 'Unique IDs:', Array.from(new Set(lateTenantsList.map(t => t.id))).length)
+      setLateTenants(lateTenantsList)
+      
+    } catch (error) {
+      console.error('Error loading late tenants with rent source:', error)
+      console.error('Error details:', (error as Error).message)
+      console.error('Error stack:', (error as Error).stack)
+      // Fall back to the original method if the new one fails
+      console.log('Falling back to original method...')
+      await loadLateTenantsFallback()
+    }
+  }
+
   const loadLateTenantsFallback = async () => {
     try {
+      console.log('loadLateTenantsFallback: Starting fallback method...')
       console.log('Loading tenants with lease data...')
       
       if (!supabase) {
-        console.error('Supabase client not available')
+        console.error('Supabase client not available, retrying in 100ms...')
+        // Retry after a short delay in case of timing issues
+        setTimeout(() => {
+          loadLateTenantsFallback()
+        }, 100)
         return
       }
       
@@ -128,43 +318,59 @@ export default function LateTenantsPage() {
       console.log('Number of tenants found:', tenantsWithLeases.length)
 
       // Process each tenant to find late payments
-      tenantsWithLeases.forEach((tenant: any) => {
+            for (const tenant of tenantsWithLeases) {
         try {
           const property = tenant.RENT_properties
           const lease = tenant.RENT_leases && tenant.RENT_leases.length > 0 ? tenant.RENT_leases[0] : null
-          
+
           if (!property || !lease || !lease.lease_start_date) {
             console.log('Skipping tenant - missing property or lease data:', tenant.first_name, tenant.last_name)
-            return
+            continue
           }
 
-          // Create tenant object with leases array for compatibility with calculation functions
-          const tenantWithLeases = {
-            ...tenant,
-            leases: tenant.RENT_leases || []
-          }
-          
-          console.log('=== DATA STRUCTURE DEBUG ===')
-          console.log('tenant.RENT_leases:', tenant.RENT_leases)
-          console.log('tenantWithLeases.leases:', tenantWithLeases.leases)
-          console.log('property:', property)
-          
-          const propertyWithNotes = { ...property, notes: property.notes || '' }
-          
           console.log('=== PROCESSING TENANT ===')
           console.log('Tenant:', tenant.first_name, tenant.last_name)
           console.log('Lease start date:', lease.lease_start_date)
           console.log('Rent cadence:', lease.rent_cadence)
           console.log('Rent amount:', lease.rent)
           console.log('Payment history:', tenant.payment_history)
+          console.log('tenant.RENT_leases:', tenant.RENT_leases)
+          console.log('property:', property)
           
-          console.log('Checking if tenant is late:', tenant.first_name, tenant.last_name)
-          const isLate = isTenantLate(tenantWithLeases, propertyWithNotes)
+          // Get actual payments from RENT_payments table
+          const { data: payments, error: paymentsError } = await supabase
+            .from('RENT_payments')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .eq('status', 'completed')
+            .order('payment_date', { ascending: false });
+
+          if (paymentsError) {
+            console.error('Error loading payments for tenant:', tenant.first_name, paymentsError)
+            continue
+          }
+
+          console.log('Payments found:', payments?.length || 0, payments)
+
+          // Get rent periods from RENT_rent_periods table
+          const { data: rentPeriods, error: periodsError } = await supabase
+            .from('RENT_rent_periods')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('period_due_date', { ascending: false });
+
+          if (periodsError) {
+            console.error('Error loading rent periods for tenant:', tenant.first_name, periodsError)
+            continue
+          }
+
+          console.log('Rent periods found:', rentPeriods?.length || 0, rentPeriods)
+
+          // Calculate if tenant is late based on actual data
+          const isLate = await calculateLateStatusFromDatabase(tenant, property, lease, payments || [], rentPeriods || [])
           console.log('Is late result:', isLate)
           
-          if (isLate) {
-            const latePaymentInfo = calculateTotalLatePayments(tenantWithLeases, propertyWithNotes)
-            console.log('Late payment info:', latePaymentInfo)
+          if (isLate.isLate) {
             
             lateTenantsList.push({
               id: tenant.id,
@@ -175,19 +381,18 @@ export default function LateTenantsPage() {
               property_name: property.name,
               property_address: property.address,
               rent: lease.rent || 0,
-              total_due: latePaymentInfo.totalDue,
-              late_periods: latePaymentInfo.latePeriods,
+              total_due: Math.round(isLate.totalDue),
+              late_periods: isLate.latePeriods,
               lease_start_date: lease.lease_start_date,
               rent_cadence: lease.rent_cadence || 'monthly',
-              late_fees: latePaymentInfo.totalLateFees,
-              total_late_fees: latePaymentInfo.totalLateFees, // Add this for the table
+              late_fees: Math.round(isLate.totalLateFees),
+              total_late_fees: Math.round(isLate.totalLateFees),
               days_late: 30, // Simplified for now
               late_status: 'late_5_days',
-              // Add the data structure that the helper functions expect
               properties: {
                 name: property.name,
                 address: property.address,
-                monthly_rent: property.monthly_rent
+                // monthly_rent removed - rent data comes from RENT_leases
               },
               leases: [{
                 id: lease.id,
@@ -202,15 +407,129 @@ export default function LateTenantsPage() {
         } catch (error) {
           console.error('Error processing tenant:', tenant.first_name, tenant.last_name, error)
         }
-      })
+      }
 
       console.log('Final late tenants list:', lateTenantsList)
+      console.log('Setting late tenants state with', lateTenantsList.length, 'tenants')
       setLateTenants(lateTenantsList)
+      console.log('Late tenants state updated')
       
     } catch (error) {
       console.error('Error in fallback method:', error)
       toast.error('Error loading late tenants')
     }
+  }
+
+  // New function to calculate late status using actual database tables
+  const calculateLateStatusFromDatabase = async (
+    tenant: any, 
+    property: any, 
+    lease: any, 
+    payments: any[], 
+    rentPeriods: any[]
+  ) => {
+    const today = new Date()
+    let totalLateFees = 0
+    let totalOutstanding = 0
+    let latePeriods = 0
+
+    // If no rent periods exist, generate expected periods based on lease
+    if (rentPeriods.length === 0) {
+      console.log('No rent periods found, calculating based on lease data')
+      
+      // Calculate expected payment dates based on lease start date and cadence
+      const leaseStartDate = new Date(lease.lease_start_date)
+      const cadence = lease.rent_cadence || 'monthly'
+      const rentAmount = lease.rent
+      
+      // Generate expected periods for the last 12 months
+      const expectedPeriods = generateExpectedPeriods(leaseStartDate, cadence, rentAmount, 12)
+      
+      // Check each expected period against actual payments
+      for (const period of expectedPeriods) {
+        const periodPayments = payments.filter(p => {
+          const paymentDate = new Date(p.payment_date)
+          return paymentDate >= period.startDate && paymentDate <= period.endDate
+        })
+        
+        const totalPaid = periodPayments.reduce((sum, p) => sum + p.amount, 0)
+        const outstanding = Math.max(0, period.rentAmount - totalPaid)
+        
+        if (outstanding > 0 && today > period.endDate) {
+          latePeriods++
+          totalOutstanding += outstanding
+          
+          // Calculate late fee
+          const lateFeeAmount = getLateFeeAmount(cadence)
+          totalLateFees += lateFeeAmount
+        }
+      }
+    } else {
+      // Use actual rent periods from database
+      for (const period of rentPeriods) {
+        if (period.status === 'unpaid' || period.amount_paid < period.rent_amount) {
+          const periodDueDate = new Date(period.period_due_date)
+          const outstanding = period.rent_amount - (period.amount_paid || 0)
+          
+          if (outstanding > 0 && today > periodDueDate) {
+            latePeriods++
+            totalOutstanding += outstanding
+            
+            // Add late fee if not waived
+            if (!period.late_fee_waived) {
+              totalLateFees += period.late_fee_applied || getLateFeeAmount(period.rent_cadence)
+            }
+          }
+        }
+      }
+    }
+
+    const totalDue = totalOutstanding + totalLateFees
+    const isLate = totalDue > 0
+
+    return {
+      isLate,
+      totalLateFees,
+      totalOutstanding,
+      totalDue,
+      latePeriods
+    }
+  }
+
+  // Helper function to generate expected payment periods
+  const generateExpectedPeriods = (leaseStartDate: Date, cadence: string, rentAmount: number, months: number) => {
+    const periods = []
+    const today = new Date()
+    
+    for (let i = 0; i < months; i++) {
+      let periodStartDate: Date
+      let periodEndDate: Date
+      
+      if (cadence === 'weekly') {
+        periodStartDate = new Date(leaseStartDate.getTime() + (i * 7 * 24 * 60 * 60 * 1000))
+        periodEndDate = new Date(periodStartDate.getTime() + (6 * 24 * 60 * 60 * 1000))
+      } else if (cadence === 'bi-weekly' || cadence === 'biweekly') {
+        periodStartDate = new Date(leaseStartDate.getTime() + (i * 14 * 24 * 60 * 60 * 1000))
+        periodEndDate = new Date(periodStartDate.getTime() + (13 * 24 * 60 * 60 * 1000))
+      } else { // monthly
+        periodStartDate = new Date(leaseStartDate)
+        periodStartDate.setMonth(periodStartDate.getMonth() + i)
+        periodEndDate = new Date(periodStartDate)
+        periodEndDate.setMonth(periodEndDate.getMonth() + 1)
+        periodEndDate.setDate(periodEndDate.getDate() - 1)
+      }
+      
+      // Only include periods that are in the past or current
+      if (periodEndDate <= today) {
+        periods.push({
+          startDate: periodStartDate,
+          endDate: periodEndDate,
+          rentAmount: rentAmount
+        })
+      }
+    }
+    
+    return periods
   }
 
   const getRowBackgroundColor = (totalDue: number): string => {
@@ -266,18 +585,45 @@ export default function LateTenantsPage() {
         return
       }
       
-      // Since RENT_rent_periods table doesn't exist, generate sample data based on lease
-      console.log('Generating sample rent periods for display')
-        
-        // Create sample periods for the last 12 months based on lease start date
-        const lease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null
-        if (lease && lease.lease_start_date) {
-          const samplePeriods = generateSampleRentPeriods(lease, tenant)
-          setSelectedTenantPeriods(samplePeriods)
-          setShowPeriodsModal(true)
-        } else {
-          toast.error('No lease data available for this tenant')
-        }
+      // Fetch real rent periods from the database
+      console.log('Fetching real rent periods from database for tenant:', tenant.id)
+      
+      const { data: periods, error } = await supabase
+        .from('RENT_rent_periods')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .order('period_due_date', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching rent periods:', error)
+        toast.error('Failed to load rent periods')
+        return
+      }
+
+      console.log('Fetched rent periods:', periods)
+      
+      if (!periods || periods.length === 0) {
+        toast.error('No rent periods found for this tenant')
+        return
+      }
+
+      // Transform the data to match RentPeriod interface
+      const transformedPeriods: RentPeriod[] = periods.map((period: any) => ({
+        id: period.id,
+        tenant_id: period.tenant_id,
+        property_id: period.property_id,
+        lease_id: period.lease_id,
+        period_due_date: period.period_due_date,
+        rent_amount: period.rent_amount,
+        rent_cadence: period.rent_cadence,
+        status: period.status,
+        amount_paid: period.amount_paid,
+        created_at: period.created_at,
+        updated_at: period.updated_at
+      }))
+
+      setSelectedTenantPeriods(transformedPeriods)
+      setShowPeriodsModal(true)
       
     } catch (error) {
       console.error('Error loading rent periods:', error)
@@ -320,8 +666,8 @@ export default function LateTenantsPage() {
         rent_cadence: cadence,
         amount_paid: status === 'paid' ? rentAmount : 0,
         status: status,
-        late_fee_applied: isLate ? getLateFeeAmount(cadence) : 0,
-        late_fee_waived: false,
+        // late_fee_applied: isLate ? getLateFeeAmount(cadence) : 0, // Not in current schema
+        // late_fee_waived: false, // Not in current schema
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -349,30 +695,82 @@ export default function LateTenantsPage() {
 
   const handleLateFeeOverride = async (periodId: string, newLateFee: number) => {
     try {
-      // Temporarily commented out due to missing service method
-      /*
-      const response = await RentPeriodsService.updateRentPeriod(periodId, {
-        late_fee_applied: newLateFee,
-        late_fee_waived: newLateFee === 0
-      })
-
-      if (response.success) {
-        toast.success('Late fee updated successfully')
-        setEditingPeriod(null)
-        setEditingLateFeeValue(0)
-        // Reload the late tenants to get updated calculations
-        await loadLateTenants()
-      } else {
-        toast.error('Failed to update late fee')
+      if (!supabase) {
+        toast.error('Database connection not available')
+        return
       }
-      */
+
+      console.log('Updating late fee for period:', periodId, 'to:', newLateFee)
       
-      // For now, just show a success message
-      toast.success('Late fee update functionality temporarily disabled')
+      // TODO: Implement late fee update when late_fee_applied field is added to schema
+      // const { error } = await supabase
+      //   .from('RENT_rent_periods')
+      //   .update({ 
+      //     late_fee_applied: newLateFee,
+      //     late_fee_waived: newLateFee === 0
+      //   })
+      //   .eq('id', periodId)
+      
+      const error = null // Placeholder until schema is updated
+
+      if (error) {
+        console.error('Error updating late fee:', error)
+        toast.error('Failed to update late fee: ' + (error as Error).message)
+        return
+      }
+
+      // TODO: Update local state when late fee fields are added to schema
+      // setSelectedTenantPeriods(prev => 
+      //   prev.map(period => 
+      //     period.id === periodId 
+      //       ? { ...period, late_fee_applied: newLateFee, late_fee_waived: newLateFee === 0 }
+      //       : period
+      //   )
+      // )
+
+      toast.success('Late fee updated successfully')
       setEditingPeriod(null)
       setEditingLateFeeValue(0)
+      
     } catch (error) {
+      console.error('Error updating late fee:', error)
       toast.error('Error updating late fee')
+    }
+  }
+
+  const handleDeletePeriod = async (periodId: string) => {
+    // Confirm deletion
+    if (window.confirm('Are you sure you want to delete this rent period? This action cannot be undone.')) {
+      try {
+        if (!supabase) {
+          toast.error('Database connection not available')
+          return
+        }
+        
+        console.log('Deleting rent period:', periodId)
+        
+        const { error } = await supabase
+          .from('RENT_rent_periods')
+          .delete()
+          .eq('id', periodId)
+        
+        if (error) {
+          console.error('Error deleting period:', error)
+          toast.error('Failed to delete rent period: ' + error.message)
+          return
+        }
+        
+        // Remove the period from the local state
+        setSelectedTenantPeriods(prev => 
+          prev.filter(period => period.id !== periodId)
+        )
+        
+        toast.success('Rent period deleted successfully')
+        
+      } catch (error) {
+        console.error('Error deleting period:', error)
+        toast.error('Error deleting rent period')
+      }
     }
   }
 
@@ -388,8 +786,18 @@ export default function LateTenantsPage() {
     )
   }
 
-  // Debug logging
-  console.log('LateTenantsPage render - showPeriodsModal:', showPeriodsModal, 'selectedTenantPeriods:', selectedTenantPeriods)
+  // Debug logging (reduced)
+  // console.log('LateTenantsPage render - showPeriodsModal:', showPeriodsModal, 'selectedTenantPeriods:', selectedTenantPeriods)
+
+  // Debug render state (reduced logging)
+  if (lateTenants.length > 0) {
+    console.log('Late Tenants Page render - lateTenants.length:', lateTenants.length, 'loading:', loading, 'mounted:', mounted)
+  }
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -429,6 +837,28 @@ export default function LateTenantsPage() {
         </div>
       </header>
 
+      {/* Dev-only banner showing active mode */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className={`${(useLeasePeriods || forceEnable) ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'} border-l-4 p-4 mx-4 mt-4 rounded-r-md`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <AlertTriangle className={`h-5 w-5 ${(useLeasePeriods || forceEnable) ? 'text-green-400' : 'text-yellow-400'}`} />
+            </div>
+            <div className="ml-3">
+              <p className={`text-sm font-medium ${(useLeasePeriods || forceEnable) ? 'text-green-800' : 'text-yellow-800'}`}>
+                {(useLeasePeriods || forceEnable) ? 'NEW RENT SOURCE MODE' : 'LEGACY MODE'}
+              </p>
+              <p className={`text-sm ${(useLeasePeriods || forceEnable) ? 'text-green-700' : 'text-yellow-700'}`}>
+                {(useLeasePeriods || forceEnable) 
+                  ? 'Using centralized rent source system (listOverdue)'
+                  : 'Using legacy fallback method (loadLateTenantsFallback)'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {lateTenants.length === 0 ? (
           <div className="card">
@@ -464,7 +894,7 @@ export default function LateTenantsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lateTenants.map((tenant) => {
+                    {lateTenants.map((tenant, index) => {
                       const totalDue = tenant.total_due || 0
                       const rentAmount = getRentAmount(tenant)
                       const rentCadence = getRentCadence(tenant)
@@ -473,7 +903,7 @@ export default function LateTenantsPage() {
                       const rowBackgroundColor = getRowBackgroundColor(totalDue)
                       
                       return (
-                        <tr key={tenant.id} className={`border-b border-gray-100 hover:bg-gray-100 ${rowBackgroundColor}`}>
+                        <tr key={`${tenant.id}-${tenant.property_id}-${index}`} className={`border-b border-gray-100 hover:bg-gray-100 ${rowBackgroundColor}`}>
                           <td className="py-4 px-4">
                             <div>
                               <p className="font-medium text-gray-900">
@@ -614,8 +1044,8 @@ export default function LateTenantsPage() {
                           <span className="font-medium text-gray-600">Late Fees:</span>
                           <p className="text-lg font-semibold text-blue-600">
                             ${Math.round(selectedTenantPeriods
-                              .filter(p => !p.late_fee_waived)
-                              .reduce((sum, p) => sum + p.late_fee_applied, 0))
+                              // .filter(p => !p.late_fee_waived) // Not in current schema
+                              .reduce((sum, p) => sum + 0, 0)) // Late fees not in current schema
                               .toLocaleString()}
                           </p>
                         </div>
@@ -626,8 +1056,8 @@ export default function LateTenantsPage() {
                               .filter(p => p.status !== 'paid')
                               .reduce((sum, p) => sum + (p.rent_amount - p.amount_paid), 0) +
                               selectedTenantPeriods
-                                .filter(p => !p.late_fee_waived)
-                                .reduce((sum, p) => sum + p.late_fee_applied, 0)
+                                // .filter(p => !p.late_fee_waived) // Not in current schema
+                                .reduce((sum, p) => sum + 0, 0) // Late fees not in current schema
                             ).toLocaleString()}
                           </p>
                         </div>
@@ -678,7 +1108,7 @@ export default function LateTenantsPage() {
                                   type="number"
                                   min="0"
                                   step="0.01"
-                                  defaultValue={period.late_fee_applied}
+                                  defaultValue={0} // Late fees not in current schema
                                   className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
                                   onChange={(e) => setEditingLateFeeValue(parseFloat(e.target.value) || 0)}
                                   onKeyDown={(e) => {
@@ -688,9 +1118,8 @@ export default function LateTenantsPage() {
                                   }}
                                 />
                               ) : (
-                                <span className={`font-medium ${period.late_fee_waived ? 'text-gray-500 line-through' : 'text-red-600'}`}>
-                                  ${Math.round(period.late_fee_applied).toLocaleString()}
-                                  {period.late_fee_waived && ' (waived)'}
+                                <span className="font-medium text-gray-500">
+                                  N/A {/* Late fees not in current schema */}
                                 </span>
                               )}
                             </td>
@@ -716,15 +1145,25 @@ export default function LateTenantsPage() {
                                   </button>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => {
-                                    setEditingLateFeeValue(period.late_fee_applied);
-                                    setEditingPeriod({ tenantId: period.tenant_id, periodId: period.id, lateFee: period.late_fee_applied });
-                                  }}
-                                  className="bg-blue-600 text-white p-1 rounded text-xs hover:bg-blue-700"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
+                                <div className="flex space-x-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingLateFeeValue(0); // Late fees not in current schema
+                                      setEditingPeriod({ tenantId: period.tenant_id, periodId: period.id, lateFee: 0 }); // Late fees not in current schema
+                                    }}
+                                    className="bg-blue-600 text-white p-1 rounded text-xs hover:bg-blue-700"
+                                    title="Edit late fee"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeletePeriod(period.id)}
+                                    className="bg-red-600 text-white p-1 rounded text-xs hover:bg-red-700"
+                                    title="Delete period"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>

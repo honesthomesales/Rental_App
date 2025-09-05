@@ -25,7 +25,7 @@ interface Property {
   purchase_price: number | null
   purchase_date: string | null
   current_value: number | null
-  monthly_rent: number | null
+  // monthly_rent removed - rent data comes from RENT_leases
   is_for_rent: boolean
   is_for_sale: boolean
   insurance_policy_number: string | null
@@ -82,6 +82,13 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
   
+  // Feature flag for new rent source system
+  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' || true // Temporarily hardcoded for testing
+  
+  // Debug logging
+  console.log('Dashboard - NEXT_PUBLIC_USE_LEASE_PERIODS:', process.env.NEXT_PUBLIC_USE_LEASE_PERIODS)
+  console.log('Dashboard - useLeasePeriods:', useLeasePeriods)
+  
   // Sorting state
   const [sortField, setSortField] = useState<'name' | 'address' | 'type' | 'status' | 'rent'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -92,12 +99,80 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (mounted) {
-      loadDashboardData()
+      if (useLeasePeriods) {
+        loadDashboardDataFromViews()
+      } else {
+        loadDashboardDataOriginal()
+      }
     }
-  }, [mounted])
+  }, [mounted, useLeasePeriods])
 
-  // Memoize the loadDashboardData function to prevent unnecessary re-renders
-  const loadDashboardData = useCallback(async () => {
+  // Load data from new views when feature flag is enabled
+  const loadDashboardDataFromViews = useCallback(async () => {
+    try {
+      setLoading(true)
+      
+      // Import supabase client
+      const { supabase } = await import('@rental-app/api')
+      
+      if (!supabase) {
+        console.error('Supabase client not available')
+        return
+      }
+      
+      // Load data from new views in parallel
+      const [expectedData, collectedData, propertiesResponse, tenantsResponse] = await Promise.all([
+        (supabase as any).from('RENT_expected_by_month').select('*'),
+        (supabase as any).from('RENT_collected_by_month').select('*'),
+        PropertiesService.getAll(),
+        TenantsService.getAll()
+      ])
+      
+      const propertiesData = propertiesResponse.data
+      const tenantsData = tenantsResponse.data
+      
+      if (propertiesData) {
+        const convertedProperties = propertiesData.map(property => ({
+          ...property,
+          bedrooms: property.bedrooms ?? null,
+          bathrooms: property.bathrooms ?? null,
+          square_feet: property.square_feet ?? null,
+          year_built: property.year_built ?? null,
+          purchase_price: property.purchase_price ?? null,
+          purchase_date: property.purchase_date ?? null,
+          current_value: property.current_value ?? null,
+          // monthly_rent removed - rent data comes from RENT_leases
+          insurance_policy_number: property.insurance_policy_number ?? null,
+          insurance_provider: property.insurance_provider ?? null,
+          insurance_expiry_date: property.insurance_expiry_date ?? null,
+          insurance_premium: property.insurance_premium ?? null,
+          owner_name: property.owner_name ?? null,
+          owner_phone: property.owner_phone ?? null,
+          owner_email: property.owner_email ?? null,
+          notes: property.notes ?? null
+        }))
+        setProperties(convertedProperties)
+        
+        // Calculate stats using new view data
+        const calculatedStats = calculateDashboardStatsFromViews(
+          convertedProperties, 
+          tenantsData || [],
+          expectedData.data || [],
+          collectedData.data || []
+        )
+        setStats(calculatedStats)
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data from views:', error)
+      // Fall back to original method
+      await loadDashboardDataOriginal()
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Original data loading method (fallback)
+  const loadDashboardDataOriginal = useCallback(async () => {
     try {
       setLoading(true)
   
@@ -121,7 +196,7 @@ export default function Dashboard() {
           purchase_price: property.purchase_price ?? null,
           purchase_date: property.purchase_date ?? null,
           current_value: property.current_value ?? null,
-          monthly_rent: property.monthly_rent ?? null,
+          // monthly_rent removed - rent data comes from RENT_leases
           insurance_policy_number: property.insurance_policy_number ?? null,
           insurance_provider: property.insurance_provider ?? null,
           insurance_expiry_date: property.insurance_expiry_date ?? null,
@@ -145,12 +220,109 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Memoize expensive calculations
+  // Calculate stats using new view data
+  const calculateDashboardStatsFromViews = useCallback((
+    propertiesData: Property[], 
+    tenantsData: any[], 
+    expectedData: any[], 
+    collectedData: any[]
+  ): DashboardStats => {
+    // Calculate basic stats
+    const totalRent = propertiesData.reduce((sum, property) => {
+      const rentCadence = extractRentCadence(property.notes || undefined)
+      const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+      return sum + normalizedRent
+    }, 0)
+    
+    // Calculate property type breakdown
+    const typeBreakdown = propertiesData.reduce((acc, property) => {
+      const type = property.property_type || 'house'
+      acc[type] = (acc[type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    // Count occupied properties
+    let occupiedCount = 0
+    if (propertiesData && propertiesData.length > 0) {
+      occupiedCount = propertiesData.filter(property => property.status === 'rented').length
+    }
+    
+    // Calculate monthly income from collected data
+    const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
+    const currentMonthCollected = collectedData.find((item: any) => 
+      item.month.startsWith(currentMonth)
+    )
+    const monthlyIncome = currentMonthCollected ? 
+      (currentMonthCollected.collected_rent || 0) + (currentMonthCollected.collected_late_fees || 0) : 0
+    
+    // Calculate expected vs collected for current month
+    const currentMonthExpected = expectedData.find((item: any) => 
+      item.month.startsWith(currentMonth)
+    )
+    const expectedRent = currentMonthExpected ? 
+      (currentMonthExpected.expected_rent || 0) + (currentMonthExpected.expected_late_fees || 0) : 0
+    
+    // Calculate outstanding balances (expected - collected)
+    const outstandingBalances = expectedRent - monthlyIncome
+    
+    // Calculate late tenants count using new system
+    let lateTenantsCount = 0
+    if (tenantsData && tenantsData.length > 0) {
+      // This will be improved when we have proper period data
+      lateTenantsCount = tenantsData.filter((tenant: any) => {
+        try {
+          const property = propertiesData.find((p: any) => p.id === tenant.property_id)
+          if (!property || !tenant.leases || tenant.leases.length === 0) {
+            return false
+          }
+          
+          const lease = tenant.leases[0]
+          const leaseStartDate = new Date(lease.lease_start_date)
+          const today = new Date()
+          const daysSinceStart = Math.floor((today.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          if (daysSinceStart > 30) {
+            const paymentHistory = tenant.payment_history || []
+            const recentPayments = paymentHistory.filter((p: any) => {
+              const paymentDate = new Date(p.date)
+              const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
+              return daysSincePayment <= 30
+            })
+            return recentPayments.length === 0
+          }
+          return false
+        } catch (error) {
+          console.error('Error checking tenant lateness:', error)
+          return false
+        }
+      }).length
+    }
+    
+    return {
+      total_properties: propertiesData.length,
+      total_tenants: occupiedCount,
+      outstanding_balances: Math.max(0, outstandingBalances),
+      monthly_income: monthlyIncome,
+      monthly_expenses: 0, // TODO: Calculate from expenses data
+      profit: monthlyIncome - 0, // TODO: Subtract expenses
+      total_bank_balance: 0, // TODO: Calculate from bank data
+      late_tenants_count: lateTenantsCount,
+      property_type_breakdown: {
+        house: typeBreakdown.house || 0,
+        singlewide: typeBreakdown.singlewide || 0,
+        doublewide: typeBreakdown.doublewide || 0,
+        land: typeBreakdown.land || 0,
+        loan: typeBreakdown.loan || 0
+      }
+    }
+  }, [])
+
+  // Memoize expensive calculations (original method)
   const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: any[]): DashboardStats => {
     // Calculate basic stats with normalized rent amounts
     const totalRent = propertiesData.reduce((sum, property) => {
       const rentCadence = extractRentCadence(property.notes || undefined)
-      const normalizedRent = normalizeRentToMonthly(property.monthly_rent || 0, rentCadence)
+      const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
       return sum + normalizedRent
     }, 0)
     
@@ -172,8 +344,8 @@ export default function Dashboard() {
     let totalOutstanding = 0
     
     if (tenantsData && tenantsData.length > 0) {
-
-      
+      // For now, use a simple calculation based on lease data
+      // This will be improved when we have proper payment data
       lateTenantsCount = tenantsData.filter((tenant: any) => {
         try {
           // Find the property for this tenant
@@ -183,8 +355,26 @@ export default function Dashboard() {
             return false
           }
           
-          // Use the new late payment calculation system
-          return isTenantLate(tenant, property)
+          const lease = tenant.leases[0]
+          const leaseStartDate = new Date(lease.lease_start_date)
+          const today = new Date()
+          
+          // Simple check: if lease started more than 30 days ago and no recent payments
+          const daysSinceStart = Math.floor((today.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          if (daysSinceStart > 30) {
+            // Check if there are any payments in the payment_history
+            const paymentHistory = tenant.payment_history || []
+            const recentPayments = paymentHistory.filter((p: any) => {
+              const paymentDate = new Date(p.date)
+              const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
+              return daysSincePayment <= 30
+            })
+            
+            return recentPayments.length === 0
+          }
+          
+          return false
         } catch (error) {
           console.error('Error checking tenant late status:', error)
           return false
@@ -196,8 +386,26 @@ export default function Dashboard() {
         try {
           const property = propertiesData.find((p: any) => p.id === tenant.property_id)
           if (property && tenant.leases && tenant.leases.length > 0) {
-            const latePaymentInfo = calculateTotalLatePayments(tenant, property)
-            return sum + latePaymentInfo.totalDue
+            const lease = tenant.leases[0]
+            const leaseStartDate = new Date(lease.lease_start_date)
+            const today = new Date()
+            const daysSinceStart = Math.floor((today.getTime() - leaseStartDate.getTime()) / (1000 * 60 * 60 * 24))
+            
+            if (daysSinceStart > 30) {
+              const paymentHistory = tenant.payment_history || []
+              const recentPayments = paymentHistory.filter((p: any) => {
+                const paymentDate = new Date(p.date)
+                const daysSincePayment = Math.floor((today.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24))
+                return daysSincePayment <= 30
+              })
+              
+              if (recentPayments.length === 0) {
+                // Calculate estimated outstanding based on rent amount and time
+                const rentAmount = lease.rent || 0
+                const monthsOverdue = Math.floor(daysSinceStart / 30)
+                return sum + (rentAmount * monthsOverdue)
+              }
+            }
           }
         } catch (error) {
           console.error('Error calculating outstanding for tenant:', error)
@@ -224,6 +432,8 @@ export default function Dashboard() {
       }
     }
   }, [])
+
+
 
   // Memoize filtered properties to prevent unnecessary re-renders
   const filteredProperties = useMemo(() => {
@@ -264,8 +474,8 @@ export default function Dashboard() {
           bValue = b.status?.toLowerCase() || ''
           break
         case 'rent':
-          aValue = a.monthly_rent || 0
-          bValue = b.monthly_rent || 0
+          aValue = a.leases?.[0]?.rent || 0
+          bValue = b.leases?.[0]?.rent || 0
           break
         default:
           return 0
@@ -309,9 +519,12 @@ export default function Dashboard() {
     router.push('/tenants')
   }, [router])
 
-  const handleViewLatePayments = useCallback(() => {
-    router.push('/late-payments')
-  }, [router])
+
+
+  const handleViewLateTenants = useCallback(() => {
+    // Force a complete page reload to ensure fresh component mount
+    window.location.href = '/late-tenants'
+  }, [])
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
@@ -333,8 +546,26 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Rental Dashboard 1.0</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Rental Dashboard 1.3</h1>
               <p className="text-gray-600">Manage your rental properties</p>
+              
+              {/* Feature flag banner */}
+              {useLeasePeriods && (
+                <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded-md">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-4 w-4 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-2">
+                      <p className="text-xs font-medium text-green-800">
+                        Using New Rent Period System - Data from RENT_expected_by_month and RENT_collected_by_month views
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <button 
@@ -344,13 +575,7 @@ export default function Dashboard() {
                 <Plus className="w-5 h-5 mr-2" />
                 Add Property
               </button>
-              <button 
-                onClick={handleViewLatePayments}
-                className="btn btn-warning btn-lg"
-              >
-                <AlertTriangle className="w-5 h-5 mr-2" />
-                Late Payments
-              </button>
+
             </div>
           </div>
         </div>
@@ -403,7 +628,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewLatePayments}>
+          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewLateTenants}>
             <div className="card-content">
               <div className="flex items-center">
                 <div className="p-2 bg-danger-100 rounded-lg">
@@ -417,21 +642,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/late-payments')}>
-            <div className="card-content">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    ${Math.round(stats.outstanding_balances).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {/* Property Type Breakdown */}
@@ -592,7 +803,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {property.monthly_rent ? `${property.monthly_rent.toLocaleString()} (${extractRentCadence(property.notes || undefined)})` : 'N/A'}
+                        {property.leases?.[0]?.rent ? `${property.leases[0].rent.toLocaleString()} (${property.leases[0].rent_cadence})` : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button

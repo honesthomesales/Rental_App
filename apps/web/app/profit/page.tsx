@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns
 import { Calendar, DollarSign, TrendingUp, PieChart, Plus, Minus, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
 import { supabase } from '@rental-app/api'
 import { normalizeRentToMonthly, extractRentCadence } from '../../lib/utils'
+import { getExpectedRentByMonth, getCollectedRentByMonth } from '../../src/lib/rentSource'
 import toast from 'react-hot-toast'
 
 interface ProfitData {
@@ -24,6 +25,9 @@ interface ProfitData {
 }
 
 export default function ProfitPage() {
+  // Feature flag for new rent source system
+  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
+  
   const [profitData, setProfitData] = useState<ProfitData>({
     potentialIncome: 0,
     expectedIncome: 0,
@@ -145,8 +149,82 @@ export default function ProfitPage() {
      try {
        setLoading(true)
        
+       if (useLeasePeriods) {
+         // Use new views for rent data
+         await loadProfitDataFromViews()
+       } else {
+         // Use original method
+         await loadProfitDataOriginal()
+       }
+     } catch (error) {
+       console.error('Error loading profit data:', error)
+       toast.error('Failed to load profit data')
+     } finally {
+       setLoading(false)
+     }
+   }
+
+   const loadProfitDataFromViews = async () => {
+     try {
+       // Use rentSource functions
+       const [expectedData, collectedData, propertiesData] = await Promise.all([
+         getExpectedRentByMonth(),
+         getCollectedRentByMonth(),
+         (supabase as any).from('RENT_properties').select('*')
+       ])
+       
+       if (propertiesData.error) {
+         throw new Error('Failed to load properties data')
+       }
+       
+       // Calculate profit data from views
+       const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
+       const currentMonthExpected = expectedData?.find((item: any) => 
+         item.month.startsWith(currentMonth)
+       )
+       const currentMonthCollected = collectedData?.find((item: any) => 
+         item.month.startsWith(currentMonth)
+       )
+       
+       const expectedRentIncome = currentMonthExpected ? 
+         ((currentMonthExpected as any).expected_rent || 0) + ((currentMonthExpected as any).expected_late_fees || 0) : 0
+       const collectedRentIncome = currentMonthCollected ? 
+         ((currentMonthCollected as any).collected_rent || 0) + ((currentMonthCollected as any).collected_late_fees || 0) : 0
+       
+       // Calculate other metrics from properties
+       const totalProperties = propertiesData.data?.length || 0
+       const potentialIncome = propertiesData.data?.reduce((sum: number, property: any) => {
+         const rentCadence = extractRentCadence(property.notes || undefined)
+         const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+         return sum + normalizedRent
+       }, 0) || 0
+       
+       setProfitData({
+         potentialIncome,
+         expectedIncome: expectedRentIncome,
+         collectedIncome: collectedRentIncome,
+         insurance: 0, // TODO: Calculate from insurance data
+         taxes: 0, // TODO: Calculate from tax data
+         totalPayments: collectedRentIncome,
+         repairs: 0, // TODO: Calculate from repairs data
+         miscIncome: 0, // TODO: Calculate from misc income data
+         otherExpenses: 0, // TODO: Calculate from other expenses data
+         expectedProfit: expectedRentIncome - 0, // TODO: Subtract expenses
+         netProfit: collectedRentIncome - 0, // TODO: Subtract expenses
+         expectedRentIncome,
+         collectedRentIncome
+       })
+     } catch (error) {
+       console.error('Error loading profit data from views:', error)
+       // Fall back to original method
+       await loadProfitDataOriginal()
+     }
+   }
+
+   const loadProfitDataOriginal = async () => {
+     try {
        // Fetch properties
-       const { data: propertiesData, error: propertiesError } = await supabase
+       const { data: propertiesData, error: propertiesError } = await (supabase as any)
          .from('RENT_properties')
          .select('*')
 
@@ -156,7 +234,7 @@ export default function ProfitPage() {
        }
 
        // Fetch tenants
-       const { data: tenantsData, error: tenantsError } = await supabase
+       const { data: tenantsData, error: tenantsError } = await (supabase as any)
          .from('RENT_tenants')
          .select('*')
 
@@ -166,7 +244,7 @@ export default function ProfitPage() {
        }
 
        // Fetch payments for the date range
-       const { data: paymentsData, error: paymentsError } = await supabase
+       const { data: paymentsData, error: paymentsError } = await (supabase as any)
          .from('RENT_payments')
          .select('*')
          .gte('payment_date', dateRange.start)
@@ -222,7 +300,7 @@ export default function ProfitPage() {
        // Calculate potential income (sum of all property monthly rents * months in range)
        const calculatedMonthlyPotentialIncome = propertiesData.reduce((sum: number, property: any) => {
          const rentCadence = extractRentCadence(property.notes)
-         const normalizedRent = normalizeRentToMonthly(property.monthly_rent || 0, rentCadence)
+         const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
          return sum + normalizedRent
        }, 0)
 
@@ -242,7 +320,7 @@ export default function ProfitPage() {
          .filter((property: any) => occupiedPropertyIds.has(property.id))
          .reduce((sum: number, property: any) => {
            const rentCadence = extractRentCadence(property.notes)
-           const normalizedRent = normalizeRentToMonthly(property.monthly_rent || 0, rentCadence)
+           const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
            return sum + normalizedRent
          }, 0)
        
@@ -533,7 +611,25 @@ export default function ProfitPage() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Profit Analysis</h1>
-              <p className="text-gray-600">Track income, expenses, and profitability</p>
+              <p className="text-gray-600">Track your rental property profitability</p>
+              
+              {/* Feature flag banner */}
+              {useLeasePeriods && (
+                <div className="mt-2 p-2 bg-green-100 border border-green-300 rounded-md">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-4 w-4 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-2">
+                      <p className="text-xs font-medium text-green-800">
+                        Using New Rent Period System - Data from RENT_expected_by_month and RENT_collected_by_month views
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">

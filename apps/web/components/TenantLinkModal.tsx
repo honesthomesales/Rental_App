@@ -64,7 +64,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
               property_id: propertyId,
               lease_start_date: tenant.lease_start_date || new Date().toISOString().split('T')[0],
               lease_end_date: tenant.lease_end_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              rent: tenant.monthly_rent || 0, // Use tenant's monthly_rent for the lease
+              rent: 0, // Rent will be set when creating the lease
               rent_cadence: rentCadence, // Use selected rent cadence from dropdown
               move_in_fee: 0,
               late_fee_amount: 50,
@@ -200,11 +200,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         {tenant.phone && (
                           <p className="text-sm text-gray-600">{tenant.phone}</p>
                         )}
-                        {tenant.monthly_rent && (
-                          <p className="text-sm text-green-600 font-medium">
-                            ${tenant.monthly_rent}/month
-                          </p>
-                        )}
+                        {/* Rent amount removed - comes from lease data */}
                       </div>
                       <button
                         onClick={() => handleUnlinkTenant(tenant.id)}
@@ -255,11 +251,7 @@ export function TenantLinkModal({ propertyId, propertyName, onClose, onSuccess }
                         {tenant.phone && (
                           <p className="text-sm text-gray-600">{tenant.phone}</p>
                         )}
-                        {tenant.monthly_rent && (
-                          <p className="text-sm text-green-600 font-medium">
-                            ${tenant.monthly_rent}/month
-                          </p>
-                        )}
+                        {/* Rent amount removed - comes from lease data */}
                       </div>
                       <div className="flex flex-col items-end space-y-2">
                         <select

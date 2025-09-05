@@ -29,7 +29,6 @@ class PropertiesService {
           purchase_price,
           purchase_date,
           current_value,
-          monthly_rent,
           is_for_rent,
           is_for_sale,
           insurance_premium,

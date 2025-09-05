@@ -16,7 +16,7 @@ interface Tenant {
   phone?: string;
   lease_start_date?: string;
   lease_end_date?: string;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data comes from RENT_leases
   notes?: string;
   is_active?: boolean;
   created_at?: string;

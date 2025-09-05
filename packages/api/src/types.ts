@@ -21,7 +21,7 @@ export interface Property {
   purchase_price?: number;
   purchase_date?: string;
   current_value?: number;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data should come from RENT_leases
   is_for_sale: boolean;
   is_for_rent: boolean;
   insurance_policy_number?: string;
@@ -52,7 +52,7 @@ export interface Tenant {
   emergency_contact_phone?: string | null; // Made nullable to match database types
   lease_start_date?: string | null; // Made nullable to match database types
   lease_end_date?: string | null; // Made nullable to match database types
-  monthly_rent?: number | null; // Made nullable to match database types
+  // monthly_rent removed - rent data should come from RENT_leases
   security_deposit?: number | null; // Made nullable to match database types
   lease_pdf_url?: string | null; // Made nullable to match database types
   payment_history?: PaymentHistoryItem[] | any; // Made compatible with Json from database
@@ -77,7 +77,7 @@ export interface Lease {
   lease_end_date: string;
   rent: number;
   rent_cadence: string; // Made required since database types show it as required
-  rent_due_day?: number; // Made optional with default handling at usage sites
+  rent_due_day?: number | null; // Made optional with default handling at usage sites
   move_in_fee?: number | null; // Made nullable to match database types
   late_fee_amount?: number | null; // Made nullable to match database types
   lease_pdf?: string | null; // Made nullable to match database types
@@ -99,12 +99,10 @@ export interface RentPeriod {
   property_id: string;
   lease_id: string;
   period_due_date: string;
-  rent_amount: number;
-  rent_cadence: string;
-  status: 'paid' | 'unpaid' | 'partial' | 'overdue';
+  // rent_amount, rent_cadence, status removed - these should come from RENT_leases
   amount_paid: number;
-  late_fee_applied: number;
-  late_fee_waived: boolean;
+  late_fee_applied?: number;
+  late_fee_waived?: boolean;
   due_date_override?: string;
   notes?: string;
   created_at: string;
@@ -216,7 +214,7 @@ export interface CreatePropertyData {
   purchase_price?: number;
   purchase_date?: string;
   current_value?: number;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data should come from RENT_leases
   is_for_sale?: boolean;
   is_for_rent?: boolean;
   insurance_policy_number?: string;
@@ -229,7 +227,7 @@ export interface CreatePropertyData {
   latitude?: number;
   longitude?: number;
   notes?: string;
-  rent_cadence?: string;
+  // rent_cadence removed - rent data should come from RENT_leases
 }
 
 export interface UpdatePropertyData extends Partial<CreatePropertyData> {
@@ -246,7 +244,7 @@ export interface CreateTenantData {
   emergency_contact_phone?: string;
   lease_start_date?: string;
   lease_end_date?: string;
-  monthly_rent?: number;
+  // monthly_rent removed - rent data should come from RENT_leases
   security_deposit?: number;
   notes?: string;
 }

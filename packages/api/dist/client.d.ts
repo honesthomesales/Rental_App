@@ -18,7 +18,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 purchase_price: number | null;
                 purchase_date: string | null;
                 current_value: number | null;
-                monthly_rent: number | null;
                 is_for_sale: boolean;
                 is_for_rent: boolean;
                 insurance_policy_number: string | null;
@@ -48,7 +47,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 purchase_price?: number | null;
                 purchase_date?: string | null;
                 current_value?: number | null;
-                monthly_rent?: number | null;
                 is_for_sale?: boolean;
                 is_for_rent?: boolean;
                 insurance_policy_number?: string | null;
@@ -78,7 +76,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 purchase_price?: number | null;
                 purchase_date?: string | null;
                 current_value?: number | null;
-                monthly_rent?: number | null;
                 is_for_sale?: boolean;
                 is_for_rent?: boolean;
                 insurance_policy_number?: string | null;
@@ -106,7 +103,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 emergency_contact_phone: string | null;
                 lease_start_date: string | null;
                 lease_end_date: string | null;
-                monthly_rent: number | null;
                 security_deposit: number | null;
                 lease_pdf_url: string | null;
                 payment_history: import("./database.types").Json;
@@ -129,7 +125,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 emergency_contact_phone?: string | null;
                 lease_start_date?: string | null;
                 lease_end_date?: string | null;
-                monthly_rent?: number | null;
                 security_deposit?: number | null;
                 lease_pdf_url?: string | null;
                 payment_history?: import("./database.types").Json;
@@ -152,7 +147,6 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 emergency_contact_phone?: string | null;
                 lease_start_date?: string | null;
                 lease_end_date?: string | null;
-                monthly_rent?: number | null;
                 security_deposit?: number | null;
                 lease_pdf_url?: string | null;
                 payment_history?: import("./database.types").Json;
@@ -181,9 +175,10 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 lease_end_date: string;
                 rent: number;
                 rent_cadence: string;
+                rent_due_day: number | null;
                 move_in_fee: number | null;
                 late_fee_amount: number | null;
-                lease_pdf: string | null;
+                lease_pdf_url: string | null;
                 status: string;
                 notes: string | null;
                 created_at: string;
@@ -197,9 +192,10 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 lease_end_date: string;
                 rent: number;
                 rent_cadence: string;
+                rent_due_day?: number | null;
                 move_in_fee?: number | null;
                 late_fee_amount?: number | null;
-                lease_pdf?: string | null;
+                lease_pdf_url?: string | null;
                 status?: string;
                 notes?: string | null;
                 created_at?: string;
@@ -213,9 +209,10 @@ export declare function getSupabaseClient(): import("@supabase/supabase-js").Sup
                 lease_end_date?: string;
                 rent?: number;
                 rent_cadence?: string;
+                rent_due_day?: number | null;
                 move_in_fee?: number | null;
                 late_fee_amount?: number | null;
-                lease_pdf?: string | null;
+                lease_pdf_url?: string | null;
                 status?: string;
                 notes?: string | null;
                 created_at?: string;
@@ -601,7 +598,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 purchase_price: number | null;
                 purchase_date: string | null;
                 current_value: number | null;
-                monthly_rent: number | null;
                 is_for_sale: boolean;
                 is_for_rent: boolean;
                 insurance_policy_number: string | null;
@@ -631,7 +627,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 purchase_price?: number | null;
                 purchase_date?: string | null;
                 current_value?: number | null;
-                monthly_rent?: number | null;
                 is_for_sale?: boolean;
                 is_for_rent?: boolean;
                 insurance_policy_number?: string | null;
@@ -661,7 +656,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 purchase_price?: number | null;
                 purchase_date?: string | null;
                 current_value?: number | null;
-                monthly_rent?: number | null;
                 is_for_sale?: boolean;
                 is_for_rent?: boolean;
                 insurance_policy_number?: string | null;
@@ -689,7 +683,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 emergency_contact_phone: string | null;
                 lease_start_date: string | null;
                 lease_end_date: string | null;
-                monthly_rent: number | null;
                 security_deposit: number | null;
                 lease_pdf_url: string | null;
                 payment_history: import("./database.types").Json;
@@ -712,7 +705,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 emergency_contact_phone?: string | null;
                 lease_start_date?: string | null;
                 lease_end_date?: string | null;
-                monthly_rent?: number | null;
                 security_deposit?: number | null;
                 lease_pdf_url?: string | null;
                 payment_history?: import("./database.types").Json;
@@ -735,7 +727,6 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 emergency_contact_phone?: string | null;
                 lease_start_date?: string | null;
                 lease_end_date?: string | null;
-                monthly_rent?: number | null;
                 security_deposit?: number | null;
                 lease_pdf_url?: string | null;
                 payment_history?: import("./database.types").Json;
@@ -764,9 +755,10 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 lease_end_date: string;
                 rent: number;
                 rent_cadence: string;
+                rent_due_day: number | null;
                 move_in_fee: number | null;
                 late_fee_amount: number | null;
-                lease_pdf: string | null;
+                lease_pdf_url: string | null;
                 status: string;
                 notes: string | null;
                 created_at: string;
@@ -780,9 +772,10 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 lease_end_date: string;
                 rent: number;
                 rent_cadence: string;
+                rent_due_day?: number | null;
                 move_in_fee?: number | null;
                 late_fee_amount?: number | null;
-                lease_pdf?: string | null;
+                lease_pdf_url?: string | null;
                 status?: string;
                 notes?: string | null;
                 created_at?: string;
@@ -796,9 +789,10 @@ export declare const supabase: import("@supabase/supabase-js").SupabaseClient<Da
                 lease_end_date?: string;
                 rent?: number;
                 rent_cadence?: string;
+                rent_due_day?: number | null;
                 move_in_fee?: number | null;
                 late_fee_amount?: number | null;
-                lease_pdf?: string | null;
+                lease_pdf_url?: string | null;
                 status?: string;
                 notes?: string | null;
                 created_at?: string;

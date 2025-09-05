@@ -11,7 +11,7 @@ interface Property {
   state: string
   latitude?: number
   longitude?: number
-  monthly_rent?: number
+  // monthly_rent removed - rent data comes from RENT_leases
   property_type?: string
   status?: string
 }

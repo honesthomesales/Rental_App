@@ -66,7 +66,7 @@ export class TenantsService {
           if (tenant.property_id) {
             const { data: propData } = await supabase
               .from('RENT_properties')
-              .select('id, name, address, notes, monthly_rent')
+              .select('id, name, address, notes')
               .eq('id', tenant.property_id)
               .single();
             property = propData;
@@ -105,7 +105,6 @@ export class TenantsService {
             emergency_contact_phone: tenant.emergency_contact_phone || undefined,
             lease_start_date: tenant.lease_start_date || undefined,
             lease_end_date: tenant.lease_end_date || undefined,
-            monthly_rent: tenant.monthly_rent || undefined,
             security_deposit: tenant.security_deposit || undefined,
             lease_pdf_url: tenant.lease_pdf_url || undefined,
             payment_history: paymentHistory,
@@ -159,7 +158,7 @@ export class TenantsService {
       if (tenant.property_id) {
         const { data: propData } = await supabase
           .from('RENT_properties')
-          .select('id, name, address, notes, monthly_rent')
+          .select('id, name, address, notes')
           .eq('id', tenant.property_id)
           .single();
         property = propData;
@@ -258,7 +257,7 @@ export class TenantsService {
 
           // Filter out fields that don't exist in the RENT_tenants table
     const {
-      monthly_rent, // Remove this since it's causing the error
+      // monthly_rent removed - rent data comes from RENT_leases
       security_deposit,
       payment_history,
       late_fees_owed,
@@ -283,59 +282,8 @@ export class TenantsService {
         return createApiResponse(null, handleSupabaseError(tenantError))
       }
 
-      // If monthly_rent was updated, also update the corresponding lease
-      if ((tenantData as any).monthly_rent !== undefined && (tenantData as any).monthly_rent !== null) {
-        try {
-          // Find the active lease for this tenant
-          const { data: leases, error: leaseError } = await supabase
-            .from('RENT_leases')
-            .select('*')
-            .eq('tenant_id', id)
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .limit(1)
-
-          if (!leaseError && leases && leases.length > 0) {
-            const activeLease = leases[0]
-            console.log('TenantsService.update - Updating lease rent:', activeLease.id, 'to:', (tenantData as any).monthly_rent)
-            
-            // Update the lease rent
-            const { error: leaseUpdateError } = await supabase
-              .from('RENT_leases')
-              .update({ rent: (tenantData as any).monthly_rent })
-              .eq('id', activeLease.id)
-
-            if (leaseUpdateError) {
-              console.warn('TenantsService.update - Failed to update lease rent:', leaseUpdateError)
-            } else {
-              console.log('TenantsService.update - Successfully updated lease rent')
-            }
-          } else {
-            // No active lease found, create one
-            console.log('TenantsService.update - No active lease found, creating new lease with rent:', (tenantData as any).monthly_rent)
-            
-            const { error: leaseCreateError } = await supabase
-              .from('RENT_leases')
-              .insert([{
-                tenant_id: id,
-                property_id: updatedTenantData.property_id,
-                rent: (tenantData as any).monthly_rent,
-                rent_cadence: 'monthly',
-                status: 'active',
-                lease_start_date: updatedTenantData.lease_start_date || new Date().toISOString().split('T')[0],
-                lease_end_date: updatedTenantData.lease_end_date || '2030-12-31'
-              }])
-
-            if (leaseCreateError) {
-              console.warn('TenantsService.update - Failed to create new lease:', leaseCreateError)
-            } else {
-              console.log('TenantsService.update - Successfully created new lease')
-            }
-          }
-        } catch (leaseUpdateError) {
-          console.warn('TenantsService.update - Error updating lease rent:', leaseUpdateError)
-        }
-      }
+      // Note: monthly_rent field removed from tenants - rent data should come from RENT_leases
+      // If rent data needs to be updated, it should be done through the lease update endpoint
 
       // Fetch the updated tenant with leases using the same method as getById
       const { data: updatedTenant, error: fetchError } = await supabase
@@ -354,7 +302,7 @@ export class TenantsService {
       if (updatedTenant.property_id) {
         const { data: propData } = await supabase
           .from('RENT_properties')
-          .select('id, name, address, notes, monthly_rent')
+          .select('id, name, address, notes')
           .eq('id', updatedTenant.property_id)
           .single();
         property = propData;
@@ -876,7 +824,6 @@ export class TenantsService {
             id,
             name,
             address,
-            monthly_rent
           ),
           RENT_leases!inner(
             id,
@@ -1292,7 +1239,7 @@ export class TenantsService {
       // First, find the property by address
       const { data: property, error: propertyError } = await supabase
         .from('RENT_properties')
-        .select('id, monthly_rent')
+        .select('id')
         .ilike('address', `%${tenantData.property_address}%`)
         .single();
 
@@ -1305,7 +1252,7 @@ export class TenantsService {
       const tenantDataWithProperty = {
         ...tenantCreateData,
         property_id: property.id,
-        monthly_rent: tenantData.monthly_rent || property.monthly_rent
+        // monthly_rent removed - rent data comes from RENT_leases
       };
 
       const { data, error } = await supabase

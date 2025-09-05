@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Home, Users, FileText, AlertTriangle, DollarSign, TrendingUp } from 'lucide-react'
+import { Menu, X, Home, Users, FileText, AlertTriangle, DollarSign, TrendingUp, Calendar } from 'lucide-react'
 
 // Honest Home Sales Logo Component
 function HonestHomeSalesLogo({ className = "w-8 h-8" }: { className?: string }) {
@@ -53,6 +53,7 @@ export function Header() {
     { label: 'Dashboard', icon: <Home className="w-5 h-5 mr-2" />, href: '/' },
     { label: 'Properties', icon: <FileText className="w-5 h-5 mr-2" />, href: '/properties' },
     { label: 'Tenants', icon: <Users className="w-5 h-5 mr-2" />, href: '/tenants' },
+    { label: 'Leases', icon: <Calendar className="w-5 h-5 mr-2" />, href: '/leases' },
     { label: 'Payments', icon: <DollarSign className="w-5 h-5 mr-2" />, href: '/payments' },
     { label: 'Late Tenants', icon: <AlertTriangle className="w-5 h-5 mr-2" />, href: '/late-tenants' },
     { label: 'Profit', icon: <TrendingUp className="w-5 h-5 mr-2" />, href: '/profit' },

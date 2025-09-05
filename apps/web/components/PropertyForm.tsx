@@ -24,7 +24,7 @@ const propertySchema = z.object({
   purchase_price: z.number().optional(),
   purchase_date: z.string().optional(),
   current_value: z.number().optional(),
-  monthly_rent: z.number().optional(),
+  // monthly_rent removed - rent data comes from RENT_leases
   is_for_sale: z.boolean().default(false),
   is_for_rent: z.boolean().default(true),
   insurance_policy_number: z.string().optional(),
@@ -71,7 +71,7 @@ export function PropertyForm({ property, onSuccess, onCancel, modal = true }: Pr
       purchase_price: property.purchase_price || undefined,
       purchase_date: property.purchase_date || undefined,
       current_value: property.current_value || undefined,
-      monthly_rent: property.monthly_rent || undefined,
+      // monthly_rent removed - rent data comes from RENT_leases
       is_for_sale: property.is_for_sale,
       is_for_rent: property.is_for_rent,
       insurance_policy_number: property.insurance_policy_number || undefined,
@@ -324,18 +324,7 @@ export function PropertyForm({ property, onSuccess, onCancel, modal = true }: Pr
               <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-6">Financial Information</h3>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Rent
-              </label>
-              <input
-                {...register('monthly_rent', { valueAsNumber: true })}
-                type="number"
-                step="0.01"
-                className="input"
-                placeholder="2000.00"
-              />
-            </div>
+            {/* Monthly Rent removed - rent data comes from RENT_leases */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

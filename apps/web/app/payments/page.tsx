@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Plus, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Plus, Search, ChevronLeft, ChevronRight, X, DollarSign, Calendar, User } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { PaymentsService } from '@rental-app/api/src/services/payments'
 import { PropertiesService } from '@rental-app/api/src/services/properties'
 import { TenantsService } from '@rental-app/api/src/services/tenants'
 import { RentPeriodsService } from '@rental-app/api/src/services/rentPeriods'
+import { supabase } from '@rental-app/api'
 
 interface Payment {
   id: string
@@ -18,6 +19,28 @@ interface Payment {
   payment_type: string
   notes: string
   created_at: string
+}
+
+interface UnpaidPeriod {
+  id: string
+  lease_id: string
+  tenant_id: string
+  property_id: string
+  period_due_date: string
+  rent_amount: number
+  rent_cadence: string
+  status: string
+  amount_paid: number
+  outstanding_amount: number
+}
+
+interface PaymentAllocation {
+  id: string
+  payment_id: string
+  rent_period_id: string
+  amount_to_rent: number
+  amount_to_late_fee: number
+  applied_at: string
 }
 
 import type { Property, Tenant, Lease, PaymentHistoryItem } from '@rental-app/api'
@@ -102,7 +125,7 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
     
     if (daysDiff > 5) {
       // Calculate expected late fees
-      const rentAmount = property.leases?.[0]?.rent || property.monthly_rent || 0
+      const rentAmount = property.leases?.[0]?.rent || 0
       const rentCadence = property.leases?.[0]?.rent_cadence || 'monthly'
       
       let lateFeePerPeriod = 0
@@ -509,6 +532,250 @@ function PaymentModal({ isOpen, onClose, property, selectedDate, onDateChange, o
   )
 }
 
+// Payment Allocation Panel Component
+interface PaymentAllocationPanelProps {
+  selectedPayment: Payment | null
+  onClose: () => void
+  onRefresh: () => void
+}
+
+function PaymentAllocationPanel({ selectedPayment, onClose, onRefresh }: PaymentAllocationPanelProps) {
+  const [unpaidPeriods, setUnpaidPeriods] = useState<UnpaidPeriod[]>([])
+  const [existingAllocations, setExistingAllocations] = useState<PaymentAllocation[]>([])
+  const [loading, setLoading] = useState(false)
+  const [applying, setApplying] = useState(false)
+
+  // Check feature flag
+  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
+  console.log('Payments page - Feature flag NEXT_PUBLIC_USE_LEASE_PERIODS:', process.env.NEXT_PUBLIC_USE_LEASE_PERIODS)
+  console.log('Payments page - useLeasePeriods:', useLeasePeriods)
+
+  useEffect(() => {
+    if (selectedPayment && useLeasePeriods) {
+      loadAllocationData()
+    }
+  }, [selectedPayment, useLeasePeriods])
+
+  const loadAllocationData = async () => {
+    if (!selectedPayment) return
+
+    try {
+      setLoading(true)
+      console.log('Loading allocation data for payment:', selectedPayment.id)
+
+      // Load unpaid periods for the tenant
+      if (!supabase) {
+        console.error('Supabase client not available')
+        toast.error('Database connection not available')
+        return
+      }
+      
+      const { data: periods, error: periodsError } = await supabase
+        .from('RENT_rent_periods')
+        .select('*')
+        .eq('tenant_id', selectedPayment.tenant_id)
+        .neq('status', 'paid')
+        .order('period_due_date', { ascending: true })
+
+      if (periodsError) {
+        console.error('Error loading unpaid periods:', periodsError)
+        toast.error('Error loading unpaid periods')
+        return
+      }
+
+      // Calculate outstanding amounts
+      const periodsWithOutstanding = (periods || []).map(period => ({
+        ...period,
+        outstanding_amount: Math.max(0, period.rent_amount - period.amount_paid)
+      }))
+
+      setUnpaidPeriods(periodsWithOutstanding)
+
+      // Load existing allocations for this payment
+      // Note: RENT_payment_allocations table doesn't exist yet, so we'll use empty array
+      console.log('RENT_payment_allocations table not available yet, using empty allocations')
+      setExistingAllocations([])
+
+    } catch (error) {
+      console.error('Error loading allocation data:', error)
+      toast.error('Error loading allocation data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const applyPayment = async () => {
+    if (!selectedPayment) return
+
+    try {
+      setApplying(true)
+      console.log('Applying payment:', selectedPayment.id)
+
+      const response = await fetch(`/api/payments/${selectedPayment.id}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to apply payment')
+      }
+
+      toast.success('Payment applied successfully')
+      console.log('Payment applied:', result)
+      
+      // Refresh the panel data
+      await loadAllocationData()
+      onRefresh()
+
+    } catch (error) {
+      console.error('Error applying payment:', error)
+      toast.error(error instanceof Error ? error.message : 'Error applying payment')
+    } finally {
+      setApplying(false)
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  if (!useLeasePeriods) {
+    return null // Don't show panel if feature flag is off
+  }
+
+  if (!selectedPayment) {
+    return null
+  }
+
+  return (
+    <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl border-l border-gray-200 z-30">
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Payment Allocation</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            <div className="flex items-center">
+              <DollarSign className="h-4 w-4 mr-1" />
+              {formatCurrency(selectedPayment.amount)}
+            </div>
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              {formatDate(selectedPayment.payment_date)}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Unpaid Periods */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Unpaid/Partial Periods</h4>
+                {unpaidPeriods.length === 0 ? (
+                  <p className="text-sm text-gray-500">No unpaid periods found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {unpaidPeriods.map((period) => (
+                      <div key={period.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatDate(period.period_due_date)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {period.rent_cadence} • {period.status}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatCurrency(period.outstanding_amount)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Due: {formatCurrency(period.rent_amount)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Existing Allocations */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Existing Allocations</h4>
+                {existingAllocations.length === 0 ? (
+                  <p className="text-sm text-gray-500">No allocations found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {existingAllocations.map((allocation) => (
+                      <div key={allocation.id} className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-sm text-gray-900">
+                          Period: {formatDate(allocation.applied_at)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Rent: {formatCurrency(allocation.amount_to_rent)} • 
+                          Late Fee: {formatCurrency(allocation.amount_to_late_fee)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={applyPayment}
+            disabled={applying || loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {applying ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Applying...
+              </>
+            ) : (
+              'Apply Payment'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PaymentsPage() {
   const [properties, setProperties] = useState<PropertyWithTenants[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -523,6 +790,8 @@ export default function PaymentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [savingPayment, setSavingPayment] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
+  const [showAllocationPanel, setShowAllocationPanel] = useState(false)
 
   // Generate weekly dates (Fridays) for the grid
   const generateWeeklyDates = (weeks: number = 8) => {
@@ -703,7 +972,7 @@ export default function PaymentsPage() {
     }
 
     const tenant = property.tenants[0]
-    const expectedAmount = property.leases?.[0]?.rent || property.monthly_rent || 0
+    const expectedAmount = property.leases?.[0]?.rent || 0
 
     if (expectedAmount === 0) {
       toast.error('No rent amount set for this property')
@@ -819,6 +1088,24 @@ export default function PaymentsPage() {
     }
   }, [])
 
+  const handlePaymentSelect = (payment: Payment) => {
+    setSelectedPayment(payment)
+    setShowAllocationPanel(true)
+  }
+
+  const handleCloseAllocationPanel = () => {
+    setShowAllocationPanel(false)
+    setSelectedPayment(null)
+  }
+
+  const handleRefreshPayments = async () => {
+    const dateRange = getDateRange()
+    const paymentsResponse = await PaymentsService.getByDateRange(dateRange.start, dateRange.end)
+    if (paymentsResponse.success) {
+      setPayments(paymentsResponse.data || [])
+    }
+  }
+
   // Function to get payment for a specific week
   const getPaymentForWeek = useCallback((propertyId: string, date: Date) => {
     const weekStart = new Date(date)
@@ -889,7 +1176,7 @@ export default function PaymentsPage() {
       return false
     }
 
-    const monthlyRent = lease.rent || property.monthly_rent || 0
+    const monthlyRent = lease.rent || 0
     if (monthlyRent <= 0) return false
 
     // Get the month start and end dates for the date being checked
@@ -922,7 +1209,7 @@ export default function PaymentsPage() {
   // Function to get rent cadence for display
   const getRentCadenceDisplay = useCallback((property: PropertyWithTenants): string => {
     const cadence = getRentCadence(property)
-    const rent = property.leases?.[0]?.rent || property.monthly_rent || 0
+    const rent = property.leases?.[0]?.rent || 0
     
     if (cadence === 'monthly') {
       return `$${rent.toLocaleString()}/month`
@@ -975,7 +1262,7 @@ export default function PaymentsPage() {
       // Get the expected bi-weekly rent amount from the lease
       const propertyData = properties.find(p => p.id === property.id)
       const lease = propertyData?.leases?.[0]
-      const expectedBiWeeklyRent = lease?.rent || propertyData?.monthly_rent || 0
+      const expectedBiWeeklyRent = lease?.rent || 0
       
       // For bi-weekly, if there was any payment in the previous week, show checkbox for current week
       return previousWeekPayment.amount > 0
@@ -1213,17 +1500,24 @@ export default function PaymentsPage() {
                             >
                                 <div className="flex flex-col items-center">
                                 {payment ? (
-                                  <>
-                                  <span className="font-semibold text-green-600">
-                                    ${payment.amount.toLocaleString()}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                      {new Date(payment.payment_date).toLocaleDateString()}
+                                  <div 
+                                    className="cursor-pointer hover:bg-green-50 p-1 rounded"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handlePaymentSelect(payment)
+                                    }}
+                                    title="Click to view allocation panel"
+                                  >
+                                    <span className="font-semibold text-green-600">
+                                      ${payment.amount.toLocaleString()}
                                     </span>
-                                    <span className="text-xs text-gray-400">
-                                    {payment.payment_type}
-                                  </span>
-                                  </>
+                                    <span className="text-xs text-gray-500">
+                                        {new Date(payment.payment_date).toLocaleDateString()}
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                      {payment.payment_type}
+                                    </span>
+                                  </div>
                                 ) : showCheckbox ? (
                                   <div className="flex items-center justify-center">
                                       <input
@@ -1403,6 +1697,15 @@ export default function PaymentsPage() {
         loading={savingPayment}
         editingPayment={editingPayment}
       />
+
+      {/* Payment Allocation Panel */}
+      {showAllocationPanel && (
+        <PaymentAllocationPanel
+          selectedPayment={selectedPayment}
+          onClose={handleCloseAllocationPanel}
+          onRefresh={handleRefreshPayments}
+        />
+      )}
     </div>
   )
 } 

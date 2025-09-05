@@ -35,7 +35,7 @@ export function RentPaymentForm({ tenant, onSuccess, onCancel }: RentPaymentForm
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      amount: tenant.leases?.[0]?.rent || 0, // Use lease rent instead of tenant monthly_rent
+      amount: tenant.leases?.[0]?.rent || 0, // Use lease rent
       payment_date: new Date().toISOString().split('T')[0],
       description: 'Rent payment',
     }

@@ -20,7 +20,6 @@ export interface Property {
     purchase_price?: number;
     purchase_date?: string;
     current_value?: number;
-    monthly_rent?: number;
     is_for_sale: boolean;
     is_for_rent: boolean;
     insurance_policy_number?: string;
@@ -50,7 +49,6 @@ export interface Tenant {
     emergency_contact_phone?: string | null;
     lease_start_date?: string | null;
     lease_end_date?: string | null;
-    monthly_rent?: number | null;
     security_deposit?: number | null;
     lease_pdf_url?: string | null;
     payment_history?: PaymentHistoryItem[] | any;
@@ -74,7 +72,7 @@ export interface Lease {
     lease_end_date: string;
     rent: number;
     rent_cadence: string;
-    rent_due_day?: number;
+    rent_due_day?: number | null;
     move_in_fee?: number | null;
     late_fee_amount?: number | null;
     lease_pdf?: string | null;
@@ -94,12 +92,9 @@ export interface RentPeriod {
     property_id: string;
     lease_id: string;
     period_due_date: string;
-    rent_amount: number;
-    rent_cadence: string;
-    status: 'paid' | 'unpaid' | 'partial' | 'overdue';
     amount_paid: number;
-    late_fee_applied: number;
-    late_fee_waived: boolean;
+    late_fee_applied?: number;
+    late_fee_waived?: boolean;
     due_date_override?: string;
     notes?: string;
     created_at: string;
@@ -204,7 +199,6 @@ export interface CreatePropertyData {
     purchase_price?: number;
     purchase_date?: string;
     current_value?: number;
-    monthly_rent?: number;
     is_for_sale?: boolean;
     is_for_rent?: boolean;
     insurance_policy_number?: string;
@@ -217,7 +211,6 @@ export interface CreatePropertyData {
     latitude?: number;
     longitude?: number;
     notes?: string;
-    rent_cadence?: string;
 }
 export interface UpdatePropertyData extends Partial<CreatePropertyData> {
     id: string;
@@ -232,7 +225,6 @@ export interface CreateTenantData {
     emergency_contact_phone?: string;
     lease_start_date?: string;
     lease_end_date?: string;
-    monthly_rent?: number;
     security_deposit?: number;
     notes?: string;
 }

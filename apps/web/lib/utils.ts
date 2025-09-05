@@ -298,8 +298,17 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
   }
   
   try {
-    // Get lease information from the leases array
-    const activeLease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null;
+    // Get lease information from the leases array or RENT_leases
+    let activeLease = null;
+    if (tenant.leases && tenant.leases.length > 0) {
+      activeLease = tenant.leases[0];
+    } else if (tenant.RENT_leases && tenant.RENT_leases.length > 0) {
+      activeLease = tenant.RENT_leases[0];
+    }
+    
+    console.log('calculateTotalLatePayments: Active lease found:', !!activeLease);
+    console.log('calculateTotalLatePayments: Lease data:', activeLease);
+    
     if (!activeLease || !activeLease.lease_start_date) {
       console.log('calculateTotalLatePayments: No active lease found for tenant');
       return {
@@ -312,7 +321,7 @@ export function calculateTotalLatePayments(tenant: any, property: any): {
     }
 
     const cadence = activeLease.rent_cadence || 'monthly';
-    const monthlyRent = activeLease.rent || property.monthly_rent;
+    const monthlyRent = activeLease.rent || 0;
     console.log('calculateTotalLatePayments: Cadence:', cadence, 'Monthly rent:', monthlyRent);
     // Convert monthly rent to the actual rent amount for the cadence
     let rentAmount = monthlyRent;
@@ -390,9 +399,18 @@ export function isTenantLate(tenant: any, property: any): boolean {
     }
     
     console.log('isTenantLate: Starting check for tenant', tenant.first_name, tenant.last_name);
-    const activeLease = tenant.leases && tenant.leases.length > 0 ? tenant.leases[0] : null;
+    
+    // Check both possible lease data structures
+    let activeLease = null;
+    if (tenant.leases && tenant.leases.length > 0) {
+      activeLease = tenant.leases[0];
+    } else if (tenant.RENT_leases && tenant.RENT_leases.length > 0) {
+      activeLease = tenant.RENT_leases[0];
+    }
+    
+    console.log('isTenantLate: Active lease found:', !!activeLease);
     console.log('isTenantLate: Tenant lease_start_date:', activeLease?.lease_start_date);
-    console.log('isTenantLate: Property monthly_rent:', property.monthly_rent);
+    console.log('isTenantLate: Property rent from lease:', activeLease?.rent);
     
     const latePaymentInfo = calculateTotalLatePayments(tenant, property);
     const isLate = latePaymentInfo.totalDue > 0;
