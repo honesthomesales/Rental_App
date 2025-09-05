@@ -154,7 +154,7 @@ export default function LateTenantsPage() {
       }
       
       // Transform overdue periods to match the existing LateTenant interface
-      const lateTenantsList: LateTenant[] = overduePeriods.map(period => ({
+      const lateTenantsList: LateTenant[] = (overduePeriods as any[]).map((period: any) => ({
         id: period.tenant_id,
         first_name: period.RENT_leases?.RENT_tenants?.first_name || '',
         last_name: period.RENT_leases?.RENT_tenants?.last_name || '',
