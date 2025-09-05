@@ -193,11 +193,11 @@ export default function ProfitPage() {
        
        // Calculate other metrics from properties
        const totalProperties = propertiesData.data?.length || 0
-       const potentialIncome = propertiesData.data?.reduce((sum: number, property: unknown) => {
-         const rentCadence = extractRentCadence(property.notes || undefined)
-         const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
-         return sum + normalizedRent
-       }, 0) || 0
+               const potentialIncome = propertiesData.data?.reduce((sum: number, property: any) => {
+          const rentCadence = extractRentCadence(property.notes || undefined)
+          const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
+          return sum + normalizedRent
+        }, 0) || 0
        
        setProfitData({
          potentialIncome,
