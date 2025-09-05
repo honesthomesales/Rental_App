@@ -1,5 +1,6 @@
-import { getSupabaseClient } from '../lib/supabase';
-import { createApiResponse, handleSupabaseError, ApiResponse } from '../utils/apiResponse';
+import { getSupabaseClient, handleSupabaseError, createApiResponse } from '../client';
+import type { Database } from '../database.types';
+import type { ApiResponse } from '../types';
 
 /**
  * Centralized rent source service

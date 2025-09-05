@@ -677,7 +677,7 @@ class TenantsService {
           RENT_properties!inner(
             id,
             name,
-            address,
+            address
           ),
           RENT_leases!inner(
             id,
@@ -727,7 +727,7 @@ class TenantsService {
                 return null;
             }));
             const filteredLateTenants = lateTenants
-                .filter(tenant => tenant !== null)
+                .filter((tenant) => tenant !== null)
                 .sort((a, b) => (b?.total_due || 0) - (a?.total_due || 0)); // Sort by total due descending
             return (0, client_1.createApiResponse)(filteredLateTenants);
         }

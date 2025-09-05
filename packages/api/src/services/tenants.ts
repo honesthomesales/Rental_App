@@ -823,7 +823,7 @@ export class TenantsService {
           RENT_properties!inner(
             id,
             name,
-            address,
+            address
           ),
           RENT_leases!inner(
             id,
@@ -848,7 +848,7 @@ export class TenantsService {
 
       // Process tenants to identify late payments using rent periods
       const lateTenants = await Promise.all(
-        tenants.map(async (tenant) => {
+        tenants.map(async (tenant: any) => {
           if (!tenant.RENT_properties || !tenant.RENT_leases || tenant.RENT_leases.length === 0) {
             return null;
           }
@@ -885,8 +885,8 @@ export class TenantsService {
       );
 
       const filteredLateTenants = lateTenants
-        .filter(tenant => tenant !== null)
-        .sort((a, b) => (b?.total_due || 0) - (a?.total_due || 0)); // Sort by total due descending
+        .filter((tenant: any) => tenant !== null)
+        .sort((a: any, b: any) => (b?.total_due || 0) - (a?.total_due || 0)); // Sort by total due descending
 
       return createApiResponse(filteredLateTenants);
     } catch (error) {
