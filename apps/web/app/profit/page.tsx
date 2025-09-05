@@ -179,12 +179,12 @@ export default function ProfitPage() {
        
        // Calculate profit data from views
        const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
-       const currentMonthExpected = expectedData?.find((item: unknown) => 
-         item.month.startsWith(currentMonth)
-       )
-       const currentMonthCollected = collectedData?.find((item: unknown) => 
-         item.month.startsWith(currentMonth)
-       )
+               const currentMonthExpected = expectedData?.find((item: any) => 
+          item.month.startsWith(currentMonth)
+        )
+        const currentMonthCollected = collectedData?.find((item: any) => 
+          item.month.startsWith(currentMonth)
+        )
        
        const expectedRentIncome = currentMonthExpected ? 
          ((currentMonthExpected as any).expected_rent || 0) + ((currentMonthExpected as any).expected_late_fees || 0) : 0
