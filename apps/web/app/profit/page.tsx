@@ -257,7 +257,7 @@ export default function ProfitPage() {
 
        // Fetch other entries for the date range
        // TODO: RENT_other table doesn't exist - temporarily disabled
-       const otherEntriesData: unknown[] = []
+       const otherEntriesData: any[] = []
        const otherEntriesError = null
 
        // const { data: otherEntriesData, error: otherEntriesError } = await supabase
@@ -314,11 +314,11 @@ export default function ProfitPage() {
        // Use monthly amounts for display (not multiplied by months in range)
        const potentialIncome = calculatedMonthlyPotentialIncome
        
-       // Calculate expected income (for properties that currently have renters)
-       const occupiedPropertyIds = new Set(tenantsData.map((tenant: unknown) => tenant.property_id))
-       const monthlyExpectedIncome = propertiesData
-         .filter((property: unknown) => occupiedPropertyIds.has(property.id))
-         .reduce((sum: number, property: unknown) => {
+               // Calculate expected income (for properties that currently have renters)
+        const occupiedPropertyIds = new Set(tenantsData.map((tenant: any) => tenant.property_id))
+        const monthlyExpectedIncome = propertiesData
+          .filter((property: any) => occupiedPropertyIds.has(property.id))
+          .reduce((sum: number, property: any) => {
            const rentCadence = extractRentCadence(property.notes)
            const normalizedRent = normalizeRentToMonthly(property.leases?.[0]?.rent || 0, rentCadence)
            return sum + normalizedRent
@@ -329,79 +329,79 @@ export default function ProfitPage() {
        // Calculate expected rent income (only rent payments for collection rate)
        const expectedRentIncome = monthlyExpectedIncome
 
-       // Calculate collected income for the date range (only positive values)
-       const collectedIncome = paymentsData
-         .reduce((sum: number, payment: unknown) => {
-           const positiveAmount = Math.max(0, payment.amount || 0)
-           return sum + positiveAmount
-         }, 0)
+             // Calculate collected income for the date range (only positive values)
+      const collectedIncome = paymentsData
+        .reduce((sum: number, payment: any) => {
+          const positiveAmount = Math.max(0, payment.amount || 0)
+          return sum + positiveAmount
+        }, 0)
 
-       // Calculate collected rent income (only rent payments for collection rate)
-       const collectedRentIncome = paymentsData
-         .filter((payment: unknown) => {
-           const paymentType = payment.payment_type?.toLowerCase() || ''
-           return paymentType === 'rent'
-         })
-         .reduce((sum: number, payment: unknown) => {
-           const positiveAmount = Math.max(0, payment.amount || 0)
-           return sum + positiveAmount
-         }, 0)
+             // Calculate collected rent income (only rent payments for collection rate)
+      const collectedRentIncome = paymentsData
+        .filter((payment: any) => {
+          const paymentType = payment.payment_type?.toLowerCase() || ''
+          return paymentType === 'rent'
+        })
+        .reduce((sum: number, payment: any) => {
+          const positiveAmount = Math.max(0, payment.amount || 0)
+          return sum + positiveAmount
+        }, 0)
 
-       // Calculate total payments income/expense for the date range (all values, positive and negative)
-       const totalPaymentsIncome = paymentsData
-         .reduce((sum: number, payment: unknown) => sum + (payment.amount || 0), 0)
+             // Calculate total payments income/expense for the date range (all values, positive and negative)
+      const totalPaymentsIncome = paymentsData
+        .reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0)
 
        // Calculate expenses by type
-       // Calculate total insurance from properties
-       const insurance = propertiesData.reduce((sum: number, property: unknown) => {
-         return sum + (property.insurance_premium || 0)
-       }, 0)
+             // Calculate total insurance from properties
+      const insurance = propertiesData.reduce((sum: number, property: any) => {
+        return sum + (property.insurance_premium || 0)
+      }, 0)
        
-       // Calculate total taxes from properties
-       const taxes = propertiesData.reduce((sum: number, property: unknown) => {
-         return sum + (property.property_tax || 0)
-       }, 0)
+             // Calculate total taxes from properties
+      const taxes = propertiesData.reduce((sum: number, property: any) => {
+        return sum + (property.property_tax || 0)
+      }, 0)
        
-       // Calculate total payments from properties
-       const totalPayments = propertiesData.reduce((sum: number, property: unknown) => {
-         return sum + (property.purchase_payment || 0)
-       }, 0)
+             // Calculate total payments from properties
+      const totalPayments = propertiesData.reduce((sum: number, property: any) => {
+        return sum + (property.purchase_payment || 0)
+      }, 0)
        
-       // Calculate repairs from payments (type "Repairs" not case sensitive)
-       const repairs = paymentsData
-         .filter((payment: unknown) => {
-           const paymentType = payment.payment_type?.toLowerCase() || ''
-           return paymentType === 'repairs'
-         })
-         .reduce((sum: number, payment: unknown) => {
-           const amount = Math.abs(payment.amount || 0)
-           return sum + amount
-         }, 0)
+             // Calculate repairs from payments (type "Repairs" not case sensitive)
+      const repairs = paymentsData
+        .filter((payment: any) => {
+          const paymentType = payment.payment_type?.toLowerCase() || ''
+          return paymentType === 'repairs'
+        })
+        .reduce((sum: number, payment: any) => {
+          const amount = Math.abs(payment.amount || 0)
+          return sum + amount
+        }, 0)
        
-       // Calculate other expenses (all negative values that are not repairs)
-       const otherExpenses = paymentsData
-         .filter((payment: unknown) => {
-           const paymentType = payment.payment_type?.toLowerCase() || ''
-           const isNegative = (payment.amount || 0) < 0
-           const isNotRepair = paymentType !== 'repairs'
-           return isNegative && isNotRepair
-         })
-         .reduce((sum: number, payment: unknown) => {
-           const amount = Math.abs(payment.amount || 0)
-           return sum + amount
-         }, 0)
+             // Calculate other expenses (all negative values that are not repairs)
+      const otherExpenses = paymentsData
+        .filter((payment: any) => {
+          const paymentType = payment.payment_type?.toLowerCase() || ''
+          const isNegative = (payment.amount || 0) < 0
+          const isNotRepair = paymentType !== 'repairs'
+          return isNegative && isNotRepair
+        })
+        .reduce((sum: number, payment: any) => {
+          const amount = Math.abs(payment.amount || 0)
+          return sum + amount
+        }, 0)
        
-       // Calculate misc income (all positive values that are not rent)
-       const miscIncome = paymentsData
-         .filter((payment: unknown) => {
-           const paymentType = payment.payment_type?.toLowerCase() || ''
-           const isPositive = (payment.amount || 0) > 0
-           const isNotRent = paymentType !== 'rent'
-           return isPositive && isNotRent
-         })
-         .reduce((sum: number, payment: unknown) => {
-           return sum + (payment.amount || 0)
-         }, 0)
+             // Calculate misc income (all positive values that are not rent)
+      const miscIncome = paymentsData
+        .filter((payment: any) => {
+          const paymentType = payment.payment_type?.toLowerCase() || ''
+          const isPositive = (payment.amount || 0) > 0
+          const isNotRent = paymentType !== 'rent'
+          return isPositive && isNotRent
+        })
+        .reduce((sum: number, payment: any) => {
+          return sum + (payment.amount || 0)
+        }, 0)
 
        const totalExpenses = insurance + taxes + totalPayments + repairs + otherExpenses
        const expectedProfit = expectedIncome - totalExpenses
@@ -471,7 +471,7 @@ export default function ProfitPage() {
     }
   }
 
-  const editEntry = (entry: unknown) => {
+  const editEntry = (entry: any) => {
     setEditingEntry(entry)
     setNewEntry({
       type: entry.type,
@@ -585,7 +585,7 @@ export default function ProfitPage() {
     }
   }
 
-  const editPayment = (payment: unknown) => {
+  const editPayment = (payment: any) => {
     // For now, just show a toast message since we need to implement payment editing
     toast('Payment editing functionality will be implemented soon')
   }
@@ -882,7 +882,7 @@ export default function ProfitPage() {
                     </tr>
                   </thead>
                                    <tbody>
-                                         {rentPayments.map((payment: unknown) => {
+                                         {rentPayments.map((payment: any) => {
                        const property = properties.find(p => p.id === payment.property_id)
                        return (
                          <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
