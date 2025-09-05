@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     console.log('RPC method available:', typeof supabase.rpc)
     
     try {
-      const { data, error: periodsError } = await supabase.rpc('rent_generate_periods', {
+      const { data, error: periodsError } = await (supabase as any).rpc('rent_generate_periods', {
         p_lease_id: lease.id
       })
       

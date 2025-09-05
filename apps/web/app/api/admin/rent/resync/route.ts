@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const asOfDate = body.as_of || new Date().toISOString().split('T')[0]
 
     // Call the resync function
-    const { data, error } = await supabase.rpc('RENT_resync_all', {
+    const { data, error } = await (supabase as any).rpc('RENT_resync_all', {
       p_as_of: asOfDate
     })
 
