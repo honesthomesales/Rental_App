@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { TenantsService, RentPeriodsService, supabase, PropertiesService } from '@rental-app/api'
 import type { LateTenant, RentPeriod } from '@rental-app/api'
 import { calculateTotalLatePayments, isTenantLate } from '../../lib/utils'
-import { listOverdue, type OverduePeriod } from '../../src/lib/rentSource'
+import { listOverdue } from '../../src/lib/rentSource'
 import { 
   AlertTriangle, 
   FileText, 
