@@ -169,11 +169,11 @@ export default function LateTenantsPage() {
         rent_cadence: period.RENT_leases?.rent_cadence || '',
         late_fees: 0, // Late fees not stored in current schema
         total_late_fees: 0, // Late fees not stored in current schema
-        days_late: period.days_overdue, // Add missing property
+        days_late: period.period_due_date ? Math.max(0, Math.floor((new Date().getTime() - new Date(period.period_due_date).getTime()) / (1000 * 60 * 60 * 24))) : 0, // Calculate days overdue
         properties: { // Add missing property with all required fields
           id: period.property_id,
-          name: period.property_name,
-          address: period.property_address,
+          name: period.RENT_leases?.RENT_properties?.name || '',
+          address: period.RENT_leases?.RENT_properties?.address || '',
           city: '',
           state: '',
           zip_code: '',
