@@ -48,7 +48,7 @@ interface CreateTenantData {
   notes?: string;
 }
 
-interface UpdateTenantData extends CreateTenantData {}
+// interface UpdateTenantData extends CreateTenantData {}
 
 const tenantSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
