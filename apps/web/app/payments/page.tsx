@@ -1125,7 +1125,7 @@ export default function PaymentsPage() {
     const property = properties.find(p => p.id === propertyId)
     if (!property?.tenants?.[0]?.payment_history) return null
 
-    const tenantPayment = property.tenants[0].payment_history.find((p: unknown) => {
+    const tenantPayment = property.tenants[0].payment_history.find((p: any) => {
       const paymentDate = new Date(p.date)
       return paymentDate >= weekStart && paymentDate <= weekEnd && p.status === 'completed'
     })
