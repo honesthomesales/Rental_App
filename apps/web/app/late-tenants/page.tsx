@@ -214,8 +214,8 @@ export default function LateTenantsPage() {
         }],
         RENT_properties: {
           id: period.property_id,
-          name: period.property_name,
-          address: period.property_address,
+          name: period.RENT_leases?.RENT_properties?.name || '',
+          address: period.RENT_leases?.RENT_properties?.address || '',
           // monthly_rent removed - rent data comes from RENT_leases
         }
       }))
