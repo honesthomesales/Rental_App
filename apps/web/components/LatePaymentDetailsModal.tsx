@@ -40,7 +40,7 @@ export default function LatePaymentDetailsModal({ tenant, onClose, onSave }: Lat
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if ((tenant as any).late_payment_info?.payPeriods) {
+    if ((tenant as any).late_payment_info && (tenant as any).late_payment_info.payPeriods) {
       const periods = (tenant as any).late_payment_info.payPeriods.map((period: any) => ({
         ...period,
         editedLateFees: period.lateFees,

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@rental-app/api'
 
+export async function generateStaticParams() {
+  return []
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
