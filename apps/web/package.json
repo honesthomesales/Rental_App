@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "scripts\\prebuild.bat && next build && node scripts/fix-asset-urls.js && scripts\\postbuild.bat",
+    "build:static": "npm run prebuild:static && next build && node scripts/fix-asset-urls.js && npm run postbuild:static",
+    "prebuild:static": "node scripts/prebuild.js",
+    "postbuild:static": "node scripts/postbuild.js",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next out"
