@@ -65,7 +65,9 @@ class TenantsService {
                         paymentHistory = [];
                     }
                 }
-                // Map to expected Tenant type
+                // Get active lease data to prioritize over tenant-level data
+                const activeLease = (leasesData || []).find(lease => lease.status === 'active') || (leasesData || [])[0];
+                // Map to expected Tenant type - prioritize lease data over tenant data
                 const mappedTenant = {
                     id: tenant.id,
                     property_id: tenant.property_id || undefined,
@@ -75,10 +77,12 @@ class TenantsService {
                     phone: tenant.phone || undefined,
                     emergency_contact_name: tenant.emergency_contact_name || undefined,
                     emergency_contact_phone: tenant.emergency_contact_phone || undefined,
-                    lease_start_date: tenant.lease_start_date || undefined,
-                    lease_end_date: tenant.lease_end_date || undefined,
+                    // Prioritize lease data over tenant data for lease dates
+                    lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
+                    lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
                     security_deposit: tenant.security_deposit || undefined,
-                    lease_pdf_url: tenant.lease_pdf_url || undefined,
+                    // Prioritize lease data for lease PDF URL
+                    lease_pdf_url: activeLease?.lease_pdf_url || tenant.lease_pdf_url || undefined,
                     payment_history: paymentHistory,
                     late_fees_owed: tenant.late_fees_owed || 0,
                     late_status: tenant.late_status || 'on_time',
@@ -89,13 +93,14 @@ class TenantsService {
                     created_at: tenant.created_at,
                     updated_at: tenant.updated_at,
                     properties: property,
-                    payment_frequency: undefined, // This field doesn't exist in the database yet
+                    // Get payment frequency from active lease
+                    payment_frequency: activeLease?.rent_cadence || undefined,
                     leases: (leasesData || []).map(lease => ({
                         ...lease,
                         tenant_id: lease.tenant_id || '',
                         property_id: lease.property_id || '',
                         rent_cadence: lease.rent_cadence || 'monthly',
-                        rent_due_day: 1 // Default value since database query doesn't include this field
+                        rent_due_day: lease.rent_due_day || 1
                     }))
                 };
                 return mappedTenant;
@@ -149,12 +154,21 @@ class TenantsService {
                     paymentHistory = [];
                 }
             }
+            // Get active lease data to prioritize over tenant-level data
+            const activeLease = (leasesData || []).find(lease => lease.status === 'active') || (leasesData || [])[0];
             const tenantWithRelations = {
                 ...tenant,
+                // Prioritize lease data over tenant data for lease dates
+                lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
+                lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
+                // Prioritize lease data for lease PDF URL
+                lease_pdf_url: activeLease?.lease_pdf_url || tenant.lease_pdf_url || undefined,
+                // Get payment frequency from active lease
+                payment_frequency: activeLease?.rent_cadence || undefined,
                 properties: property,
                 leases: (leasesData || []).map(lease => ({
                     ...lease,
-                    rent_due_day: 1 // Default value since database query doesn't include this field
+                    rent_due_day: lease.rent_due_day || 1
                 })),
                 payment_history: paymentHistory
             };

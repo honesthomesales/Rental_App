@@ -80,7 +80,7 @@ export interface Lease {
   rent_due_day?: number | null; // Made optional with default handling at usage sites
   move_in_fee?: number | null; // Made nullable to match database types
   late_fee_amount?: number | null; // Made nullable to match database types
-  lease_pdf?: string | null; // Made nullable to match database types
+  lease_pdf_url?: string | null; // Made nullable to match database types
   status: string;
   notes?: string | null; // Made nullable to match database types
   created_at: string; // Made required since database types show it as required
@@ -266,7 +266,7 @@ export interface CreateLeaseData {
   rent_cadence: string;
   move_in_fee?: number;
   late_fee_amount?: number;
-  lease_pdf?: string;
+  lease_pdf_url?: string;
   status?: string;
   notes?: string;
 }

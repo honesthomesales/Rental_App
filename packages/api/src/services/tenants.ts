@@ -111,7 +111,7 @@ export class TenantsService {
             lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
             security_deposit: tenant.security_deposit || undefined,
             // Prioritize lease data for lease PDF URL
-            lease_pdf_url: activeLease?.lease_pdf || tenant.lease_pdf_url || undefined,
+            lease_pdf_url: activeLease?.lease_pdf_url || tenant.lease_pdf_url || undefined,
             payment_history: paymentHistory,
             late_fees_owed: tenant.late_fees_owed || 0,
             late_status: tenant.late_status || 'on_time',
@@ -199,7 +199,7 @@ export class TenantsService {
         lease_start_date: activeLease?.lease_start_date || tenant.lease_start_date || undefined,
         lease_end_date: activeLease?.lease_end_date || tenant.lease_end_date || undefined,
         // Prioritize lease data for lease PDF URL
-        lease_pdf_url: activeLease?.lease_pdf || tenant.lease_pdf_url || undefined,
+        lease_pdf_url: activeLease?.lease_pdf_url || tenant.lease_pdf_url || undefined,
         // Get payment frequency from active lease
         payment_frequency: activeLease?.rent_cadence as any || undefined,
         properties: property,

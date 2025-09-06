@@ -75,7 +75,7 @@ export interface Lease {
     rent_due_day?: number | null;
     move_in_fee?: number | null;
     late_fee_amount?: number | null;
-    lease_pdf?: string | null;
+    lease_pdf_url?: string | null;
     status: string;
     notes?: string | null;
     created_at: string;
@@ -244,7 +244,7 @@ export interface CreateLeaseData {
     rent_cadence: string;
     move_in_fee?: number;
     late_fee_amount?: number;
-    lease_pdf?: string;
+    lease_pdf_url?: string;
     status?: string;
     notes?: string;
 }
