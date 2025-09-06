@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
 import { Calendar, DollarSign, TrendingUp, PieChart, Plus, Minus, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
 import { supabase } from '@rental-app/api'
-import { normalizeRentToMonthly, extractRentCadence } from '../../lib/utils'
+import { normalizeRentToMonthly, extractRentCadence, getRentCadenceFromLease } from '../../lib/utils'
 import { getExpectedRentByMonth, getCollectedRentByMonth } from '../../src/lib/rentSource'
 import toast from 'react-hot-toast'
 

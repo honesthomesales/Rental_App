@@ -23,15 +23,25 @@ export function normalizeRentToMonthly(amount: number, cadence?: string): number
 }
 
 /**
- * Extract rent cadence from property notes
+ * Extract rent cadence from property notes (DEPRECATED - use lease data instead)
  * @param notes - Property notes that may contain rent cadence info
  * @returns The rent cadence or 'monthly' as default
+ * @deprecated Use rent_cadence from RENT_leases table instead
  */
 export function extractRentCadence(notes?: string): string {
   if (!notes) return 'monthly'
   
   const cadenceMatch = notes.match(/Rent cadence:\s*(\w+)/i)
   return cadenceMatch ? cadenceMatch[1] : 'monthly'
+}
+
+/**
+ * Get rent cadence from lease data (PREFERRED METHOD)
+ * @param lease - Lease object with rent_cadence field
+ * @returns The rent cadence or 'monthly' as default
+ */
+export function getRentCadenceFromLease(lease?: { rent_cadence?: string }): string {
+  return lease?.rent_cadence || 'monthly'
 }
 
 /**

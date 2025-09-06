@@ -6,7 +6,7 @@ import { Plus, Search, DollarSign, Home, Users, AlertTriangle } from 'lucide-rea
 import toast from 'react-hot-toast'
 import { PropertiesService } from '@rental-app/api'
 import { TenantsService } from '@rental-app/api'
-import { normalizeRentToMonthly, extractRentCadence } from '../lib/utils'
+import { normalizeRentToMonthly, extractRentCadence, getRentCadenceFromLease } from '../lib/utils'
 
 interface Property {
   id: string
@@ -227,10 +227,13 @@ export default function Dashboard() {
     expectedData: any[], 
     collectedData: any[]
   ): DashboardStats => {
-    // Calculate basic stats
+    // Calculate basic stats from lease data
     const totalRent = propertiesData.reduce((sum, property) => {
-      const rentCadence = extractRentCadence(property.notes || undefined)
-      const normalizedRent = normalizeRentToMonthly(property.active_leases?.[0]?.rent || 0, rentCadence)
+      const activeLease = property.active_leases?.[0]
+      if (!activeLease) return sum
+      
+      const rentCadence = getRentCadenceFromLease(activeLease)
+      const normalizedRent = normalizeRentToMonthly(activeLease.rent || 0, rentCadence)
       return sum + normalizedRent
     }, 0)
     
@@ -319,10 +322,13 @@ export default function Dashboard() {
 
   // Memoize expensive calculations (original method)
   const calculateDashboardStats = useCallback((propertiesData: Property[], tenantsData: any[]): DashboardStats => {
-    // Calculate basic stats with normalized rent amounts
+    // Calculate basic stats with normalized rent amounts from lease data
     const totalRent = propertiesData.reduce((sum, property) => {
-      const rentCadence = extractRentCadence(property.notes || undefined)
-      const normalizedRent = normalizeRentToMonthly(property.active_leases?.[0]?.rent || 0, rentCadence)
+      const activeLease = property.active_leases?.[0]
+      if (!activeLease) return sum
+      
+      const rentCadence = getRentCadenceFromLease(activeLease)
+      const normalizedRent = normalizeRentToMonthly(activeLease.rent || 0, rentCadence)
       return sum + normalizedRent
     }, 0)
     
