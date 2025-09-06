@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@rental-app/api'
 
-export async function generateStaticParams() {
-  // Required for static export
+// Required for static export
+export async function generateStaticParams(): Promise<{ id: string }[]> {
   return []
 }
 
