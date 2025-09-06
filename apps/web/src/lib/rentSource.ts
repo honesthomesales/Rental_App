@@ -1,14 +1,14 @@
 /**
  * Centralized data access for rent management
  * This file provides a single source of truth for all rent-related data queries
- * All queries are gated behind NEXT_PUBLIC_USE_LEASE_PERIODS environment variable
+ * All screens now consistently use lease data from RENT_leases table
  */
 
 import { supabase } from '@rental-app/api'
 
-// Check if lease periods feature is enabled
+// Always use lease periods - feature flag removed for consistency
 const isLeasePeriodsEnabled = () => {
-  return process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
+  return true
 }
 
 /**

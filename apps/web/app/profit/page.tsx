@@ -26,7 +26,7 @@ interface ProfitData {
 
 export default function ProfitPage() {
   // Feature flag for new rent source system
-  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
+  const useLeasePeriods = true // Always use lease data for consistency
   
   const [profitData, setProfitData] = useState<ProfitData>({
     potentialIncome: 0,

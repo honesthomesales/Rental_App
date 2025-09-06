@@ -32,13 +32,9 @@ export default function LateTenantsPage() {
   const [mounted, setMounted] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   
-  // Feature flag for new rent source system
-  // Try multiple ways to read the environment variable
-  const envVar = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS
-  const useLeasePeriods = envVar === 'true'
-  // Force enable for testing (bypassing env var issue)
-  const forceEnable = true
-  console.log('FORCE ENABLING NEW SYSTEM FOR TESTING:', forceEnable)
+  // Always use lease data for consistency
+  const useLeasePeriods = true
+  console.log('Using lease data for consistency')
 
   useEffect(() => {
     console.log('=== COMPONENT MOUNTING ===')
@@ -98,13 +94,11 @@ export default function LateTenantsPage() {
       setLoading(true)
       console.log('Loading late tenants... (attempt:', retryCount + 1, ')')
       
-      // Check feature flag for new rent source system
-      const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
-      const forceEnable = true // Force enable for testing
-      console.log('Feature flag NEXT_PUBLIC_USE_LEASE_PERIODS:', useLeasePeriods)
-      console.log('Force enable for testing:', forceEnable)
+      // Always use lease data for consistency
+      const useLeasePeriods = true
+      console.log('Using lease data for consistency')
       
-      if (useLeasePeriods || forceEnable) {
+      if (useLeasePeriods) {
         console.log('Using new centralized rent source system...')
         await loadLateTenantsWithRentSource()
       } else {
@@ -852,17 +846,17 @@ export default function LateTenantsPage() {
 
       {/* Dev-only banner showing active mode */}
       {process.env.NODE_ENV === 'development' && (
-        <div className={`${(useLeasePeriods || forceEnable) ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'} border-l-4 p-4 mx-4 mt-4 rounded-r-md`}>
+        <div className={`${useLeasePeriods ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300'} border-l-4 p-4 mx-4 mt-4 rounded-r-md`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <AlertTriangle className={`h-5 w-5 ${(useLeasePeriods || forceEnable) ? 'text-green-400' : 'text-yellow-400'}`} />
+              <AlertTriangle className={`h-5 w-5 ${useLeasePeriods ? 'text-green-400' : 'text-yellow-400'}`} />
             </div>
             <div className="ml-3">
-              <p className={`text-sm font-medium ${(useLeasePeriods || forceEnable) ? 'text-green-800' : 'text-yellow-800'}`}>
-                {(useLeasePeriods || forceEnable) ? 'NEW RENT SOURCE MODE' : 'LEGACY MODE'}
+              <p className={`text-sm font-medium ${useLeasePeriods ? 'text-green-800' : 'text-yellow-800'}`}>
+                {useLeasePeriods ? 'LEASE DATA MODE' : 'LEGACY MODE'}
               </p>
-              <p className={`text-sm ${(useLeasePeriods || forceEnable) ? 'text-green-700' : 'text-yellow-700'}`}>
-                {(useLeasePeriods || forceEnable) 
+              <p className={`text-sm ${useLeasePeriods ? 'text-green-700' : 'text-yellow-700'}`}>
+                {useLeasePeriods 
                   ? 'Using centralized rent source system (listOverdue)'
                   : 'Using legacy fallback method (loadLateTenantsFallback)'
                 }

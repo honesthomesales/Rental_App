@@ -83,7 +83,7 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false)
   
   // Feature flag for new rent source system
-  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' || true // Temporarily hardcoded for testing
+  const useLeasePeriods = true // Always use lease data for consistency
   
   // Debug logging
   console.log('Dashboard - NEXT_PUBLIC_USE_LEASE_PERIODS:', process.env.NEXT_PUBLIC_USE_LEASE_PERIODS)

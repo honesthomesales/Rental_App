@@ -546,8 +546,8 @@ function PaymentAllocationPanel({ selectedPayment, onClose, onRefresh }: Payment
   const [applying, setApplying] = useState(false)
 
   // Check feature flag
-  const useLeasePeriods = process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true'
-  console.log('Payments page - Feature flag NEXT_PUBLIC_USE_LEASE_PERIODS:', process.env.NEXT_PUBLIC_USE_LEASE_PERIODS)
+  const useLeasePeriods = true // Always use lease data for consistency
+  console.log('Payments page - Using lease data for consistency')
   console.log('Payments page - useLeasePeriods:', useLeasePeriods)
 
   useEffect(() => {

@@ -40,21 +40,19 @@ export default function PropertiesPage() {
         console.log('✅ Properties loaded:', response.data)
         setProperties(response.data)
         
-        // Load rent info for each property if using lease periods
-        if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true') {
-          const rentInfoPromises = response.data.map(async (property) => {
-            const rentInfo = await getPropertyRentInfo(property.id)
-            return { propertyId: property.id, rentInfo }
-          })
-          
-          const rentInfoResults = await Promise.all(rentInfoPromises)
-          const rentInfoMap = rentInfoResults.reduce((acc, { propertyId, rentInfo }) => {
-            acc[propertyId] = rentInfo
-            return acc
-          }, {} as Record<string, any>)
-          
-          setPropertyRentInfo(rentInfoMap)
-        }
+        // Always load rent info for each property from leases table
+        const rentInfoPromises = response.data.map(async (property) => {
+          const rentInfo = await getPropertyRentInfo(property.id)
+          return { propertyId: property.id, rentInfo }
+        })
+        
+        const rentInfoResults = await Promise.all(rentInfoPromises)
+        const rentInfoMap = rentInfoResults.reduce((acc, { propertyId, rentInfo }) => {
+          acc[propertyId] = rentInfo
+          return acc
+        }, {} as Record<string, any>)
+        
+        setPropertyRentInfo(rentInfoMap)
       } else {
         console.error('❌ Failed to load properties:', response.error)
         toast.error('Failed to load properties')
@@ -554,8 +552,8 @@ export default function PropertiesPage() {
                       </td>
                       <td className="px-6 py-4">
                         {(() => {
-                          // Use rentSource if enabled, otherwise fall back to existing logic
-                          if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' && propertyRentInfo[property.id]) {
+                          // Always use lease data from leases table
+                          if (propertyRentInfo[property.id]) {
                             const rentInfo = propertyRentInfo[property.id]
                             if (rentInfo.source === 'lease') {
                               return (
@@ -564,51 +562,19 @@ export default function PropertiesPage() {
                                   <div className="text-xs text-gray-500">(Lease)</div>
                                 </div>
                               )
-                            } else if (rentInfo.source === 'property') {
-                              return (
-                                <div className="text-sm font-medium text-blue-600">
-                                  ${rentInfo.rent.toLocaleString()}/month
-                                  <div className="text-xs text-gray-500">(Market Rent)</div>
-                                </div>
-                              )
                             } else {
                               return (
-                                <div className="text-sm font-medium text-red-600">
-                                  Vacant
-                                  <div className="text-xs text-gray-500">Market Rent: ${property.active_leases?.[0]?.rent?.toLocaleString() || '0'}/{property.active_leases?.[0]?.rent_cadence || 'month'}</div>
+                                <div className="text-sm text-gray-500">
+                                  No active lease
                                 </div>
                               )
                             }
                           } else {
-                            // Fallback to existing logic
-                            // Priority 1: Active lease rent (most accurate - tenant is actually paying this)
-                            if (property.active_leases && property.active_leases.length > 0) {
-                              const activeLease = property.active_leases[0]
-                              return (
-                                <div className="text-sm font-medium text-green-600">
-                                  ${activeLease.rent.toLocaleString()}/{activeLease.rent_cadence || 'monthly'}
-                                  <div className="text-xs text-gray-500">(Lease)</div>
-                                </div>
-                              )
-                            }
-                            // Priority 2: Property base rent from active lease (fallback when no tenant)
-                            else if (property.active_leases?.[0]?.rent) {
-                              return (
-                                <div className="text-sm font-medium text-blue-600">
-                                  ${property.active_leases[0].rent.toLocaleString()}/{property.active_leases[0].rent_cadence}
-                                  <div className="text-xs text-gray-500">(Base)</div>
-                                </div>
-                              )
-                            }
-                            // No active leases or tenants - show $0 to indicate no income
-                            else {
-                              return (
-                                <div className="text-sm font-medium text-red-600">
-                                  $0/month
-                                  <div className="text-xs text-gray-500">(No Tenant)</div>
-                                </div>
-                              )
-                            }
+                            return (
+                              <div className="text-sm text-gray-500">
+                                No active lease
+                              </div>
+                            )
                           }
                         })()}
                       </td>

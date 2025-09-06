@@ -31,21 +31,19 @@ export default function TenantsPage() {
         console.log('✅ Tenants loaded:', response.data)
         setTenants(response.data)
         
-        // Load lease info for each tenant if using lease periods
-        if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true') {
-          const leaseInfoPromises = response.data.map(async (tenant) => {
-            const leaseInfo = await getActiveLeaseByTenant(tenant.id)
-            return { tenantId: tenant.id, leaseInfo }
-          })
-          
-          const leaseInfoResults = await Promise.all(leaseInfoPromises)
-          const leaseInfoMap = leaseInfoResults.reduce((acc, { tenantId, leaseInfo }) => {
-            acc[tenantId] = leaseInfo
-            return acc
-          }, {} as Record<string, any>)
-          
-          setTenantLeaseInfo(leaseInfoMap)
-        }
+        // Always load lease info for each tenant from leases table
+        const leaseInfoPromises = response.data.map(async (tenant) => {
+          const leaseInfo = await getActiveLeaseByTenant(tenant.id)
+          return { tenantId: tenant.id, leaseInfo }
+        })
+        
+        const leaseInfoResults = await Promise.all(leaseInfoPromises)
+        const leaseInfoMap = leaseInfoResults.reduce((acc, { tenantId, leaseInfo }) => {
+          acc[tenantId] = leaseInfo
+          return acc
+        }, {} as Record<string, any>)
+        
+        setTenantLeaseInfo(leaseInfoMap)
       } else {
         console.error('❌ Failed to load tenants:', response.error)
         toast.error('Failed to load tenants')
@@ -398,8 +396,8 @@ export default function TenantsPage() {
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-900">
                             {(() => {
-                              // Use rentSource if enabled, otherwise fall back to existing logic
-                              if (process.env.NEXT_PUBLIC_USE_LEASE_PERIODS === 'true' && tenantLeaseInfo[tenant.id]) {
+                              // Always use lease data from leases table
+                              if (tenantLeaseInfo[tenant.id]) {
                                 const leaseInfo = tenantLeaseInfo[tenant.id]
                                 if (leaseInfo) {
                                   return `$${leaseInfo.rent.toLocaleString()}/${leaseInfo.cadence}`
@@ -407,14 +405,7 @@ export default function TenantsPage() {
                                   return 'No active lease'
                                 }
                               } else {
-                                // Fallback to existing logic
-                                if (tenant.leases && tenant.leases.length > 0 && tenant.leases[0].rent) {
-                                  return `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence || 'month'}`
-                                } else if (tenant.leases?.[0]?.rent) {
-                                  return `$${tenant.leases[0].rent.toLocaleString()}/${tenant.leases[0].rent_cadence}`
-                                } else {
-                                  return 'Not set'
-                                }
+                                return 'No active lease'
                               }
                             })()}
                           </td>
