@@ -72,8 +72,8 @@ export default function PropertiesPage() {
     if (!properties.length) return []
     
     return [...properties].sort((a, b) => {
-      let aValue: unknown
-      let bValue: unknown
+      let aValue: any = ''
+      let bValue: any = ''
       
       switch (sortField) {
         case 'name':

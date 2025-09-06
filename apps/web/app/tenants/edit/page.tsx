@@ -21,7 +21,7 @@ interface Tenant {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
-  properties?: unknown;
+  properties?: any;
   leases?: Array<{
     id: string;
     rent: number;
@@ -117,7 +117,7 @@ function TenantEditContent() {
     );
   }
 
-  const handleSuccess = (updatedTenant: Tenant) => {
+  const handleSuccess = (updatedTenant: any) => {
     toast.success('Tenant updated successfully');
     router.push('/tenants');
   };

@@ -269,7 +269,7 @@ export function calculateLateFeesForPeriod(
  * @param property - The property object (for rent cadence)
  * @returns Object with total late fees and outstanding amounts
  */
-export function calculateTotalLatePayments(tenant: unknown, property: unknown): {
+export function calculateTotalLatePayments(tenant: any, property: any): {
   totalLateFees: number;
   totalOutstanding: number;
   totalDue: number;
@@ -391,7 +391,7 @@ export function calculateTotalLatePayments(tenant: unknown, property: unknown): 
  * @param property - The property object
  * @returns True if tenant is late
  */
-export function isTenantLate(tenant: unknown, property: unknown): boolean {
+export function isTenantLate(tenant: any, property: any): boolean {
   try {
     if (!tenant || !property) {
       console.log('isTenantLate: Missing tenant or property data');
