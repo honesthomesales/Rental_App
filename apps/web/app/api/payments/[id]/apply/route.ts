@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@rental-app/api'
 
 export async function generateStaticParams() {
+  // Required for static export
   return []
 }
 
